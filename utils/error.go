@@ -1,8 +1,12 @@
 package utils
 
+import (
+	"github.com/skirrund/gcloud/response"
+)
+
 type Error struct {
 	Err     error
-	Msginfo *Msginfo
+	Msginfo *response.Msginfo
 }
 
 func (e *Error) Error() string {
@@ -15,7 +19,7 @@ func (e *Error) Error() string {
 	return ""
 }
 
-func NewError(err error, msginfo *Msginfo) *Error {
+func NewError(err error, msginfo *response.Msginfo) *Error {
 	return &Error{
 		Err:     err,
 		Msginfo: msginfo,

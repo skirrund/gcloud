@@ -10,8 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	"mth-config-service/common/logger"
 	"regexp"
+
+	"github.com/skirrund/gcloud/logger"
 
 	"github.com/disintegration/imaging"
 )

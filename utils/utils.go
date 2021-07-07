@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"io"
 	"math/rand"
-	cc "mth-config-service/common/config"
-	"mth-config-service/common/logger"
 	"net"
 	"net/url"
 	"os"
@@ -15,6 +13,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/skirrund/gcloud/logger"
+
+	cc "github.com/skirrund/gcloud/config"
 
 	"github.com/google/uuid"
 	"github.com/json-iterator/go"

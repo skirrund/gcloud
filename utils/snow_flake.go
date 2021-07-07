@@ -2,11 +2,12 @@ package utils
 
 import (
 	"errors"
-	"mth-config-service/common/cache/redis"
-	"mth-config-service/common/logger"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/skirrund/gcloud/cache/redis"
+	"github.com/skirrund/gcloud/logger"
 )
 
 const (

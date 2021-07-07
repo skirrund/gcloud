@@ -2,10 +2,11 @@ package validator
 
 import (
 	"errors"
-	"mth-config-service/common/logger"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/skirrund/gcloud/logger"
 )
 
 func Validate(obj interface{}) error {

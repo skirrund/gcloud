@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/skirrund/gcloud/server"
-	"github.com/skirrund/gcloud/utils"
 
 	"github.com/skirrund/gcloud/cache/redis"
 	"github.com/skirrund/gcloud/config"
@@ -38,7 +37,7 @@ type Application struct {
 	Registry      registry.IRegistry
 	Mq            *mq.Client
 	Redis         *redis.RedisClient
-	IdWorker      *common.Worker
+	IdWorker      *utils.Worker
 	ConfigCenter  config.IConfig
 }
 
@@ -200,7 +199,7 @@ func (app *Application) StartRedis() *redis.RedisClient {
 	opts := redis.Options{}
 	utils.NewOptions(env.GetInstance(), &opts)
 	client := redis.NewClient(opts)
-	worker, _ := common.NewWorkerWithRedis(client, app.BootOptions.ServerName)
+	worker, _ := utils.NewWorkerWithRedis(client, app.BootOptions.ServerName)
 	app.IdWorker = worker
 	app.Redis = client
 	return client

@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/skirrund/gcloud"
+	"github.com/skirrund/gcloud/response"
 
 	"strings"
 
@@ -22,9 +22,9 @@ func CheckParamsWithErrorMsg(name string, str string, v *string, errorMsg string
 	*v = str
 	if len(str) == 0 {
 		if len(errorMsg) == 0 {
-			ctx.JSON(200, common.ValidateError(name+"不能为空"))
+			ctx.JSON(200, response.ValidateError(name+"不能为空"))
 		} else {
-			ctx.JSON(200, common.ValidateError(errorMsg))
+			ctx.JSON(200, response.ValidateError(errorMsg))
 		}
 
 		return false
@@ -59,7 +59,7 @@ func SendJSON(ctx *gin.Context, data interface{}) {
 func ShouldBind(ctx *gin.Context, data interface{}) bool {
 	err := ctx.ShouldBind(data)
 	if err != nil {
-		ctx.JSON(200, common.Fail(err.Error()))
+		ctx.JSON(200, response.Fail(err.Error()))
 		return false
 	}
 	return true

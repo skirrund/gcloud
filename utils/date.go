@@ -2,8 +2,9 @@ package utils
 
 import (
 	"fmt"
-	"mth-config-service/common/logger"
 	"time"
+
+	"github.com/skirrund/gcloud/logger"
 
 	"database/sql/driver"
 )

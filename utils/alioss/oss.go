@@ -4,17 +4,18 @@ import (
 	"encoding/base64"
 	"errors"
 	"io/ioutil"
-	"mth-config-service/common/bootstrap/env"
-	"mth-config-service/common/logger"
 	"net/url"
 	"os"
 	"strings"
 
-	"mth-config-service/common/utils"
+	"github.com/skirrund/gcloud/bootstrap/env"
+	"github.com/skirrund/gcloud/logger"
+
+	"github.com/skirrund/gcloud/utils"
 
 	"bytes"
 
-	"mth-config-service/common/server/http"
+	"github.com/skirrund/gcloud/server/http"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )

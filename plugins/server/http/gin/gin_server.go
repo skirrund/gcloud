@@ -13,10 +13,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/skirrund/gcloud"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
 	"github.com/skirrund/gcloud/plugins/server/http/gin/zipkin"
+	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/server"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -51,7 +51,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine)) 
 	s.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		logger.Error("[GIN] recover:", recovered)
 
-		c.JSON(200, common.Fail(fmt.Sprintf("%v", recovered)))
+		c.JSON(200, response.Fail(fmt.Sprintf("%v", recovered)))
 		return
 		//		c.AbortWithStatus(http.StatusInternalServerError)
 	}))
