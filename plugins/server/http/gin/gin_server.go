@@ -1,4 +1,4 @@
-package gin_server
+package gin
 
 import (
 	"bytes"
