@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/skirrund/gcloud/response"
+	"github.com/skirrund/gcloud/utils/validator"
 
 	"strings"
 
@@ -60,6 +61,21 @@ func ShouldBind(ctx *gin.Context, data interface{}) bool {
 	err := ctx.ShouldBind(data)
 	if err != nil {
 		ctx.JSON(200, response.Fail(err.Error()))
+		return false
+	}
+	return true
+
+}
+
+func ShouldBindAndValidate(ctx *gin.Context, data interface{}) bool {
+	err := ctx.ShouldBind(data)
+	if err != nil {
+		ctx.JSON(200, response.Fail(err.Error()))
+		return false
+	}
+	err = validator.Validate(data)
+	if err != nil {
+		SendJSON(ctx, response.ValidateError(err.Error()))
 		return false
 	}
 	return true
