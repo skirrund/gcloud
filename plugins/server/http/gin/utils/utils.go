@@ -86,5 +86,9 @@ func PostFormArray(ctx *gin.Context, name string) []string {
 			params = append(params, tmp...)
 		}
 	}
-	return params
+	if len(params) > 0 {
+		return params
+	} else {
+		return QueryArray(ctx, name)
+	}
 }
