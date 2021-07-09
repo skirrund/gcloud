@@ -87,10 +87,12 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	var flagSn string
 	var flagAddress string
 	var flagLogdir string
+	var flagLogMaxAge uint64
 	flag.StringVar(&flagProfile, env.SERVER_PROFILE_KEY, "", "server profile:[dev,local,prod]")
 	flag.StringVar(&flagSn, env.SERVER_SERVERNAME_KEY, "", "sererver name")
 	flag.StringVar(&flagAddress, env.SERVER_ADDRESS_KEY, "", "sererver address")
 	flag.StringVar(&flagLogdir, env.LOGGER_DIR_KEY, "", "logDir")
+	flag.Uint64Var(&flagLogMaxAge, env.LOGGER_MAXAGE_KEY, "log maxAge:day")
 	flag.Parse()
 	if len(flagProfile) == 0 {
 		flagProfile = profile
@@ -119,6 +121,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	cfg.Set(env.SERVER_PROFILE_KEY, flagProfile)
 	cfg.Set(env.SERVER_SERVERNAME_KEY, flagSn)
 	cfg.Set(env.LOGGER_DIR_KEY, flagLogdir)
+	cfg.Set(env.LOGGER_MAXAGE_KEY, flagLogMaxAge)
 	env.GetInstance().SetBaseConfig(cfg)
 
 	return BootstrapOptions{
@@ -146,10 +149,11 @@ func BootstrapAll(reader io.Reader, fileType string) *Application {
 
 func (app *Application) StartLogger() {
 	ops := app.BootOptions
+	maxAge := env.GetInstance().GetUint64WithDefault(env.LOGGER_MAXAGE_KEY, 7)
 	if app.BootOptions.Profile == "local" {
-		logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), true)
+		logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), true, maxAge)
 	} else {
-		logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), false)
+		logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), false, maxAge)
 	}
 }
 

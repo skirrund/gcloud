@@ -19,6 +19,7 @@ const (
 	SERVER_PROFILE_KEY    = "server.profile"
 	SERVER_SERVERNAME_KEY = "server.name"
 	LOGGER_DIR_KEY        = "logger.dir"
+	LOGGER_MAXAGE_KEY     = "logger.maxAge"
 	ZIPKIN_URL_KEY        = "zipkin.url"
 )
 

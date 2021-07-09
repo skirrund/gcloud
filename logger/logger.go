@@ -126,7 +126,7 @@ func getJSONEncoder() zapcore.Encoder {
 	return encoder
 }
 
-func initLog(fileDir string, serviceName string, port string, console bool) {
+func initLog(fileDir string, serviceName string, port string, console bool, maxAge time.Duration) {
 	encoder := getEncoder()
 	jsonEncoder := getJSONEncoder()
 	// 实现两个判断日志等级的interface (其实 zapcore.*Level 自身就是 interface)
@@ -134,7 +134,7 @@ func initLog(fileDir string, serviceName string, port string, console bool) {
 		return lvl > zapcore.DebugLevel
 	})
 	// 获取 info、warn日志文件的io.Writer 抽象 getWriter() 在下方实现
-	infoWriter := getWriter(fileDir, serviceName, port)
+	infoWriter := getWriter(fileDir, serviceName, port, maxAge)
 	//	warnWriter := getWriter("log/log.log")
 	jsonWriter := getWriterJSON(fileDir, serviceName, port)
 	jWriter := zapcore.AddSync(jsonWriter)
@@ -157,10 +157,13 @@ func initLog(fileDir string, serviceName string, port string, console bool) {
 	logger = zap.New(core).Sugar() // 需要传入 zap.AddCaller() 才会显示打日志点的文件名和行数, 有点小坑
 }
 
-func InitLog(fileDir string, serviceName string, port string, console bool) {
+func InitLog(fileDir string, serviceName string, port string, console bool, maxAgeDay uint64) {
 	service = serviceName
 	once.Do(func() {
-		initLog(fileDir, serviceName, port, console)
+		if maxAgeDay == 0 {
+			maxAgeDay = 7
+		}
+		initLog(fileDir, serviceName, port, console, time.Duration(maxAgeDay)*time.Hour*24)
 	})
 }
 
@@ -169,7 +172,7 @@ func getFileName(serviceName string, port string) string {
 	return "/" + serviceName + "/" + serviceName + "-" + host + "-" + port // ".log.%Y-%m-%d"
 }
 
-func getWriter(fileDir string, serviceName string, port string) io.Writer {
+func getWriter(fileDir string, serviceName string, port string, maxAgeDay time.Duration) io.Writer {
 	// 生成rotatelogs的Logger 实际生成的文件名 demo.log.YYmmddHH
 	// demo.log是指向最新日志的链接
 	// 保存7天内的日志，每1小时(整点)分割一次日志
@@ -179,7 +182,7 @@ func getWriter(fileDir string, serviceName string, port string) io.Writer {
 	hook, err := rotatelogs.New(
 		fileDir+fileName+".log.%Y-%m-%d", // 没有使用go风格反人类的format格式%Y-%m-%d-%H
 		rotatelogs.WithLinkName(fileDir+fileName+".log"),
-		rotatelogs.WithMaxAge(time.Hour*24*7),
+		rotatelogs.WithMaxAge(maxAgeDay),
 		rotatelogs.WithRotationTime(time.Hour),
 		rotatelogs.WithHandler(rotatelogs.HandlerFunc(func(e rotatelogs.Event) {
 			if e.Type() != rotatelogs.FileRotatedEventType {
