@@ -92,7 +92,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	flag.StringVar(&flagSn, env.SERVER_SERVERNAME_KEY, "", "sererver name")
 	flag.StringVar(&flagAddress, env.SERVER_ADDRESS_KEY, "", "sererver address")
 	flag.StringVar(&flagLogdir, env.LOGGER_DIR_KEY, "", "logDir")
-	flag.Uint64Var(&flagLogMaxAge, env.LOGGER_MAXAGE_KEY, "log maxAge:day")
+	flag.Uint64Var(&flagLogMaxAge, env.LOGGER_MAXAGE_KEY, 7, "log maxAge:day   default:7")
 	flag.Parse()
 	if len(flagProfile) == 0 {
 		flagProfile = profile
