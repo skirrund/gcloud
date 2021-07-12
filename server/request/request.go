@@ -1,6 +1,7 @@
 package request
 
 import (
+	"context"
 	"io"
 	"os"
 	"time"
@@ -26,6 +27,7 @@ type Request struct {
 	Method      string
 	LbOptions   *LbOptions
 	HasFile     bool
+	Context     context.Context
 }
 
 type LbOptions struct {
@@ -44,4 +46,11 @@ func NewDefaultLbOptions() *LbOptions {
 		Enabled:                         true,
 		Retrys:                          0,
 	}
+}
+
+func (r *Request) WithContext(ctx context.Context) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	r.Context = ctx
 }

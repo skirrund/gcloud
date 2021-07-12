@@ -13,9 +13,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
-	"github.com/skirrund/gcloud/plugins/server/http/gin/zipkin"
+	"github.com/skirrund/gcloud/plugins/zipkin"
 	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/server"
 
@@ -56,8 +57,9 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine)) 
 		//		c.AbortWithStatus(http.StatusInternalServerError)
 	}))
 	s.Use(cors)
+	s.Use(zipkinMiddleware)
 	s.Use(loggingMiddleware)
-	zipkin.InitZipkinTracer(s)
+	//zipkin.InitZipkinTracer(s)
 	gp := prometheus.New(s)
 	s.Use(gp.Middleware())
 	// metrics采样
@@ -102,6 +104,22 @@ func loggingMiddleware(ctx *gin.Context) {
 		strBody = strBody[:(MAX_PRINT_BODY_LEN - 1)]
 	}
 	defer requestEnd(ctx, start, strBody)
+}
+
+func zipkinMiddleware(c *gin.Context) {
+	tracer := zipkin.GetTracer()
+	carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
+	clientContext, err := tracer.Extract(opentracing.HTTPHeaders, carrier)
+	// 将tracer注入到gin的中间件中
+	var serverSpan opentracing.Span
+	if err == nil {
+		serverSpan = tracer.StartSpan(
+			c.Request.Method+" "+c.FullPath(), opentracing.FollowsFrom(clientContext))
+	} else {
+		serverSpan = tracer.StartSpan(c.Request.Method + " " + c.FullPath())
+	}
+	defer serverSpan.Finish()
+	c.Next()
 }
 
 func requestEnd(ctx *gin.Context, start time.Time, strBody string) {

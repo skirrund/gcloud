@@ -2,13 +2,13 @@ package zipkin
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/utils"
 
 	"github.com/skirrund/gcloud/bootstrap/env"
 
-	"github.com/gin-gonic/gin"
 	"github.com/opentracing/opentracing-go"
 	zkOt "github.com/openzipkin-contrib/zipkin-go-opentracing"
 	zipkin "github.com/openzipkin/zipkin-go"
@@ -18,8 +18,16 @@ import (
 
 var zkTracer opentracing.Tracer
 var zkReporter reporter.Reporter
+var once sync.Once
 
-func InitZipkinTracer(engine *gin.Engine) error {
+func GetTracer() opentracing.Tracer {
+	once.Do(func() {
+		initZipkinTracer()
+	})
+	return zkTracer
+}
+
+func initZipkinTracer() error {
 	cfg := env.GetInstance()
 	url := cfg.GetString(env.ZIPKIN_URL_KEY)
 	if len(url) == 0 {
@@ -42,20 +50,6 @@ func InitZipkinTracer(engine *gin.Engine) error {
 	}
 	zkTracer = zkOt.Wrap(nativeTracer)
 	opentracing.SetGlobalTracer(zkTracer)
-	engine.Use(func(c *gin.Context) {
-		carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
-		clientContext, err := zkTracer.Extract(opentracing.HTTPHeaders, carrier)
-		// 将tracer注入到gin的中间件中
-		var serverSpan opentracing.Span
-		if err == nil {
-			serverSpan = zkTracer.StartSpan(
-				c.Request.Method+" "+c.FullPath(), opentracing.FollowsFrom(clientContext))
-		} else {
-			serverSpan = zkTracer.StartSpan(c.Request.Method + " " + c.FullPath())
-		}
-		defer serverSpan.Finish()
-		c.Next()
-	})
 	return nil
 }
 
