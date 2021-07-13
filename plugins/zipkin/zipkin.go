@@ -57,12 +57,21 @@ func initZipkinTracer() error {
 	return nil
 }
 
-func WrapHttp(request *http.Request) {
+func WrapHttp(request *http.Request, host string) {
 	if zkTracer != nil {
+		url := request.URL.String()
+		if len(host) > 0 {
+			url = host + "(" + url + ")"
+		}
 		ctx := request.Context()
 		span := opentracing.SpanFromContext(ctx)
 		if span == nil {
-			span = opentracing.StartSpan(request.Method + " " + request.URL.String())
+			parentSpan := opentracing.StartSpan(request.Method)
+			span = opentracing.StartSpan(request.Method+" "+url,
+				opentracing.ChildOf(parentSpan.Context()))
+		} else {
+			span = opentracing.StartSpan(request.Method+" "+url,
+				opentracing.ChildOf(span.Context()))
 		}
 		zkTracer.Inject(
 			span.Context(),
