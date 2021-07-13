@@ -108,17 +108,19 @@ func loggingMiddleware(ctx *gin.Context) {
 
 func zipkinMiddleware(c *gin.Context) {
 	tracer := zipkin.GetTracer()
-	carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
-	clientContext, err := tracer.Extract(opentracing.HTTPHeaders, carrier)
-	// 将tracer注入到gin的中间件中
-	var serverSpan opentracing.Span
-	if err == nil {
-		serverSpan = tracer.StartSpan(
-			c.Request.Method+" "+c.FullPath(), opentracing.FollowsFrom(clientContext))
-	} else {
-		serverSpan = tracer.StartSpan(c.Request.Method + " " + c.FullPath())
+	if tracer != nil {
+		carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
+		clientContext, err := tracer.Extract(opentracing.HTTPHeaders, carrier)
+		// 将tracer注入到gin的中间件中
+		var serverSpan opentracing.Span
+		if err == nil {
+			serverSpan = tracer.StartSpan(
+				c.Request.Method+" "+c.FullPath(), opentracing.FollowsFrom(clientContext))
+		} else {
+			serverSpan = tracer.StartSpan(c.Request.Method + " " + c.FullPath())
+		}
+		defer serverSpan.Finish()
 	}
-	defer serverSpan.Finish()
 	c.Next()
 }
 

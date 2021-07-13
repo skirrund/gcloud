@@ -2,6 +2,7 @@ package zipkin
 
 import (
 	"errors"
+	"net/http"
 	"sync"
 
 	"github.com/skirrund/gcloud/logger"
@@ -54,6 +55,20 @@ func initZipkinTracer() error {
 	zkTracer = zkOt.Wrap(nativeTracer)
 	opentracing.SetGlobalTracer(zkTracer)
 	return nil
+}
+
+func WrapHttp(request *http.Request) {
+	if zkTracer != nil {
+		ctx := request.Context()
+		span := opentracing.SpanFromContext(ctx)
+		if span == nil {
+			span = opentracing.StartSpan(request.Method + " " + request.URL.String())
+		}
+		zkTracer.Inject(
+			span.Context(),
+			opentracing.HTTPHeaders,
+			opentracing.HTTPHeadersCarrier(request.Header))
+	}
 }
 
 func Close() {
