@@ -278,10 +278,15 @@ func do(req *request.Request) (statusCode int, err error) {
 	defer requestEnd(url, start)
 
 	ctx := request.Context()
-	span := zipkin.GetTracer().StartSpan(req.Method + " " + url)
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	request = request.WithContext(ctx)
-	defer span.Finish()
+
+	span := opentracing.SpanFromContext(ctx)
+	if span == nil {
+		span = opentracing.StartSpan(url)
+	}
+	zipkin.GetTracer().Inject(
+		span.Context(),
+		opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(request.Header))
 
 	response, err = GetClient().Do(request)
 
