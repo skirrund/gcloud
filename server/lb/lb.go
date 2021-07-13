@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/skirrund/gcloud/plugins/zipkin"
 
 	"github.com/skirrund/gcloud/bootstrap"
@@ -275,8 +276,13 @@ func do(req *request.Request) (statusCode int, err error) {
 	start := time.Now()
 
 	defer requestEnd(url, start)
+
+	ctx := request.Context()
 	span := zipkin.GetTracer().StartSpan(req.Method + " " + url)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	request = request.WithContext(ctx)
 	defer span.Finish()
+
 	response, err = GetClient().Do(request)
 
 	if err != nil {

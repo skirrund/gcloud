@@ -21,6 +21,9 @@ var zkReporter reporter.Reporter
 var once sync.Once
 
 func GetTracer() opentracing.Tracer {
+	if zkTracer != nil {
+		return zkTracer
+	}
 	once.Do(func() {
 		initZipkinTracer()
 	})
