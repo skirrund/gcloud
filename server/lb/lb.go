@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/skirrund/gcloud/plugins/zipkin"
+
 	"github.com/skirrund/gcloud/bootstrap"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/registry"
@@ -178,7 +180,6 @@ func (s *ServerPool) Run(req *request.Request) (int, error) {
 	if len(req.Url) == 0 {
 		return 0, errors.New("request url  is empty")
 	}
-
 	status, err := do(req)
 	if checkRetry(err, status) {
 		logger.Info("[LB] retry next:", req.ServiceName)
@@ -274,7 +275,8 @@ func do(req *request.Request) (statusCode int, err error) {
 	start := time.Now()
 
 	defer requestEnd(url, start)
-
+	span := zipkin.GetTracer().StartSpan(req.Method + " " + url)
+	defer span.Finish()
 	response, err = GetClient().Do(request)
 
 	if err != nil {
