@@ -9,6 +9,7 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type dataSource struct {
@@ -109,6 +110,6 @@ func Get() *dataSource {
 	return instance
 }
 
-func (ds *dataSource) Where() *dataSource {
-	return instance
+func Expr(expr string, args ...interface{}) clause.Expr {
+	return gorm.Expr(expr, args)
 }
