@@ -108,3 +108,7 @@ func CreateInsertSql(tableName string, kv map[string]interface{}) (sql string, v
 func Get() *dataSource {
 	return instance
 }
+
+func (ds *dataSource) Where() *dataSource {
+	return instance
+}
