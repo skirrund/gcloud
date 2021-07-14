@@ -67,9 +67,7 @@ func WrapHttp(request *http.Request, host string) (opentracing.Span, error) {
 		ctx := request.Context()
 		span = opentracing.SpanFromContext(ctx)
 		if span == nil {
-			parentSpan := opentracing.StartSpan(request.Method)
-			span = opentracing.StartSpan(request.Method+" "+url,
-				opentracing.ChildOf(parentSpan.Context()))
+			span = opentracing.StartSpan(request.Method + " " + url)
 		} else {
 			span = opentracing.StartSpan(request.Method+" "+url,
 				opentracing.ChildOf(span.Context()))
