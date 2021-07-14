@@ -1,6 +1,9 @@
 package env
 
 import (
+	"io"
+	"sync"
+
 	"github.com/skirrund/gcloud/config"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/server"
@@ -9,8 +12,7 @@ import (
 )
 
 type env struct {
-	config     *viper.Viper
-	baseConfig *viper.Viper
+	config *viper.Viper
 }
 
 const (
@@ -24,23 +26,26 @@ const (
 )
 
 var e *env
+var once sync.Once
 
 func init() {
 	e = &env{
-		config:     viper.New(),
-		baseConfig: viper.New(),
+		config: viper.New(),
 	}
 	server.RegisterEventHook(server.ConfigChangeEvent, e.MergeConfig)
 }
 
 func GetInstance() config.IConfig {
-
 	return e
 }
 
-func (e *env) SetBaseConfig(cfg *viper.Viper) {
-	e.config.MergeConfigMap(cfg.AllSettings())
-	e.baseConfig = cfg
+func (e *env) SetBaseConfig(reader io.Reader, configType string) {
+	once.Do(func() {
+		bc := e.config
+		bc.SetConfigType(configType)
+		bc.SetConfigName("bootstrap")
+		bc.ReadConfig(reader)
+	})
 }
 
 func (e *env) MergeConfig(eventType server.EventName, eventInfo interface{}) (err error) {
@@ -70,6 +75,10 @@ func (e *env) Watch() {
 
 func (nc *env) Get(key string) interface{} {
 	return nc.config.Get(key)
+}
+
+func (nc *env) Set(key string, value interface{}) {
+	nc.config.Set(key, value)
 }
 
 func (e *env) GetStringWithDefault(key string, defaultString string) string {

@@ -1,9 +1,9 @@
 package config
 
 import (
-	"github.com/skirrund/gcloud/server"
+	"io"
 
-	"github.com/spf13/viper"
+	"github.com/skirrund/gcloud/server"
 )
 
 type IConfig interface {
@@ -20,11 +20,12 @@ type IConfig interface {
 	GetUint64(key string) uint64
 	GetUint64WithDefault(key string, defaultUint64 uint64) uint64
 	GetBool(key string) bool
+	Set(key string, value interface{})
 	GetFloat64(key string) float64
 	Shutdown()
 	Read() error
 	Watch()
 	MergeConfig(eventType server.EventName, eventInfo interface{}) error
-	SetBaseConfig(cfg *viper.Viper)
+	SetBaseConfig(reader io.Reader, configType string)
 	GetStringMapString(key string) map[string]string
 }

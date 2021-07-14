@@ -28,7 +28,6 @@ import (
 	"github.com/skirrund/gcloud/bootstrap/env"
 
 	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
 )
 
 type Application struct {
@@ -73,10 +72,8 @@ func StartBase(reader io.Reader, fileType string) *Application {
 }
 
 func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
-	cfg := viper.New()
-	cfg.SetConfigName("bootstrap")
-	cfg.SetConfigType(fileType)
-	cfg.ReadConfig(reader)
+	cfg := env.GetInstance()
+	cfg.SetBaseConfig(reader, fileType)
 	host, _ := os.Hostname()
 	address := cfg.GetString(env.SERVER_ADDRESS_KEY)
 	port := uint64(8080)
@@ -122,7 +119,6 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	cfg.Set(env.SERVER_SERVERNAME_KEY, flagSn)
 	cfg.Set(env.LOGGER_DIR_KEY, flagLogdir)
 	cfg.Set(env.LOGGER_MAXAGE_KEY, flagLogMaxAge)
-	env.GetInstance().SetBaseConfig(cfg)
 
 	return BootstrapOptions{
 		ServerAddress: flagAddress,

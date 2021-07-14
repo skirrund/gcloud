@@ -2,6 +2,7 @@ package nacos_config
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	commonConfig "github.com/skirrund/gcloud/config"
@@ -55,6 +56,10 @@ func CreateInstance(opts commonConfig.Options) *nacosConfigCenter {
 	server.EmitEvent(server.ConfigChangeEvent, config)
 	nc.Watch()
 	return nc
+}
+
+func (nc *nacosConfigCenter) Set(key string, value interface{}) {
+	config.Set(key, value)
 }
 
 func (nc *nacosConfigCenter) Get(key string) interface{} {
@@ -133,8 +138,12 @@ func (nc *nacosConfigCenter) MergeConfig(eventType server.EventName, eventInfo i
 	return nil
 }
 
-func (nc *nacosConfigCenter) SetBaseConfig(cfg *viper.Viper) {
-	config.MergeConfigMap(cfg.AllSettings())
+func (nc *nacosConfigCenter) SetBaseConfig(reader io.Reader, configType string) {
+	baseCfg := viper.New()
+	baseCfg.SetConfigName("base")
+	baseCfg.SetConfigType(configType)
+	baseCfg.ReadConfig(reader)
+	config.MergeConfigMap(baseCfg.AllSettings())
 }
 
 func (c *nacosConfigCenter) Read() error {
