@@ -275,7 +275,10 @@ func do(req *request.Request) (statusCode int, err error) {
 	start := time.Now()
 
 	defer requestEnd(url, start)
-	zipkin.WrapHttp(request, req.ServiceName)
+	span, err := zipkin.WrapHttp(request, req.ServiceName)
+	if err == nil {
+		defer span.Finish()
+	}
 	response, err = GetClient().Do(request)
 
 	if err != nil {

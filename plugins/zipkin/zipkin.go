@@ -57,14 +57,15 @@ func initZipkinTracer() error {
 	return nil
 }
 
-func WrapHttp(request *http.Request, host string) {
+func WrapHttp(request *http.Request, host string) (opentracing.Span, error) {
+	var span opentracing.Span
 	if zkTracer != nil {
 		url := request.URL.String()
 		if len(host) > 0 {
 			url = host + "(" + url + ")"
 		}
 		ctx := request.Context()
-		span := opentracing.SpanFromContext(ctx)
+		span = opentracing.SpanFromContext(ctx)
 		if span == nil {
 			parentSpan := opentracing.StartSpan(request.Method)
 			span = opentracing.StartSpan(request.Method+" "+url,
@@ -77,7 +78,9 @@ func WrapHttp(request *http.Request, host string) {
 			span.Context(),
 			opentracing.HTTPHeaders,
 			opentracing.HTTPHeadersCarrier(request.Header))
+		return span, nil
 	}
+	return nil, errors.New("no span")
 }
 
 func Close() {
