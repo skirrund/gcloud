@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/skirrund/gcloud/logger"
 )
@@ -55,7 +56,7 @@ func Validate(obj interface{}) error {
 func checkLength(obj interface{}, min int64, max int64) bool {
 	check := true
 	if str, ok := obj.(string); ok {
-		l := int64(len(str))
+		l := int64(utf8.RuneCountInString(str))
 		if min > 0 {
 			check = (l >= min)
 		}

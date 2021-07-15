@@ -87,6 +87,9 @@ func QueryArray(ctx *gin.Context, name string) []string {
 	var params []string
 	if len(array) > 0 {
 		for _, a := range array {
+			if len(a) == 0 {
+				continue
+			}
 			if strings.Index(a, ",") != -1 {
 				tmp := strings.Split(a, ",")
 				params = append(params, tmp...)
@@ -102,6 +105,9 @@ func PostFormArray(ctx *gin.Context, name string) []string {
 	var params []string
 	if len(array) > 0 {
 		for _, a := range array {
+			if len(a) == 0 {
+				continue
+			}
 			if strings.Index(a, ",") != -1 {
 				tmp := strings.Split(a, ",")
 				params = append(params, tmp...)
