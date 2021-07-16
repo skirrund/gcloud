@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -98,12 +99,19 @@ func loggingMiddleware(ctx *gin.Context) {
 	start := time.Now()
 	blw := bodyLogWriter{bodyBuf: bytes.NewBufferString(""), ResponseWriter: ctx.Writer}
 	ctx.Writer = blw
+	bb, err := io.ReadAll(ctx.Request.Body)
+	if err == nil {
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(bb))
+	}
 	ctx.Next()
 	strBody := strings.Trim(blw.bodyBuf.String(), "\n")
 	if len(strBody) > MAX_PRINT_BODY_LEN {
 		strBody = strBody[:(MAX_PRINT_BODY_LEN - 1)]
 	}
-	defer requestEnd(ctx, start, strBody)
+	if len(bb) > MAX_PRINT_BODY_LEN {
+		bb = bb[:(MAX_PRINT_BODY_LEN - 1)]
+	}
+	defer requestEnd(ctx, start, strBody, string(bb))
 }
 
 func zipkinMiddleware(c *gin.Context) {
@@ -124,13 +132,13 @@ func zipkinMiddleware(c *gin.Context) {
 	c.Next()
 }
 
-func requestEnd(ctx *gin.Context, start time.Time, strBody string) {
+func requestEnd(ctx *gin.Context, start time.Time, strBody string, reqBody string) {
 	req := ctx.Request
 	uri, _ := url.QueryUnescape(req.RequestURI)
 	if strings.HasPrefix(uri, "/metrics") {
 		strBody = "ignore..."
 	}
-	logger.Info("\n [GIN] uri:" + uri + "\n [GIN] method:" + req.Method + "\n [GIN] response:" + strBody + "\n [GIN] cost:" + strconv.FormatInt(time.Since(start).Milliseconds(), 10) + "ms")
+	logger.Info("\n [GIN] uri:" + uri + "\n [GIN] method:" + req.Method + "\n [GIN] body:" + reqBody + "\n [GIN] response:" + strBody + "\n [GIN] cost:" + strconv.FormatInt(time.Since(start).Milliseconds(), 10) + "ms")
 }
 
 func (server *Server) Shutdown() {
