@@ -101,7 +101,7 @@ func loggingMiddleware(ctx *gin.Context) {
 	ctx.Writer = blw
 	bb, err := io.ReadAll(ctx.Request.Body)
 	if err == nil {
-		c.Request.Body = io.NopCloser(bytes.NewBuffer(bb))
+		ctx.Request.Body = io.NopCloser(bytes.NewBuffer(bb))
 	}
 	ctx.Next()
 	strBody := strings.Trim(blw.bodyBuf.String(), "\n")
