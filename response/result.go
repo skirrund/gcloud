@@ -3,7 +3,7 @@ package response
 type Response struct {
 	Code       string      `json:"code"`
 	Message    string      `json:"message"`
-	SubMessage interface{} `json:"subMessage"`
+	SubMessage string      `json:"subMessage"`
 	Result     interface{} `json:"result"`
 	Success    bool        `json:"success"`
 }
