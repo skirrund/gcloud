@@ -102,7 +102,6 @@ func getEncoder() zapcore.Encoder {
 			enc.AppendInt64(int64(d) / 1000000)
 		},
 	})
-	encoder.AddString("service", service)
 	return encoder
 }
 
