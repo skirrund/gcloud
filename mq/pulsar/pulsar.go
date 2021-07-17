@@ -94,7 +94,8 @@ func (pc *PulsarClient) doSubscribe(opts ConsumerOptions) error {
 	consumer, err := pc.client.Subscribe(options)
 	if err != nil {
 		logger.Error(errors.New("[pulsar] Subscribe error:" + err.Error()))
-		return err
+		panic("[pulsar] Subscribe error:" + err.Error())
+		//return err
 	}
 	consumers.Store(topic+":"+subscriptionName, opts)
 
