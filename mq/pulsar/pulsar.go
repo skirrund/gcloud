@@ -89,7 +89,7 @@ func (pc *PulsarClient) doSubscribe(opts ConsumerOptions) error {
 	}
 	schema := pulsar.NewJSONSchema(`"string"`, nil)
 
-	channel := make(chan pulsar.ConsumerMessage, 512)
+	channel := make(chan pulsar.ConsumerMessage, 100)
 	options.MessageChannel = channel
 	consumer, err := pc.client.Subscribe(options)
 	if err != nil {
