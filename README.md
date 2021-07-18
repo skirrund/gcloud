@@ -1,3 +1,2 @@
 # gcloud
 go cloud
-hello
