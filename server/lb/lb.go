@@ -66,12 +66,12 @@ func GetClient() *http.Client {
 				KeepAlive: 30 * time.Second,
 			}).DialContext,
 			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          512,
+			MaxIdleConns:          100,
 			IdleConnTimeout:       30 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
-			MaxConnsPerHost:       512,
-			MaxIdleConnsPerHost:   5,
+			MaxConnsPerHost:       0,
+			MaxIdleConnsPerHost:   2,
 		}
 		httpClient = &http.Client{
 			Timeout:   DEFAULT_TIMEOUT * time.Second,

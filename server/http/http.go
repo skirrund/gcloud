@@ -8,8 +8,10 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/server/lb"
 	"github.com/skirrund/gcloud/server/request"
@@ -19,7 +21,8 @@ import (
 const (
 	// PROTOCOL_HTTP                   = "http://"
 	// PROTOCOL_HTTPS                  = "https://"
-	DEFAULT_TIMEOUT = 10
+	DEFAULT_TIMEOUT     = 10
+	HTTP_LOG_ENABLE_KEY = "server.http.log.params"
 	// WRITE_TIMEOUT_PROPERTIES        = "server.http.writeTimeout"
 	// READ_TIMEOUT_PROPERTIES         = "server.http.readTimeout"
 	// RetryOnConnectionFailure        = "server.http.retry.onConnectionFailure"
@@ -29,6 +32,21 @@ const (
 	// RetryableStatusCodes            = "server.http.retry.retryableStatusCodes"
 	// RetryTimes                      = "server.http.retry.times"
 )
+
+var bufferPool = &sync.Pool{
+	New: func() interface{} {
+		return &bytes.Buffer{}
+	},
+}
+
+func getByteBuffer() *bytes.Buffer {
+	return bufferPool.Get().(*bytes.Buffer)
+}
+
+func releaseByteBuffer(buffer *bytes.Buffer) {
+	buffer.Reset()
+	bufferPool.Put(buffer)
+}
 
 func getRequest(url string, method string, headers map[string]string, params io.Reader, isJson bool, respResult interface{}, timeOut time.Duration) *request.Request {
 	return &request.Request{
@@ -59,34 +77,41 @@ func getRequestLb(serviceName string, path string, method string, headers map[st
 
 func getJSONData(params interface{}) io.Reader {
 	body, _ := utils.Marshal(params)
-	logger.Info("[http] getJSONData:", logger.GetLogStr(string(body)))
+	if env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY) {
+		logger.Info("[http] getJSONData:", logger.GetLogStr(string(body)))
+	}
 	return bytes.NewReader(body)
 }
 
 func getFormData(params map[string]interface{}) io.Reader {
-	var values url.Values
-	values = make(map[string][]string)
+	var values url.Values = make(map[string][]string)
+	log := env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY)
 	for k, v := range params {
 		if s, ok := v.(string); ok {
 			values.Add(k, s)
-			logger.Info("[http] getFormData string:", k, ":", logger.GetLogStr(string(s)))
+			if log {
+				logger.Info("[http] getFormData string:", k, ":", logger.GetLogStr(string(s)))
+			}
 		} else {
 			s, err := utils.MarshalToString(s)
 			if err == nil {
 				values.Add(k, s)
 			}
-			logger.Info("[http] getFormData:", k, ":", logger.GetLogStr(string(s)))
+			if log {
+				logger.Info("[http] getFormData:", k, ":", logger.GetLogStr(string(s)))
+			}
 		}
 	}
 	return strings.NewReader(values.Encode())
 }
 
 func getMultipartFormData(params map[string]interface{}, files map[string]*request.File) (reader io.Reader, contentType string) {
-	bodyBuf := &bytes.Buffer{}
+	bodyBuf := getByteBuffer()
+	defer releaseByteBuffer(bodyBuf)
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	var err error
 	defer bodyWriter.Close()
-
+	log := env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY)
 	if files != nil && len(files) > 0 {
 		var reader io.Reader
 		for k, v := range files {
@@ -110,7 +135,9 @@ func getMultipartFormData(params map[string]interface{}, files map[string]*reque
 				continue
 			}
 			if wr, err := io.Copy(w, reader); err == nil {
-				logger.Info("[http] getMultipartFormData:", wr/1024)
+				if log {
+					logger.Info("[http] getMultipartFormData:", wr/1024)
+				}
 			} else {
 				logger.Error("[http] getMultipartFormData err:", err)
 			}
@@ -124,7 +151,9 @@ func getMultipartFormData(params map[string]interface{}, files map[string]*reque
 		if val, ok := v.(string); ok {
 			if len(val) > 0 {
 				err = bodyWriter.WriteField(k, val)
-				logger.Info("[http] getMultipartFormData:", k, ":", logger.GetLogStr(string(val)))
+				if log {
+					logger.Info("[http] getMultipartFormData:", k, ":", logger.GetLogStr(string(val)))
+				}
 			}
 		} else if val, ok := v.(*string); ok {
 			if val != nil && len(*val) > 0 {
@@ -140,17 +169,25 @@ func getMultipartFormData(params map[string]interface{}, files map[string]*reque
 				continue
 			}
 			err = bodyWriter.WriteField(k, str)
-			logger.Info("[http] getMultipartFormData:", k, ":", logger.GetLogStr(string(str)))
+			if err != nil {
+				logger.Error("[http] getMultipartFormData error:", err)
+				continue
+			}
+			if log {
+				logger.Info("[http] getMultipartFormData:", k, ":", logger.GetLogStr(string(str)))
+			}
 		}
 		if err != nil {
 			logger.Error("[http] getMultipartFormData error:", err)
 		}
 	}
-	return bodyBuf, bodyWriter.FormDataContentType()
+	return bytes.NewReader(bodyBuf.Bytes()), bodyWriter.FormDataContentType()
 }
 
 func getUrlWithParams(urlStr string, params map[string]interface{}) string {
-	logger.Info("[http] getUrlWithParams:", params)
+	if env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY) {
+		logger.Info("[http] getUrlWithParams:", params)
+	}
 	var p string
 	if params != nil {
 		for k, v := range params {
