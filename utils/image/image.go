@@ -6,8 +6,6 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-	"image/jpeg"
-	"strings"
 	"sync"
 
 	"regexp"
@@ -50,16 +48,19 @@ func CommpressBase64PicToByte(base64Str string, limit int, max int) []byte {
 		return bs
 	}
 	if max > 0 {
-		bs = doResize(bs, max)
+		bs, err = doResize(bs, max)
+		if err != nil {
+			return bs
+		}
 	}
 	return doCompressQuality(bs, limit)
 }
 
-func doResizeWH(b []byte, scale float64) []byte {
-	img, _, err := image.Decode(bytes.NewReader(b))
+func doResizeWH(b []byte, scale float64) ([]byte, error) {
+	img, format, err := image.Decode(bytes.NewReader(b))
 	if err != nil {
-		logger.Error("doResize error:", err.Error())
-		return b
+		logger.Error("doResizeWH error:", err.Error())
+		return b, err
 	}
 
 	h := float64(img.Bounds().Dy()) * scale
@@ -68,25 +69,26 @@ func doResizeWH(b []byte, scale float64) []byte {
 	img = imaging.Fit(img, int(w), int(h), imaging.Lanczos)
 	buf := getByteBuffer()
 	defer releaseByteBuffer(buf)
-	err = jpeg.Encode(buf, img, nil)
+	err = imaging.Encode(buf, img, imaging.JPEG)
+	//err = jpeg.Encode(buf, img, nil)
 	if err != nil {
-		logger.Error("doResize error:", err.Error())
-		return b
+		logger.Error("doResizeWH error:", err.Error(), ",format:"+format)
+		return b, err
 	}
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
-func doResize(b []byte, max int) []byte {
+func doResize(b []byte, max int) ([]byte, error) {
 	img, format, err := image.Decode(bytes.NewReader(b))
 	if err != nil {
 		logger.Error("doResize error:", err.Error())
-		return b
+		return b, err
 	}
 
 	h := img.Bounds().Dy()
 	w := img.Bounds().Dx()
 	if h <= max && w <= max {
-		return b
+		return b, nil
 	}
 	logger.Info("doResize orgin,w:", w, ",h:", h)
 	maxSide := h
@@ -103,15 +105,16 @@ func doResize(b []byte, max int) []byte {
 	img = imaging.Fit(img, w, h, imaging.Lanczos)
 	buf := getByteBuffer()
 	defer releaseByteBuffer(buf)
-	if strings.EqualFold("png", format) {
-		img = convertToJpeg(img)
-	}
-	err = jpeg.Encode(buf, img, nil)
+	err = imaging.Encode(buf, img, imaging.JPEG)
+	// if strings.EqualFold("png", format) {
+	// 	img = convertToJpeg(img)
+	// }
+	// err = jpeg.Encode(buf, img, nil)
 	if err != nil {
-		logger.Error("doResize error:", err.Error())
-		return b
+		logger.Error("doResize error:", err.Error(), ",format:"+format)
+		return b, err
 	}
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 func convertToJpeg(pngImg image.Image) image.Image {
@@ -125,7 +128,11 @@ func doCompressQuality(b []byte, limit int) []byte {
 	size := len(b) / 1024
 	if size > limit {
 		logger.Info("commpressImage current:", size, ",limit:", limit)
-		return doCompressQuality(doResizeWH(b, 0.7), limit)
+		bs, err := doResizeWH(b, 0.7)
+		if err != nil {
+			return bs
+		}
+		return doCompressQuality(bs, limit)
 
 		// img, format, err := image.Decode(bytes.NewReader(b))
 		// if err != nil {
