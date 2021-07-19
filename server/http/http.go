@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/skirrund/gcloud/bootstrap/env"
@@ -32,21 +31,6 @@ const (
 	// RetryableStatusCodes            = "server.http.retry.retryableStatusCodes"
 	// RetryTimes                      = "server.http.retry.times"
 )
-
-var bufferPool = &sync.Pool{
-	New: func() interface{} {
-		return &bytes.Buffer{}
-	},
-}
-
-func getByteBuffer() *bytes.Buffer {
-	return bufferPool.Get().(*bytes.Buffer)
-}
-
-func releaseByteBuffer(buffer *bytes.Buffer) {
-	buffer.Reset()
-	bufferPool.Put(buffer)
-}
 
 func getRequest(url string, method string, headers map[string]string, params io.Reader, isJson bool, respResult interface{}, timeOut time.Duration) *request.Request {
 	return &request.Request{
@@ -106,8 +90,7 @@ func getFormData(params map[string]interface{}) io.Reader {
 }
 
 func getMultipartFormData(params map[string]interface{}, files map[string]*request.File) (reader io.Reader, contentType string) {
-	bodyBuf := getByteBuffer()
-	defer releaseByteBuffer(bodyBuf)
+	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	var err error
 	defer bodyWriter.Close()
@@ -181,7 +164,7 @@ func getMultipartFormData(params map[string]interface{}, files map[string]*reque
 			logger.Error("[http] getMultipartFormData error:", err)
 		}
 	}
-	return bytes.NewReader(bodyBuf.Bytes()), bodyWriter.FormDataContentType()
+	return bodyBuf, bodyWriter.FormDataContentType()
 }
 
 func getUrlWithParams(urlStr string, params map[string]interface{}) string {
