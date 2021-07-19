@@ -70,7 +70,6 @@ func (e *env) Read() error {
 	return nil
 }
 func (e *env) Watch() {
-
 }
 
 func (nc *env) Get(key string) interface{} {
