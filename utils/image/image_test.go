@@ -9,7 +9,7 @@ import (
 )
 
 func TestCommpressBase64Pic(t *testing.T) {
-	f, err := os.Open("/Users/jerry.shi/Desktop/WechatIMG171.jpeg")
+	f, err := os.Open("/Users/jerry.shi/Desktop/gaitubao_WechatIMG1 2_bmp.bmp")
 	if err != nil {
 		t.Error(err)
 	}
