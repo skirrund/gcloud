@@ -58,6 +58,168 @@ func InitTrans(locale string) (err error) {
 			t, _ := ut.T("gte", fe.Field(), fe.Param())
 			return t
 		})
+		_ = v.RegisterTranslation("gt", trans, func(ut ut.Translator) error {
+			return ut.Add("gt", "{0}必须大于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("gt", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("lte", trans, func(ut ut.Translator) error {
+			return ut.Add("lte", "{0}必须小于等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("lte", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("lt", trans, func(ut ut.Translator) error {
+			return ut.Add("lt", "{0}必须小于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("lt", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("len", trans, func(ut ut.Translator) error {
+			return ut.Add("len", "{0}长度必须是{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("len", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("min", trans, func(ut ut.Translator) error {
+			return ut.Add("min", "{0}最小值为{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("min", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("max", trans, func(ut ut.Translator) error {
+			return ut.Add("max", "{0}最大值为{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("max", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("eq", trans, func(ut ut.Translator) error {
+			return ut.Add("eq", "{0}不等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("eq", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("ne", trans, func(ut ut.Translator) error {
+			return ut.Add("ne", "{0}不能等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("ne", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("eqfield", trans, func(ut ut.Translator) error {
+			return ut.Add("eqfield", "{0}必须等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("eqfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("eqcsfield", trans, func(ut ut.Translator) error {
+			return ut.Add("eqcsfield", "{0}必须等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("eqcsfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("necsfield", trans, func(ut ut.Translator) error {
+			return ut.Add("necsfield", "{0}不能等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("necsfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("gtcsfield", trans, func(ut ut.Translator) error {
+			return ut.Add("gtcsfield", "{0}必须大于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("gtcsfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("gtecsfield", trans, func(ut ut.Translator) error {
+			return ut.Add("gtecsfield", "{0}必须大于或等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("gtecsfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("ltcsfield", trans, func(ut ut.Translator) error {
+			return ut.Add("ltcsfield", "{0}必须小于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("ltcsfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("ltecsfield", trans, func(ut ut.Translator) error {
+			return ut.Add("ltecsfield", "{0}必须小于或等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("ltecsfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("gtecsfield", trans, func(ut ut.Translator) error {
+			return ut.Add("gtecsfield", "{0}必须大于或等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("gtecsfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("ltcsfield", trans, func(ut ut.Translator) error {
+			return ut.Add("ltcsfield", "{0}必须小于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("ltcsfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("ltecsfield", trans, func(ut ut.Translator) error {
+			return ut.Add("ltecsfield", "{0}必须小于或等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("ltecsfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("nefield", trans, func(ut ut.Translator) error {
+			return ut.Add("nefield", "{0}不能等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("nefield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("gtfield", trans, func(ut ut.Translator) error {
+			return ut.Add("gtfield", "{0}必须大于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("gtfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("gtefield", trans, func(ut ut.Translator) error {
+			return ut.Add("gtefield", "{0}必须大于或等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("gtefield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("ltfield", trans, func(ut ut.Translator) error {
+			return ut.Add("ltfield", "{0}必须小于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("ltfield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("ltefield", trans, func(ut ut.Translator) error {
+			return ut.Add("ltefield", "{0}必须小于或等于{1}", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("ltefield", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("alpha", trans, func(ut ut.Translator) error {
+			return ut.Add("alpha", "{0}只能包含字母", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("alpha", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("alphanum", trans, func(ut ut.Translator) error {
+			return ut.Add("alphanum", "{0}只能包含字母和数字", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("alphanum", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("numeric", trans, func(ut ut.Translator) error {
+			return ut.Add("numeric", "{0}必须是一个有效的数值", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("numeric", fe.Field(), fe.Param())
+			return t
+		})
+		_ = v.RegisterTranslation("number", trans, func(ut ut.Translator) error {
+			return ut.Add("number", "{0}必须是一个有效的数字", true)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("number", fe.Field(), fe.Param())
+			return t
+		})
 		//_ = v.RegisterTranslation("required_without", trans, func(ut ut.Translator) error {
 		//	return ut.Add("required_without", "{0} 不能为空", true)
 		//}, func(ut ut.Translator, fe validator.FieldError) string {
