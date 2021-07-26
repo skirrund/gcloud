@@ -6,8 +6,14 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type MDecimal struct {
+type MDecimal decimal.Decimal {
 	decimal.Decimal
+}
+
+func NewFromInt(value int64) MDecimal {
+	return MDecimal{
+		Decimal: decimal.NewFromInt(value),
+	}
 }
 
 func (d MDecimal) MarshalJSON() ([]byte, error) {
