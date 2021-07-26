@@ -6,7 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type MDecimal decimal.Decimal {
+type MDecimal struct {
 	decimal.Decimal
 }
 
