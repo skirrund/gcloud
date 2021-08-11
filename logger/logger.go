@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	rotatelogs "github.com/skirrund/gcloud/logger/rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -41,10 +41,6 @@ func Error(args ...interface{}) {
 
 func Fatal(args ...interface{}) {
 	withCaller().Fatal(args...)
-}
-
-func getTemplate(template string) string {
-	return template
 }
 
 func Infof(template string, args ...interface{}) {
@@ -179,10 +175,10 @@ func getWriter(fileDir string, serviceName string, port string, maxAgeDay time.D
 	fileName := getFileName(serviceName, port)
 	log.Println("[logger]start init logger file:" + fileDir + fileName)
 	hook, err := rotatelogs.New(
-		fileDir+fileName+".log.%Y-%m-%d", // 没有使用go风格反人类的format格式%Y-%m-%d-%H
+		fileDir+fileName+".log.%Y-%m-%d %H:%M", // 没有使用go风格反人类的format格式%Y-%m-%d-%H
 		rotatelogs.WithLinkName(fileDir+fileName+".log"),
 		rotatelogs.WithMaxAge(maxAgeDay),
-		rotatelogs.WithRotationTime(time.Hour),
+		rotatelogs.WithRotationTime(time.Minute),
 		rotatelogs.WithHandler(rotatelogs.HandlerFunc(func(e rotatelogs.Event) {
 			if e.Type() != rotatelogs.FileRotatedEventType {
 				return
