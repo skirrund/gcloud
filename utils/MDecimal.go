@@ -16,6 +16,12 @@ func NewFromInt(value int64) MDecimal {
 	}
 }
 
+func NewFromString(value string) MDecimal {
+	return MDecimal{
+		Decimal: decimal.NewFromString(value),
+	}
+}
+
 func (d MDecimal) MarshalJSON() ([]byte, error) {
 	f, _ := d.Float64()
 	return json.Marshal(f)
