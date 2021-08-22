@@ -1,8 +1,8 @@
 package page
 
 type Paging struct {
-	Page     int
-	PageSize int
+	Page     int `json:"page"`
+	PageSize int `json:"pageSize"`
 }
 
 const (
