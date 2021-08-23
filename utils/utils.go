@@ -182,6 +182,38 @@ func Contains(obj interface{}, target interface{}) bool {
 
 	return false
 }
+func Contains2(obj interface{}, target interface{}) bool {
+	if obj == nil || target == nil {
+		return false
+	}
+	ptrObj := reflect.ValueOf(obj)
+	if ptrObj.Kind() == reflect.Ptr {
+		// 获取指针指向的值
+		obj = ptrObj.Elem().Interface()
+	}
+	targetValue := reflect.ValueOf(target)
+	switch reflect.TypeOf(target).Kind() {
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < targetValue.Len(); i++ {
+			var arrItem = targetValue.Index(i).Interface()
+			ptrVal := reflect.ValueOf(arrItem)
+			if ptrVal.Kind() == reflect.Ptr {
+				// 获取指针指向的值
+				arrItem = ptrVal.Elem().Interface()
+			}
+			if arrItem == obj {
+				return true
+			}
+		}
+	case reflect.Map:
+		if targetValue.MapIndex(reflect.ValueOf(obj)).IsValid() {
+			return true
+		}
+	}
+
+	return false
+}
+
 
 func UnmarshalFromString(str string, obj interface{}) error {
 	return jsoniter.UnmarshalFromString(str, obj)
