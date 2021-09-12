@@ -1,7 +1,7 @@
-# gcloud
-//go:embed resources/bootstrap.properties
-var baseConfig []byte
-func main() {
+# gcloud  
+//go:embed resources/bootstrap.properties  
+var baseConfig []byte  
+func main() {  
 	//b, _ := Asset("resources/bootstrap.properties")
 	application := bootstrap.BootstrapAll(bytes.NewReader(baseConfig), "properties")
 	defer func() {
