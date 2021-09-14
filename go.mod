@@ -13,10 +13,10 @@ require (
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/go-redis/redis/v8 v8.11.3
-	github.com/google/uuid v1.1.2
-	github.com/json-iterator/go v1.1.11
+	github.com/google/uuid v1.3.0
+	github.com/json-iterator/go v1.1.12
 	github.com/lestrrat-go/strftime v1.0.5
-	github.com/nacos-group/nacos-sdk-go v1.0.8
+	github.com/nacos-group/nacos-sdk-go v1.0.9
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.5
 	github.com/openzipkin/zipkin-go v0.2.5
@@ -25,9 +25,9 @@ require (
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b // indirect
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/viper v1.8.1
-	go.uber.org/zap v1.19.0
+	go.uber.org/zap v1.19.1
 	gorm.io/driver/mysql v1.1.2
-	gorm.io/gorm v1.21.12
+	gorm.io/gorm v1.21.15
 )
 
 require (
@@ -72,7 +72,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/opentracing-contrib/go-observer v0.0.0-20170622124052-a52f23424492 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
