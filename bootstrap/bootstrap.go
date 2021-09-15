@@ -314,6 +314,7 @@ func sentinelNacosInit() bool {
 	}
 
 	//nacos client 相关参数配置,具体配置可参考https://github.com/nacos-group/nacos-sdk-go
+	// https://sentinelguard.io/zh-cn/docs/golang/hotspot-param-flow-control.html
 	cc := constant.ClientConfig{
 		TimeoutMs: 5000,
 		NamespaceId: env.GetInstance().GetString("sentinel.datasource.nacos.namespace"),

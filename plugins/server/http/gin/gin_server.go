@@ -99,7 +99,29 @@ func cors(c *gin.Context) {
 }
 
 func sentinelMiddleware(c *gin.Context) {
-	entry, b := sentinel.Entry(c.Request.RequestURI, sentinel.WithTrafficType(base.Inbound))
+	var args []interface{}
+	rawQuery := c.Request.URL.RawQuery
+	if len(rawQuery) > 0 {
+		params := strings.Split(rawQuery, "&")
+		for _, param := range params {
+			kv := strings.Split(param, "=")
+			if len(kv) > 1 && len(kv[1]) > 0 {
+				args = append(args, kv[1])
+			}
+		}
+	}
+	if c.Request.Method == "POST" {
+		c.Request.ParseForm()
+		for _, v := range c.Request.PostForm {
+			args = append(args, v)
+		}
+	}
+	fmt.Println(args)
+	requestUri := c.Request.RequestURI
+	if strings.Contains(requestUri, "?") {
+		requestUri = requestUri[0:strings.Index(requestUri, "?")]
+	}
+	entry, b :=  sentinel.Entry(requestUri, sentinel.WithTrafficType(base.Inbound), sentinel.WithArgs(args...))
 	if b != nil {
 		c.Abort()
 		switch b.BlockType() {
