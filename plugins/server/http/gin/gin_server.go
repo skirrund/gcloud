@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	sentinel "github.com/alibaba/sentinel-golang/api"
+	"github.com/alibaba/sentinel-golang/core/base"
 	"io"
 	"net/http"
 	"net/url"
@@ -65,6 +67,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine)) 
 	s.Use(gp.Middleware())
 	// metrics采样
 	s.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	s.Use(sentinelMiddleware)
 
 	pprof.Register(s)
 	routerProvider(s)
@@ -93,6 +96,31 @@ func cors(c *gin.Context) {
 	} else {
 		c.Next()
 	}
+}
+
+func sentinelMiddleware(c *gin.Context) {
+	entry, b := sentinel.Entry(c.Request.RequestURI, sentinel.WithTrafficType(base.Inbound))
+	if b != nil {
+		switch b.BlockType() {
+		case base.BlockTypeCircuitBreaking:
+			c.JSON(200, response.DEGRADE_EXCEPTION)
+			return
+		case base.BlockTypeFlow:
+			c.JSON(200, response.FLOW_EXCEPTION)
+			return
+		case base.BlockTypeHotSpotParamFlow:
+			c.JSON(200, response.PARAM_FLOW_EXCEPTION)
+			return
+		case base.BlockTypeSystemFlow:
+			c.JSON(200, response.SYSTEM_BLOCK_EXCEPTION)
+			return
+		case base.BlockTypeIsolation:
+			c.JSON(200, response.AUTHORITY_EXCEPTION)
+			return
+		}
+	}
+	c.Next()
+	entry.Exit()
 }
 
 func loggingMiddleware(ctx *gin.Context) {

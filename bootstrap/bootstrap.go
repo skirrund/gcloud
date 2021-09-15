@@ -2,6 +2,12 @@ package bootstrap
 
 import (
 	"flag"
+	sentinel "github.com/alibaba/sentinel-golang/api"
+	sentinel_ds "github.com/alibaba/sentinel-golang/ext/datasource"
+	"github.com/nacos-group/nacos-sdk-go/clients"
+	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
+	"github.com/nacos-group/nacos-sdk-go/common/constant"
+	sentinel_nacos "github.com/skirrund/gcloud/plugins/sentinel"
 	"io"
 	"log"
 	"os"
@@ -137,6 +143,7 @@ func BootstrapAll(reader io.Reader, fileType string) *Application {
 	}
 	MthApplication.StartLogger()
 	MthApplication.StartConfigCenter()
+	MthApplication.SentinelInit()
 	MthApplication.StartRegistry()
 	MthApplication.StartRedis()
 	MthApplication.StartDb()
@@ -277,5 +284,94 @@ func delayFunction(f func()) {
 	select {
 	case <-timer.C:
 		f()
+	}
+}
+
+func sentinelNacosInit() bool {
+	defer logger.Error("sentinelNacosInit error")
+	//nacos server地址
+	serverAddrStr := env.GetInstance().GetString("sentinel.datasource.nacos.server-addr")
+	if len(serverAddrStr) == 0 {
+		return false
+	}
+	var scs []constant.ServerConfig
+	serverAddrs := strings.Split(serverAddrStr, ",")
+	for _, serverAddr := range serverAddrs {
+		urlAndPort := strings.Split(serverAddr, ":")
+		port := 8848
+		if len(urlAndPort) > 1 {
+			var err error
+			port, err = strconv.Atoi(urlAndPort[1])
+			if err != nil {
+				port = 8848
+			}
+		}
+		sc := constant.ServerConfig{
+			ContextPath: "/nacos",
+			Port:        uint64(port),
+			IpAddr:      urlAndPort[0],
+		}
+		scs = append(scs, sc)
+	}
+
+	//nacos client 相关参数配置,具体配置可参考https://github.com/nacos-group/nacos-sdk-go
+	cc := constant.ClientConfig{
+		TimeoutMs: 5000,
+		NamespaceId: env.GetInstance().GetString("sentinel.datasource.nacos.namespace"),
+	}
+	//生成nacos config client(配置中心客户端)
+	client, err := clients.CreateConfigClient(map[string]interface{}{
+		"serverConfigs": scs,
+		"clientConfig":  cc,
+	})
+	if err != nil {
+		logger.Errorf("Fail to create client, err: %+v", err)
+		return false
+	}
+	// 注册流控规则Handler
+	h := sentinel_ds.NewFlowRulesHandler(sentinel_ds.FlowRuleJsonArrayParser)
+	registerAndInitDs(client, h, "-flow-rule")
+	// 注册热点规则
+	h2 := sentinel_ds.NewHotSpotParamRulesHandler(sentinel_ds.HotSpotParamRuleJsonArrayParser)
+	registerAndInitDs(client, h2, "-param-flow-rule")
+	// 注册溶断规则
+	h3 := sentinel_ds.NewCircuitBreakerRulesHandler(sentinel_ds.CircuitBreakerRuleJsonArrayParser)
+	registerAndInitDs(client, h3, "-degrade-rule")
+	// 系统规则
+	h4 := sentinel_ds.NewSystemRulesHandler(sentinel_ds.SystemRuleJsonArrayParser)
+	registerAndInitDs(client, h4, "-system-rule")
+	// 授权规则
+	h5 := sentinel_ds.NewIsolationRulesHandler(sentinel_ds.IsolationRuleJsonArrayParser)
+	registerAndInitDs(client, h5, "-authority-rule")
+	return true
+}
+
+func registerAndInitDs(client config_client.IConfigClient, h sentinel_ds.PropertyHandler, dataIdSuffix string)  {
+	//创建NacosDataSource数据源
+	//sentinel-go 对应在nacos中创建配置文件的group
+	//flow 对应在nacos中创建配置文件的dataId
+	nds, err := sentinel_nacos.NewNacosDataSource(client, env.GetInstance().GetString("sentinel.datasource.nacos.groupId"),
+		env.GetInstance().GetString("server.name") + dataIdSuffix, h)
+	if err != nil {
+		logger.Errorf("Fail to create nacos data source client, err: %+v", err)
+		return
+	}
+	//nacos数据源初始化
+	err = nds.Initialize()
+	if err != nil {
+		logger.Errorf("Fail to initialize nacos data source client, err: %+v", err)
+		return
+	}
+}
+
+// 初始化Sentinel
+func (app *Application) SentinelInit() {
+	result := sentinelNacosInit()
+	if !result {
+		return
+	}
+	err := sentinel.InitWithConfigFile("resources/sentinel.yaml")
+	if err != nil {
+		logger.Error(err)
 	}
 }

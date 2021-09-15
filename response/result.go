@@ -39,6 +39,12 @@ var DB_SELECT_EXCEPTION = Msginfo{Code: "500004", Message: "数据查询异常"}
 var DB_KEY_DUPLICATE = Msginfo{Code: "500011", Message: "主键或唯一性约束冲突"}
 var SMS_TEMPLATE_ERROR = Msginfo{Code: "4B2001", Message: "无效的短信模板"}
 
+var FLOW_EXCEPTION = Msginfo{Code: "503000", Message: "请求过于拥挤，请稍候重试"}
+var DEGRADE_EXCEPTION = Msginfo{Code: "503001", Message: "请求被降级，请稍候重试"}
+var PARAM_FLOW_EXCEPTION = Msginfo{Code: "503002", Message: "请求过于拥挤，请稍候重试"}
+var SYSTEM_BLOCK_EXCEPTION = Msginfo{Code: "503003", Message: "系统被保护，请稍候重试"}
+var AUTHORITY_EXCEPTION = Msginfo{Code: "503004", Message: "访问被限制，请稍候重试"}
+
 func NewMsgInfo(code string, msg string) *Msginfo {
 	return &Msginfo{
 		Code:    code,
