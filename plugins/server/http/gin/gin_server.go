@@ -101,6 +101,7 @@ func cors(c *gin.Context) {
 func sentinelMiddleware(c *gin.Context) {
 	entry, b := sentinel.Entry(c.Request.RequestURI, sentinel.WithTrafficType(base.Inbound))
 	if b != nil {
+		c.Abort()
 		switch b.BlockType() {
 		case base.BlockTypeCircuitBreaking:
 			c.JSON(200, response.DEGRADE_EXCEPTION)

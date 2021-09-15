@@ -288,7 +288,6 @@ func delayFunction(f func()) {
 }
 
 func sentinelNacosInit() bool {
-	defer logger.Error("sentinelNacosInit error")
 	//nacos server地址
 	serverAddrStr := env.GetInstance().GetString("sentinel.datasource.nacos.server-addr")
 	if len(serverAddrStr) == 0 {
