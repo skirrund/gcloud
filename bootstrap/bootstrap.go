@@ -380,7 +380,7 @@ func sentinelConfigInit() (*sentinel_config.Entity, error) {
 		entity.Sentinel.App.Name = env.GetInstance().GetString("server.name")
 	}
 	if entity.Sentinel.Log.Dir == sentinel_config.GetDefaultLogDir() {
-		entity.Sentinel.Log.Dir = env.GetInstance().GetString("logger.dir") + entity.Sentinel.App.Name + "/csp/"
+		entity.Sentinel.Log.Dir = env.GetInstance().GetString("logger.dir") + "/" + entity.Sentinel.App.Name + "/csp/"
 	}
 	err := sentinel.InitWithConfig(entity)
 	if err != nil {
