@@ -4,11 +4,15 @@ import (
 	"flag"
 	sentinel "github.com/alibaba/sentinel-golang/api"
 	sentinel_ds "github.com/alibaba/sentinel-golang/ext/datasource"
+	sentinel_config "github.com/alibaba/sentinel-golang/core/config"
+	"github.com/alibaba/sentinel-golang/logging"
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	sentinel_nacos "github.com/skirrund/gcloud/plugins/sentinel"
+	"gopkg.in/yaml.v2"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -287,7 +291,7 @@ func delayFunction(f func()) {
 	}
 }
 
-func sentinelNacosInit() bool {
+func sentinelNacosInit(entity *sentinel_config.Entity) bool {
 	//nacos server地址
 	serverAddrStr := env.GetInstance().GetString("sentinel.datasource.nacos.server-addr")
 	if len(serverAddrStr) == 0 {
@@ -318,6 +322,7 @@ func sentinelNacosInit() bool {
 	cc := constant.ClientConfig{
 		TimeoutMs: 5000,
 		NamespaceId: env.GetInstance().GetString("sentinel.datasource.nacos.namespace"),
+		LogDir: entity.LogBaseDir() + "/nacos",
 	}
 	//生成nacos config client(配置中心客户端)
 	client, err := clients.CreateConfigClient(map[string]interface{}{
@@ -364,14 +369,53 @@ func registerAndInitDs(client config_client.IConfigClient, h sentinel_ds.Propert
 	}
 }
 
+func sentinelConfigInit() (*sentinel_config.Entity, error) {
+	entity := sentinel_config.NewDefaultConfig()
+	err1 := ParseSentinelConfig(entity, "sentinel.yaml")
+	err2 := ParseSentinelConfig(entity, "resources/sentinel.yaml")
+	if err1 != nil && err2 != nil {
+		return nil, err2
+	}
+	if entity.Sentinel.App.Name == "" {
+		entity.Sentinel.App.Name = env.GetInstance().GetString("server.name")
+	}
+	if entity.Sentinel.Log.Dir == "" {
+		entity.Sentinel.Log.Dir = env.GetInstance().GetString("logger.dir") + entity.Sentinel.App.Name + "/csp/"
+	}
+	err := sentinel.InitWithConfig(entity)
+	if err != nil {
+		logger.Errorf("sentinel config init error, %v", err.Error())
+		return nil, err
+	}
+	return entity, nil
+}
+
+func ParseSentinelConfig(entity *sentinel_config.Entity, filePath string) error {
+	_, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		logger.Errorf("sentinel config read sentinel.yaml error," + err.Error())
+		return err
+	}
+	err = yaml.Unmarshal(content, entity)
+	if err != nil {
+		logger.Errorf("sentinel config Unmarshal error, %v", err.Error())
+		return err
+	}
+	logging.Info("[Config] Resolving Sentinel config from file=" + filePath + " success")
+	return nil
+}
+
 // 初始化Sentinel
 func (app *Application) SentinelInit() {
-	result := sentinelNacosInit()
-	if !result {
+	if env.GetInstance().GetString("spring.cloud.sentinel.enabled") == "false" {
 		return
 	}
-	err := sentinel.InitWithConfigFile("resources/sentinel.yaml")
-	if err != nil {
-		logger.Error(err)
+	entity, err := sentinelConfigInit()
+	if err == nil && entity != nil {
+		sentinelNacosInit(entity)
 	}
 }
