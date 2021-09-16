@@ -374,10 +374,7 @@ func sentinelConfigInit() (*sentinel_config.Entity, error) {
 	// 设置相关默认值
 	entity.Sentinel.Log.Metric.MaxFileCount = 14
 	entity.Sentinel.Log.Metric.SingleFileMaxSize = 104857600
-	err2 := ParseSentinelConfig(entity, "resources/sentinel.yaml")
-	if err2 != nil {
-		return entity, nil
-	}
+	ParseSentinelConfig(entity, "resources/sentinel.yaml")
 	if entity.Sentinel.App.Name == "" {
 		entity.Sentinel.App.Name = env.GetInstance().GetString("server.name")
 	}
