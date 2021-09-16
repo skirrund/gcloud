@@ -373,12 +373,13 @@ func sentinelConfigInit() (*sentinel_config.Entity, error) {
 	entity := sentinel_config.NewDefaultConfig()
 	// 设置相关默认值
 	entity.Sentinel.Log.Metric.MaxFileCount = 14
+	// 100MB
 	entity.Sentinel.Log.Metric.SingleFileMaxSize = 104857600
 	ParseSentinelConfig(entity, "resources/sentinel.yaml")
-	if entity.Sentinel.App.Name == "" {
+	if entity.Sentinel.App.Name == sentinel_config.UnknownProjectName {
 		entity.Sentinel.App.Name = env.GetInstance().GetString("server.name")
 	}
-	if entity.Sentinel.Log.Dir == "" {
+	if entity.Sentinel.Log.Dir == sentinel_config.GetDefaultLogDir() {
 		entity.Sentinel.Log.Dir = env.GetInstance().GetString("logger.dir") + entity.Sentinel.App.Name + "/csp/"
 	}
 	err := sentinel.InitWithConfig(entity)
