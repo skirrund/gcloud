@@ -371,10 +371,12 @@ func registerAndInitDs(client config_client.IConfigClient, h sentinel_ds.Propert
 
 func sentinelConfigInit() (*sentinel_config.Entity, error) {
 	entity := sentinel_config.NewDefaultConfig()
-	err1 := ParseSentinelConfig(entity, "sentinel.yaml")
+	// 设置相关默认值
+	entity.Sentinel.Log.Metric.MaxFileCount = 14
+	entity.Sentinel.Log.Metric.SingleFileMaxSize = 104857600
 	err2 := ParseSentinelConfig(entity, "resources/sentinel.yaml")
-	if err1 != nil && err2 != nil {
-		return nil, err2
+	if err2 != nil {
+		return entity, nil
 	}
 	if entity.Sentinel.App.Name == "" {
 		entity.Sentinel.App.Name = env.GetInstance().GetString("server.name")
@@ -385,7 +387,7 @@ func sentinelConfigInit() (*sentinel_config.Entity, error) {
 	err := sentinel.InitWithConfig(entity)
 	if err != nil {
 		logger.Errorf("sentinel config init error, %v", err.Error())
-		return nil, err
+		return entity, err
 	}
 	return entity, nil
 }
