@@ -42,8 +42,10 @@ func NewWorkerWithRedis(r *redis.RedisClient, appName string) (*Worker, error) {
 	return newWorker(workId)
 }
 
-// @desc 初始化一个节点
-// @auth jerry.shi 2021-05-24
+/**
+@desc 初始化一个节点
+@auth jerry.shi 2021-05-24
+ */
 func newWorker(workerId int64) (*Worker, error) {
 	// 要先检测workerId是否在上面定义的范围内
 	if workerId < 0 || workerId > workerMax {
@@ -61,8 +63,10 @@ func (w *Worker) GetIdWithPrefix(prefix string) string {
 	return prefix + id
 }
 
-// @desc 获取id
-// @auth jerry.shi 2021-05-24
+/**
+@desc 获取id
+@auth jerry.shi 2021-05-24
+ */
 func (w *Worker) GetId() string {
 	//解决并发安全
 	w.mu.Lock()
@@ -107,10 +111,12 @@ func (w *Worker) GetId() string {
 	return strconv.FormatInt(id, 10)
 }
 
-// @desc 获取当前时间
-// @auth liuguoqiang 2020-06-16
-// @param
-// @return
+/**
+@desc 获取当前时间
+@auth liuguoqiang 2020-06-16
+@param
+@return
+ */
 func (w *Worker) Now() int64 {
 	return time.Now().Unix()
 }

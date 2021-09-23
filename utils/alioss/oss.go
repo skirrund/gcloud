@@ -385,15 +385,14 @@ func (c *ossClient) GetBase64(fileName string) (string, error) {
 	return "", err
 }
 
-//
-//
-// @param fileName
-// @param file
-// @param isPrivate
-// @param forceUpload 文件名相同是否使用随机文件名进行上传
-// @return http全路径
-// @throws Exception
-//
+/**
+@param fileName
+@param file
+@param isPrivate
+@param forceUpload 文件名相同是否使用随机文件名进行上传
+@return http全路径
+@throws Exception
+ */
 func (c *ossClient) UploadFileWithFullUrl(fileName string, file *os.File, isPrivate bool, forceUpload bool) (string, error) {
 	str, err := c.UploadFileFile(fileName, file, isPrivate, forceUpload)
 	if err == nil {
@@ -402,15 +401,14 @@ func (c *ossClient) UploadFileWithFullUrl(fileName string, file *os.File, isPriv
 	return str, err
 }
 
-//
-//
-// @param fileName
-// @param bytes
-// @param isPrivate
-// @param forceUpload 文件名相同是否使用随机文件名进行上传
-// @return http全路径
-// @throws Exception
-//
+/**
+@param fileName
+@param bytes
+@param isPrivate
+@param forceUpload 文件名相同是否使用随机文件名进行上传
+@return http全路径
+@throws Exception
+ */
 func (c *ossClient) UploadFileBytesWithFullUrl(fileName string, bs []byte, isPrivate bool, forceUpload bool) (string, error) {
 	str, err := c.UploadFileBytes(fileName, bs, isPrivate, forceUpload)
 	if err == nil {
