@@ -124,7 +124,6 @@ func sentinelMiddleware(c *gin.Context) {
 			args = append(args, v)
 		}
 	}
-	fmt.Println(args)
 	requestUri := c.Request.RequestURI
 	if strings.Contains(requestUri, "?") {
 		requestUri = requestUri[0:strings.Index(requestUri, "?")]

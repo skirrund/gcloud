@@ -31,3 +31,7 @@ func main() {
 	swag init --parseDependency --parseInternal
 ## 访问
 	http://host:port/swagger/index.htm
+## 注意事项
+1. 需要在项目main.go中添加形如 _ "mth-maindata-service/docs" 的import
+2. 
+   
