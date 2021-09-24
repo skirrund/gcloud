@@ -27,6 +27,9 @@ import (
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Server struct {
@@ -68,11 +71,16 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine)) 
 	// metrics采样
 	s.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	s.Use(sentinelMiddleware)
+	initSwagger(s)
 
 	pprof.Register(s)
 	routerProvider(s)
 	srv.Srv = s
 	return srv
+}
+
+func initSwagger(e *gin.Engine)  {
+	e.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
 func cors(c *gin.Context) {

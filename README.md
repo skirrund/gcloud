@@ -23,3 +23,9 @@ func main() {
   func initRouter(router *gin.Engine) {  
 	china.NewChinaIntance().InitRouter(router)  
 }
+
+# swagger
+## github
+	https://github.com/swaggo/gin-swagger
+## 生成文档，具体参数说明见官网
+	swag init --parseDependency --parseInternal
