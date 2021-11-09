@@ -26,7 +26,7 @@ func main() {
 
 # swagger
 ## github
-	https://github.com/swaggo/gin-swagger
+	https://github.com/swaggo/gin-swagger 
 ## 生成文档，具体参数说明见官网
 	swag init --parseDependency --parseInternal
 ## 访问
