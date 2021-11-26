@@ -141,6 +141,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 		Profile:       flagProfile,
 		ServerName:    flagSn,
 		LoggerDir:     flagLogdir,
+		LoggerConsole: flagConsoleLog,
 		Host:          host,
 		Config:        env.GetInstance(),
 	}
