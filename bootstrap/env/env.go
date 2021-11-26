@@ -22,6 +22,7 @@ const (
 	SERVER_SERVERNAME_KEY = "server.name"
 	LOGGER_DIR_KEY        = "logger.dir"
 	LOGGER_MAXAGE_KEY     = "logger.maxAge"
+	LOGGER_CONSOLE        = "logger.console"
 	ZIPKIN_URL_KEY        = "zipkin.url"
 )
 

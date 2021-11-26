@@ -2,15 +2,6 @@ package bootstrap
 
 import (
 	"flag"
-	sentinel "github.com/alibaba/sentinel-golang/api"
-	sentinel_ds "github.com/alibaba/sentinel-golang/ext/datasource"
-	sentinel_config "github.com/alibaba/sentinel-golang/core/config"
-	"github.com/alibaba/sentinel-golang/logging"
-	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
-	"github.com/nacos-group/nacos-sdk-go/common/constant"
-	sentinel_nacos "github.com/skirrund/gcloud/plugins/sentinel"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,6 +9,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	sentinel "github.com/alibaba/sentinel-golang/api"
+	sentinel_config "github.com/alibaba/sentinel-golang/core/config"
+	sentinel_ds "github.com/alibaba/sentinel-golang/ext/datasource"
+	"github.com/alibaba/sentinel-golang/logging"
+	"github.com/nacos-group/nacos-sdk-go/clients"
+	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
+	"github.com/nacos-group/nacos-sdk-go/common/constant"
+	sentinel_nacos "github.com/skirrund/gcloud/plugins/sentinel"
+	"gopkg.in/yaml.v2"
 
 	"github.com/skirrund/gcloud/server"
 
@@ -30,7 +31,7 @@ import (
 	nacosRegistry "github.com/skirrund/gcloud/plugins/nacos/registry"
 	"github.com/skirrund/gcloud/registry"
 
-	"github.com/skirrund/gcloud/datasource"
+	db "github.com/skirrund/gcloud/datasource"
 	"github.com/skirrund/gcloud/mq"
 
 	mthGin "github.com/skirrund/gcloud/plugins/server/http/gin"
@@ -57,6 +58,7 @@ type BootstrapOptions struct {
 	ServerName    string
 	Host          string
 	LoggerDir     string
+	LoggerConsole bool
 	Config        config.IConfig
 }
 
@@ -95,11 +97,13 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	var flagAddress string
 	var flagLogdir string
 	var flagLogMaxAge uint64
-	flag.StringVar(&flagProfile, env.SERVER_PROFILE_KEY, "", "server profile:[dev,local,prod]")
+	var flagConsoleLog bool
+	flag.StringVar(&flagProfile, env.SERVER_PROFILE_KEY, "", "server profile:[dev,test,prod...]")
 	flag.StringVar(&flagSn, env.SERVER_SERVERNAME_KEY, "", "sererver name")
 	flag.StringVar(&flagAddress, env.SERVER_ADDRESS_KEY, "", "sererver address")
 	flag.StringVar(&flagLogdir, env.LOGGER_DIR_KEY, "", "logDir")
 	flag.Uint64Var(&flagLogMaxAge, env.LOGGER_MAXAGE_KEY, 7, "log maxAge:day   default:7")
+	flag.BoolVar(&flagConsoleLog, env.LOGGER_CONSOLE, true, "log console:day   default:true")
 	flag.Parse()
 	if len(flagProfile) == 0 {
 		flagProfile = profile
@@ -129,6 +133,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	cfg.Set(env.SERVER_SERVERNAME_KEY, flagSn)
 	cfg.Set(env.LOGGER_DIR_KEY, flagLogdir)
 	cfg.Set(env.LOGGER_MAXAGE_KEY, flagLogMaxAge)
+	cfg.Set(env.LOGGER_CONSOLE, flagConsoleLog)
 
 	return BootstrapOptions{
 		ServerAddress: flagAddress,
@@ -157,11 +162,7 @@ func BootstrapAll(reader io.Reader, fileType string) *Application {
 func (app *Application) StartLogger() {
 	ops := app.BootOptions
 	maxAge := env.GetInstance().GetUint64WithDefault(env.LOGGER_MAXAGE_KEY, 7)
-	if app.BootOptions.Profile == "local" {
-		logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), true, maxAge)
-	} else {
-		logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), false, maxAge)
-	}
+	logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), ops.LoggerConsole, maxAge)
 }
 
 func (app *Application) StartDb() {
@@ -320,9 +321,9 @@ func sentinelNacosInit(entity *sentinel_config.Entity) bool {
 	//nacos client 相关参数配置,具体配置可参考https://github.com/nacos-group/nacos-sdk-go
 	// https://sentinelguard.io/zh-cn/docs/golang/hotspot-param-flow-control.html
 	cc := constant.ClientConfig{
-		TimeoutMs: 5000,
+		TimeoutMs:   5000,
 		NamespaceId: env.GetInstance().GetString("sentinel.datasource.nacos.namespace"),
-		LogDir: entity.LogBaseDir() + "/nacos",
+		LogDir:      entity.LogBaseDir() + "/nacos",
 	}
 	//生成nacos config client(配置中心客户端)
 	client, err := clients.CreateConfigClient(map[string]interface{}{
@@ -351,12 +352,12 @@ func sentinelNacosInit(entity *sentinel_config.Entity) bool {
 	return true
 }
 
-func registerAndInitDs(client config_client.IConfigClient, h sentinel_ds.PropertyHandler, dataIdSuffix string)  {
+func registerAndInitDs(client config_client.IConfigClient, h sentinel_ds.PropertyHandler, dataIdSuffix string) {
 	//创建NacosDataSource数据源
 	//sentinel-go 对应在nacos中创建配置文件的group
 	//flow 对应在nacos中创建配置文件的dataId
 	nds, err := sentinel_nacos.NewNacosDataSource(client, env.GetInstance().GetString("sentinel.datasource.nacos.groupId"),
-		env.GetInstance().GetString("server.name") + dataIdSuffix, h)
+		env.GetInstance().GetString("server.name")+dataIdSuffix, h)
 	if err != nil {
 		logger.Errorf("Fail to create nacos data source client, err: %+v", err)
 		return
