@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	sentinel "github.com/alibaba/sentinel-golang/api"
-	"github.com/alibaba/sentinel-golang/core/base"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,6 +13,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	sentinel "github.com/alibaba/sentinel-golang/api"
+	"github.com/alibaba/sentinel-golang/core/base"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/skirrund/gcloud/logger"
@@ -79,7 +80,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine)) 
 	return srv
 }
 
-func initSwagger(e *gin.Engine)  {
+func initSwagger(e *gin.Engine) {
 	e.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
@@ -128,7 +129,7 @@ func sentinelMiddleware(c *gin.Context) {
 	if strings.Contains(requestUri, "?") {
 		requestUri = requestUri[0:strings.Index(requestUri, "?")]
 	}
-	entry, b :=  sentinel.Entry(requestUri, sentinel.WithTrafficType(base.Inbound), sentinel.WithArgs(args...))
+	entry, b := sentinel.Entry(requestUri, sentinel.WithTrafficType(base.Inbound), sentinel.WithArgs(args...))
 	if b != nil {
 		c.Abort()
 		switch b.BlockType() {

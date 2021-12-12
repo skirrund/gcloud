@@ -35,7 +35,7 @@ func initZipkinTracer() error {
 	cfg := env.GetInstance()
 	url := cfg.GetString(env.ZIPKIN_URL_KEY)
 	if len(url) == 0 {
-		logger.Fatal("[zipkin] unable to create local reporter:url is empty")
+		logger.Error("[zipkin] unable to create local reporter:url is empty")
 		return errors.New("url is empty")
 	}
 	zkReporter = zipkinhttp.NewReporter(url)
