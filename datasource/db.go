@@ -1,8 +1,9 @@
 package db
 
 import (
-	"database/sql"
+	"context"
 	"log"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -12,9 +13,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type dataSource struct {
-	DB    *gorm.DB
-	SqlDB *sql.DB
+type ctxTransactionKey struct {
+
 }
 
 type Option struct {
@@ -40,7 +40,7 @@ const (
 	DefaultMaxOpenConns    = 50
 )
 
-var instance *dataSource
+var db *gorm.DB
 var once sync.Once
 
 func InitDataSource(option Option) {
@@ -58,7 +58,9 @@ func InitDataSource(option Option) {
 			SkipDefaultTransaction: true,
 			PrepareStmt:            true,
 		})
-
+		if err != nil {
+			log.Panicln(err)
+		}
 		sqlDB, err := mysqldb.DB()
 		if err != nil {
 			log.Panicln(err)
@@ -83,9 +85,7 @@ func InitDataSource(option Option) {
 			}
 		}
 		sqlDB.Exec("set @@session.sql_mode=(SELECT CONCAT(@@session.sql_mode,',STRICT_TRANS_TABLES'))")
-		instance = &dataSource{
-			DB: mysqldb,
-		}
+		db = mysqldb
 	})
 }
 
@@ -106,8 +106,29 @@ func CreateInsertSql(tableName string, kv map[string]interface{}) (sql string, v
 	return sql + vsql, values
 }
 
-func Get() *dataSource {
-	return instance
+func Get() *gorm.DB {
+	return db
+}
+
+func GetWithContext(ctx context.Context) *gorm.DB {
+	odb:=ctx.Value(ctxTransactionKey{})
+	if odb!=nil{
+       tx,ok:=odb.(*gorm.DB)
+	   if !ok{
+		   log.Panicf("unexpect context value type: %s", reflect.TypeOf(tx))
+		   return nil
+	   }
+	   return tx
+	}
+	return db.WithContext(ctx)
+}
+
+func Transaction(ctx context.Context, fc func(txctx context.Context) error) error {
+	ndb := db.WithContext(ctx)
+	return ndb.Transaction(func(tx *gorm.DB) error {
+		txctx:=context.WithValue(ctx,ctxTransactionKey{},tx)
+		return fc(txctx)
+	})
 }
 
 func Expr(expr string, args ...interface{}) clause.Expr {
