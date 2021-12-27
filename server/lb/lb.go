@@ -3,6 +3,7 @@ package lb
 import (
 	"crypto/tls"
 	"errors"
+	"github.com/skirrund/gcloud/bootstrap/env"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -24,7 +25,8 @@ import (
 )
 
 const (
-	DEFAULT_TIMEOUT                 = 30
+	DEFAULT_TIMEOUT                 = 10
+	ConnectionTimeout               = "server.http.client.timeout"
 	RetryOnConnectionFailure        = "server.http.retry.onConnectionFailure"
 	RetryEnabled                    = "server.http.retry.enabled"
 	RetryOnAllOperations            = "server.http.retry.allOperations"
@@ -73,8 +75,12 @@ func GetClient() *http.Client {
 			MaxConnsPerHost:       0,
 			MaxIdleConnsPerHost:   2,
 		}
+		timeOut := env.GetInstance().GetInt(ConnectionTimeout)
+		if timeOut <= 0 {
+			timeOut = DEFAULT_TIMEOUT
+		}
 		httpClient = &http.Client{
-			Timeout:   DEFAULT_TIMEOUT * time.Second,
+			Timeout:   time.Duration(timeOut) * time.Second,
 			Transport: defaultTransport,
 		}
 	})
