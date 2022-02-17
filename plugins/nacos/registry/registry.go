@@ -144,7 +144,7 @@ func (nr *nacosRegistry) Subscribe(serviceName string) error {
 		ServiceName: serviceName,
 		GroupName:   nr.opts.RegistryOptions.Group, // default value is DEFAULT_GROUP
 		//Clusters:    []string{"cluster-a"},         // default value is DEFAULT
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
+		SubscribeCallback: func(services []model.Instance, err error) {
 			logger.Info("[nacos] registry change:", services)
 			var instances = make([]*registry.Instance, len(services))
 			for i, ins := range services {
