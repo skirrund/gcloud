@@ -1,11 +1,16 @@
 package nacos_config
 
 import (
+	bytes2 "bytes"
+	_ "embed"
+	"github.com/skirrund/gcloud/bootstrap/env"
+	commonCfg "github.com/skirrund/gcloud/config"
 	"os"
 	"testing"
-
-	commonCfg "github.com/skirrund/gcloud/config"
 )
+
+//go:embed bootstrap.properties
+var baseConfig []byte
 
 func TestConfig(t *testing.T) {
 	opts := commonCfg.Options{
@@ -25,7 +30,10 @@ func TestConfig(t *testing.T) {
 	}
 	t.Log(">>>>>")
 	nacos := CreateInstance(opts)
+	env.GetInstance().SetBaseConfig(bytes2.NewReader(baseConfig), "properties")
 	t.Log(nacos.GetString("datasource.dsn"))
+	p := env.GetInstance().GetString("server.name")
+	t.Log(">>>>>>>>>:" + p)
 	t.Log("end")
 	var bytes []byte
 	os.Stdin.Read(bytes)

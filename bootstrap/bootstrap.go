@@ -92,13 +92,16 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	profile := cfg.GetString(env.SERVER_PROFILE_KEY)
 	sn := cfg.GetString(env.SERVER_SERVERNAME_KEY)
 	ld := cfg.GetString(env.LOGGER_DIR_KEY)
+	cfgFile := cfg.GetString(env.SERVER_CONFIGFILE_KEY)
 	var flagProfile string
+	var flagCfgFile string
 	var flagSn string
 	var flagAddress string
 	var flagLogdir string
 	var flagLogMaxAge uint64
 	var flagConsoleLog bool
 	flag.StringVar(&flagProfile, env.SERVER_PROFILE_KEY, "", "server profile:[dev,test,prod...]")
+	flag.StringVar(&flagCfgFile, env.SERVER_CONFIGFILE_KEY, "", "server config file")
 	flag.StringVar(&flagSn, env.SERVER_SERVERNAME_KEY, "", "sererver name")
 	flag.StringVar(&flagAddress, env.SERVER_ADDRESS_KEY, "", "sererver address")
 	flag.StringVar(&flagLogdir, env.LOGGER_DIR_KEY, "", "logDir")
@@ -107,6 +110,9 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	flag.Parse()
 	if len(flagProfile) == 0 {
 		flagProfile = profile
+	}
+	if len(flagCfgFile) == 0 {
+		flagCfgFile = cfgFile
 	}
 	if len(flagSn) == 0 {
 		flagSn = sn
@@ -134,6 +140,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	cfg.Set(env.LOGGER_DIR_KEY, flagLogdir)
 	cfg.Set(env.LOGGER_MAXAGE_KEY, flagLogMaxAge)
 	cfg.Set(env.LOGGER_CONSOLE, flagConsoleLog)
+	cfg.Set(env.SERVER_CONFIGFILE_KEY, flagCfgFile)
 
 	return BootstrapOptions{
 		ServerAddress: flagAddress,

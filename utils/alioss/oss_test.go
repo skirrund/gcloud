@@ -1,9 +1,6 @@
 package alioss
 
 import (
-	"io/ioutil"
-	"os"
-	"strings"
 	"testing"
 )
 

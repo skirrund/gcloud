@@ -1,7 +1,11 @@
 package env
 
 import (
+	bytes2 "bytes"
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/skirrund/gcloud/config"
@@ -19,6 +23,7 @@ const (
 	SERVER_ADDRESS_KEY    = "server.address"
 	SERVER_PORT_KEY       = "server.port"
 	SERVER_PROFILE_KEY    = "server.profile"
+	SERVER_CONFIGFILE_KEY = "server.config.file"
 	SERVER_SERVERNAME_KEY = "server.name"
 	LOGGER_DIR_KEY        = "logger.dir"
 	LOGGER_MAXAGE_KEY     = "logger.maxAge"
@@ -46,6 +51,35 @@ func (e *env) SetBaseConfig(reader io.Reader, configType string) {
 		bc.SetConfigType(configType)
 		bc.SetConfigName("bootstrap")
 		bc.ReadConfig(reader)
+		profile := bc.GetString(SERVER_PROFILE_KEY)
+		cfgPath := bc.GetString(SERVER_CONFIGFILE_KEY)
+		path, _ := os.Executable()
+		path, _ = filepath.EvalSymlinks(path)
+		if len(cfgPath) == 0 {
+			if len(profile) > 0 {
+				cfgPath = path + "/conf/bootstrap-" + profile + "." + configType
+				logger.Info(cfgPath)
+			}
+		}
+		logger.Info("[ENV] load config file profile:", cfgPath)
+		if len(cfgPath) > 0 {
+			_, err := os.Stat(cfgPath)
+			if err == nil {
+				logger.Info("path>>>>" + path)
+				contents, err := os.ReadFile(cfgPath)
+				if err == nil {
+					pcfg := viper.New()
+					ct := cfgPath[strings.LastIndex(cfgPath, ".")+1:]
+					pcfg.SetConfigType(ct)
+					err = pcfg.ReadConfig(bytes2.NewReader(contents))
+					if err == nil {
+						bc.MergeConfigMap(pcfg.AllSettings())
+					}
+				}
+			} else {
+				logger.Error("[ENV] load config file profile error:", err.Error())
+			}
+		}
 	})
 }
 
