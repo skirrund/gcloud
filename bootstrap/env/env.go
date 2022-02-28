@@ -53,7 +53,7 @@ func (e *env) SetBaseConfig(reader io.Reader, configType string) {
 		bc.ReadConfig(reader)
 		profile := bc.GetString(SERVER_PROFILE_KEY)
 		cfgPath := bc.GetString(SERVER_CONFIGFILE_KEY)
-		path, _ := os.Executable()
+		path, _ := os.Getwd()
 		path, _ = filepath.EvalSymlinks(path)
 		if len(cfgPath) == 0 {
 			if len(profile) > 0 {
