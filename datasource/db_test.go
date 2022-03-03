@@ -2,9 +2,25 @@ package db
 
 import (
 	"context"
-	"errors"
 	"testing"
 )
+
+type Test1Service struct {
+}
+type Test2Service struct {
+}
+
+func (Test1Service) saveTest1(ctx context.Context, data interface{}) error {
+	db := GetWithContext(ctx)
+	db.Table("test_tx1").Create(data)
+	return db.Error
+}
+
+func (Test2Service) saveTest2(ctx context.Context, data interface{}) error {
+	db := GetWithContext(ctx)
+	db.Table("test_tx2").Create(data)
+	return db.Error
+}
 
 func TestTransaction(t *testing.T) {
 	option := Option{
@@ -14,17 +30,20 @@ func TestTransaction(t *testing.T) {
 	t.Log("db init finished")
 	ctx := context.Background()
 	Transaction(ctx, func(txctx context.Context) error {
-		db := GetWithContext(txctx)
 		tt1 := make(map[string]interface{})
 		tt1["name"] = "tt1"
+		ts1 := Test1Service{}
+		err := ts1.saveTest1(txctx, tt1)
+		if err != nil {
+			return err
+		}
 		tt2 := make(map[string]interface{})
 		tt2["name"] = "tt2"
-		tx := db.Table("test_tx1")
-		tx.Create(tt1)
-		t.Log(tx.Error)
-		tx = tx.Table("test_tx2")
-		tx.Create(tt2)
-		t.Log(tx.Error)
-		return errors.New("rollback")
+		ts2 := Test2Service{}
+		err = ts2.saveTest2(txctx, tt2)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 }

@@ -102,51 +102,53 @@ func (pc *PulsarClient) doSubscribe(opts ConsumerOptions) error {
 	logger.Infof("[pulsar]store consumerOptions:"+topic+":"+subscriptionName, ",", opts)
 
 	for cm := range channel {
-		msg := cm.Message
-		//		var s = ""
-		msgStr := ""
-		logger.Infof("[pulsar] consumer info=>subName:%s,msgId:%v,reDeliveryCount:%d,publishTime:%v,producerName:%s", cm.Subscription(), msg.ID(), msg.RedeliveryCount(), msg.PublishTime(), msg.ProducerName())
-		err := schema.Decode(msg.Payload(), &msgStr)
-		if err != nil {
-			logger.Info("[pulsar] consumer msg:", err.Error())
-		} else {
-			logger.Info("[pulsar] consumer msg:", msgStr)
-		}
-		err = opts.MessageListener(baseConsumer.Message{
-			Value:           msgStr,
-			RedeliveryCount: msg.RedeliveryCount(),
-		})
-		if err == nil {
-			consumer.Ack(msg)
-		} else {
-			logger.Error("[pulsar] consumer error:" + err.Error())
-			copts, ok := consumers.Load(topic + ":" + cm.Subscription())
-			retryTimes := uint32(0)
-			ACKMode := uint32(0)
-			if ok {
-				if opt, o := copts.(ConsumerOptions); o {
-					retryTimes = opt.RetryTimes
-					if retryTimes > MAX_RETRY_TIMES {
-						retryTimes = MAX_RETRY_TIMES
-					}
-					ACKMode = opt.ACKMode
-				} else {
-					logger.Errorf("[pulsar] consumerOptions type error=> options:%v", copts)
-				}
-			} else {
-				logger.Error("[pulsar] can not find ConsumerOptions=>subName:" + topic + ":" + cm.Subscription())
-			}
-
-			rt := msg.RedeliveryCount()
-			if ACKMode == 1 && rt < retryTimes {
-				logger.Infof("[pulsar]consummer error and retry=> subscriptionName:"+cm.Subscription()+",initRetryTimes:%d,retryTimes:%d,ack:%d", retryTimes, rt, ACKMode)
-				consumer.Nack(msg)
-			} else {
-				logger.Infof("[pulsar]consummer error and can not retry=> subscriptionName:"+cm.Subscription()+",initRetryTimes:%d,retryTimes:%d,ack:%d", retryTimes, rt, ACKMode)
-				consumer.Ack(msg)
-			}
-
-		}
+		go consume(cm, consumer, schema, opts)
 	}
 	return nil
+}
+func consume(cm pulsar.ConsumerMessage, consumer pulsar.Consumer, schema pulsar.Schema, opts ConsumerOptions) {
+	msg := cm.Message
+	var msgStr string
+	logger.Infof("[pulsar] consumer info=>subName:%s,msgId:%v,reDeliveryCount:%d,publishTime:%v,producerName:%s", cm.Subscription(), msg.ID(), msg.RedeliveryCount(), msg.PublishTime(), msg.ProducerName())
+	err := schema.Decode(msg.Payload(), &msgStr)
+	if err != nil {
+		logger.Info("[pulsar] consumer msg:", err.Error())
+	} else {
+		logger.Info("[pulsar] consumer msg:", msgStr)
+	}
+	err = opts.MessageListener(baseConsumer.Message{
+		Value:           msgStr,
+		RedeliveryCount: msg.RedeliveryCount(),
+	})
+	if err == nil {
+		consumer.Ack(msg)
+	} else {
+		logger.Error("[pulsar] consumer error:" + err.Error())
+		copts, ok := consumers.Load(opts.Topic + ":" + cm.Subscription())
+		retryTimes := uint32(0)
+		ACKMode := uint32(0)
+		if ok {
+			if opt, o := copts.(ConsumerOptions); o {
+				retryTimes = opt.RetryTimes
+				if retryTimes > MAX_RETRY_TIMES {
+					retryTimes = MAX_RETRY_TIMES
+				}
+				ACKMode = opt.ACKMode
+			} else {
+				logger.Errorf("[pulsar] consumerOptions type error=> options:%v", copts)
+			}
+		} else {
+			logger.Error("[pulsar] can not find ConsumerOptions=>subName:" + opts.Topic + ":" + cm.Subscription())
+		}
+
+		rt := msg.RedeliveryCount()
+		if ACKMode == 1 && rt < retryTimes {
+			logger.Infof("[pulsar]consummer error and retry=> subscriptionName:"+cm.Subscription()+",initRetryTimes:%d,retryTimes:%d,ack:%d", retryTimes, rt, ACKMode)
+			consumer.Nack(msg)
+		} else {
+			logger.Infof("[pulsar]consummer error and can not retry=> subscriptionName:"+cm.Subscription()+",initRetryTimes:%d,retryTimes:%d,ack:%d", retryTimes, rt, ACKMode)
+			consumer.Ack(msg)
+		}
+
+	}
 }
