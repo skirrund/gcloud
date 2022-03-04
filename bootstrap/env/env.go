@@ -2,15 +2,13 @@ package env
 
 import (
 	bytes2 "bytes"
+	"github.com/skirrund/gcloud/server"
 	"io"
 	"os"
 	"strings"
 	"sync"
 
-	"github.com/skirrund/gcloud/config"
 	"github.com/skirrund/gcloud/logger"
-	"github.com/skirrund/gcloud/server"
-
 	"github.com/spf13/viper"
 )
 
@@ -40,8 +38,38 @@ func init() {
 	server.RegisterEventHook(server.ConfigChangeEvent, e.MergeConfig)
 }
 
-func GetInstance() config.IConfig {
+func GetInstance() *env {
 	return e
+}
+
+func (e *env) LoadProfileBaseConfig(profile string, configType string) {
+	cfgPath := e.GetString(SERVER_CONFIGFILE_KEY)
+	path, _ := os.Getwd()
+	if len(cfgPath) == 0 {
+		if len(profile) > 0 {
+			cfgPath = path + "/conf/bootstrap-" + profile + "." + configType
+			logger.Info(cfgPath)
+		}
+	}
+	logger.Info("[ENV] load config file profile:", cfgPath)
+	if len(cfgPath) > 0 {
+		_, err := os.Stat(cfgPath)
+		if err == nil {
+			logger.Info("path>>>>" + path)
+			contents, err := os.ReadFile(cfgPath)
+			if err == nil {
+				pcfg := viper.New()
+				ct := cfgPath[strings.LastIndex(cfgPath, ".")+1:]
+				pcfg.SetConfigType(ct)
+				err = pcfg.ReadConfig(bytes2.NewReader(contents))
+				if err == nil {
+					e.config.MergeConfigMap(pcfg.AllSettings())
+				}
+			}
+		} else {
+			logger.Error("[ENV] load config file profile error:", err.Error())
+		}
+	}
 }
 
 func (e *env) SetBaseConfig(reader io.Reader, configType string) {
@@ -50,34 +78,6 @@ func (e *env) SetBaseConfig(reader io.Reader, configType string) {
 		bc.SetConfigType(configType)
 		bc.SetConfigName("bootstrap")
 		bc.ReadConfig(reader)
-		profile := bc.GetString(SERVER_PROFILE_KEY)
-		cfgPath := bc.GetString(SERVER_CONFIGFILE_KEY)
-		path, _ := os.Getwd()
-		if len(cfgPath) == 0 {
-			if len(profile) > 0 {
-				cfgPath = path + "/conf/bootstrap-" + profile + "." + configType
-				logger.Info(cfgPath)
-			}
-		}
-		logger.Info("[ENV] load config file profile:", cfgPath)
-		if len(cfgPath) > 0 {
-			_, err := os.Stat(cfgPath)
-			if err == nil {
-				logger.Info("path>>>>" + path)
-				contents, err := os.ReadFile(cfgPath)
-				if err == nil {
-					pcfg := viper.New()
-					ct := cfgPath[strings.LastIndex(cfgPath, ".")+1:]
-					pcfg.SetConfigType(ct)
-					err = pcfg.ReadConfig(bytes2.NewReader(contents))
-					if err == nil {
-						bc.MergeConfigMap(pcfg.AllSettings())
-					}
-				}
-			} else {
-				logger.Error("[ENV] load config file profile error:", err.Error())
-			}
-		}
 	})
 }
 

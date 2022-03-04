@@ -29,6 +29,9 @@ type nacosConfigCenter struct {
 	client config_client.IConfigClient
 }
 
+func (nc *nacosConfigCenter) LoadProfileBaseConfig(profile string, configType string) {
+}
+
 var config *viper.Viper
 var nc *nacosConfigCenter
 

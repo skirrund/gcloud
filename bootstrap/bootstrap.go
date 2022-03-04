@@ -141,7 +141,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	cfg.Set(env.LOGGER_MAXAGE_KEY, flagLogMaxAge)
 	cfg.Set(env.LOGGER_CONSOLE, flagConsoleLog)
 	cfg.Set(env.SERVER_CONFIGFILE_KEY, flagCfgFile)
-
+	cfg.LoadProfileBaseConfig(profile, fileType)
 	return BootstrapOptions{
 		ServerAddress: flagAddress,
 		ServerPort:    port,

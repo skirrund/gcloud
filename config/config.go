@@ -1,11 +1,5 @@
 package config
 
-import (
-	"io"
-
-	"github.com/skirrund/gcloud/server"
-)
-
 type IConfig interface {
 	Get(key string) interface{}
 	GetString(key string) string
@@ -25,7 +19,5 @@ type IConfig interface {
 	Shutdown()
 	Read() error
 	Watch()
-	MergeConfig(eventType server.EventName, eventInfo interface{}) error
-	SetBaseConfig(reader io.Reader, configType string)
 	GetStringMapString(key string) map[string]string
 }
