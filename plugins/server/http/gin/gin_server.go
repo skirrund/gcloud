@@ -200,7 +200,12 @@ func requestEnd(ctx *gin.Context, start time.Time, strBody string, reqBody strin
 	if strings.HasPrefix(uri, "/swagger") {
 		return
 	}
-	logger.Info("\n [GIN] uri:" + uri + "\n [GIN] method:" + req.Method + "\n [GIN] body:" + reqBody + "\n [GIN] response:" + strBody + "\n [GIN] cost:" + strconv.FormatInt(time.Since(start).Milliseconds(), 10) + "ms")
+	logger.Info("\n [GIN] uri:", uri,
+		"\n [GIN] content-type:", req.Header.Get("content-type"),
+		"\n [GIN] method:", req.Method,
+		"\n [GIN] body:"+reqBody,
+		"\n [GIN] response:"+strBody,
+		"\n [GIN] cost:"+strconv.FormatInt(time.Since(start).Milliseconds(), 10)+"ms")
 }
 
 func (server *Server) Shutdown() {
