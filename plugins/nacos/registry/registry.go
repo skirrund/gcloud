@@ -78,6 +78,7 @@ func (nr *nacosRegistry) RegisterInstance() error {
 	success, err := nr.client.RegisterInstance(registryParam)
 	if err != nil {
 		logger.Error("[nacos]  RegisterInstance error:", err.Error())
+		panic(err)
 	}
 	if !success {
 		logger.Error("[nacos]  RegisterInstance fail")
