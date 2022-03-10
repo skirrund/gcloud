@@ -47,9 +47,13 @@ func configure(n *nacosConfigCenter, opts commonConfig.Options) error {
 func CreateInstance(opts commonConfig.Options) *nacosConfigCenter {
 	nc = &nacosConfigCenter{}
 	nc.opts = opts
-	configure(nc, opts)
+	err := configure(nc, opts)
+	if err != nil {
+		logger.Panic("[nacos]config error:", err.Error())
+		return nc
+	}
 	config = viper.New()
-	err := nc.Read()
+	err = nc.Read()
 	if err != nil {
 		logger.Panic(err)
 		return nc
