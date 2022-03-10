@@ -9,10 +9,10 @@ import (
 
 	"github.com/skirrund/gcloud/server"
 
-	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
-	"github.com/nacos-group/nacos-sdk-go/v2/model"
-	"github.com/nacos-group/nacos-sdk-go/v2/util"
-	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
+	"github.com/nacos-group/nacos-sdk-go/model"
+	"github.com/nacos-group/nacos-sdk-go/util"
+	"github.com/nacos-group/nacos-sdk-go/vo"
 )
 
 // type Options struct {
@@ -148,7 +148,7 @@ func (nr *nacosRegistry) Subscribe(serviceName string) error {
 		ServiceName: serviceName,
 		GroupName:   nr.opts.RegistryOptions.Group, // default value is DEFAULT_GROUP
 		//Clusters:    []string{"cluster-a"},         // default value is DEFAULT
-		SubscribeCallback: func(services []model.Instance, err error) {
+		SubscribeCallback: func(services []model.SubscribeService, err error) {
 			logger.Info("[nacos] registry change:", services)
 			var instances = make([]*registry.Instance, len(services))
 			for i, ins := range services {

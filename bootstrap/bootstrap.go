@@ -14,9 +14,9 @@ import (
 	sentinel_config "github.com/alibaba/sentinel-golang/core/config"
 	sentinel_ds "github.com/alibaba/sentinel-golang/ext/datasource"
 	"github.com/alibaba/sentinel-golang/logging"
-	"github.com/nacos-group/nacos-sdk-go/v2/clients"
-	"github.com/nacos-group/nacos-sdk-go/v2/clients/config_client"
-	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/clients"
+	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
+	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	sentinel_nacos "github.com/skirrund/gcloud/plugins/sentinel"
 	"gopkg.in/yaml.v2"
 
