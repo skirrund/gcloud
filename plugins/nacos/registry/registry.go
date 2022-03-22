@@ -9,10 +9,10 @@ import (
 
 	"github.com/skirrund/gcloud/server"
 
-	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
-	"github.com/nacos-group/nacos-sdk-go/model"
-	"github.com/nacos-group/nacos-sdk-go/util"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/util"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 )
 
 // type Options struct {
@@ -75,14 +75,16 @@ func (nr *nacosRegistry) RegisterInstance() error {
 		GroupName: opts.Group, // default value is DEFAULT_GROUP
 	}
 	logger.Info("[nacos]  RegisterInstance:", registryParam)
-	success, err := nr.client.RegisterInstance(registryParam)
+	_, err := nr.client.RegisterInstance(registryParam)
 	if err != nil {
 		logger.Error("[nacos]  RegisterInstance error:", err.Error())
 		panic(err)
 	}
-	if !success {
-		logger.Error("[nacos]  RegisterInstance fail")
-	}
+	//if !success {
+	//	logger.Error("[nacos]  RegisterInstance fail")
+	//} else {
+	//	logger.Info("[nacos]  RegisterInstance success")
+	//}
 	return err
 }
 
@@ -148,7 +150,7 @@ func (nr *nacosRegistry) Subscribe(serviceName string) error {
 		ServiceName: serviceName,
 		GroupName:   nr.opts.RegistryOptions.Group, // default value is DEFAULT_GROUP
 		//Clusters:    []string{"cluster-a"},         // default value is DEFAULT
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
+		SubscribeCallback: func(services []model.Instance, err error) {
 			logger.Info("[nacos] registry change:", services)
 			var instances = make([]*registry.Instance, len(services))
 			for i, ins := range services {
