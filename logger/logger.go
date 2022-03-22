@@ -136,7 +136,7 @@ func initLog(fileDir string, serviceName string, port string, console bool, maxA
 	writer := zapcore.AddSync(infoWriter)
 	var core zapcore.Core
 	if console {
-		c := zapcore.AddSync(os.Stderr)
+		c := zapcore.AddSync(os.Stdout)
 		core = zapcore.NewTee(
 			zapcore.NewCore(encoder, writer, infoLevel),
 			zapcore.NewCore(encoder, c, infoLevel),

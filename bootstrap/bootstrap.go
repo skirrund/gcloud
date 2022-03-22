@@ -102,11 +102,11 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	var flagConsoleLog bool
 	flag.StringVar(&flagProfile, env.SERVER_PROFILE_KEY, "", "server profile:[dev,test,prod...]")
 	flag.StringVar(&flagCfgFile, env.SERVER_CONFIGFILE_KEY, "", "server config file")
-	flag.StringVar(&flagSn, env.SERVER_SERVERNAME_KEY, "", "sererver name")
-	flag.StringVar(&flagAddress, env.SERVER_ADDRESS_KEY, "", "sererver address")
+	flag.StringVar(&flagSn, env.SERVER_SERVERNAME_KEY, "", "server name")
+	flag.StringVar(&flagAddress, env.SERVER_ADDRESS_KEY, "", "server address")
 	flag.StringVar(&flagLogdir, env.LOGGER_DIR_KEY, "", "logDir")
 	flag.Uint64Var(&flagLogMaxAge, env.LOGGER_MAXAGE_KEY, 7, "log maxAge:day   default:7")
-	flag.BoolVar(&flagConsoleLog, env.LOGGER_CONSOLE, true, "log console:day   default:true")
+	flag.BoolVar(&flagConsoleLog, env.LOGGER_CONSOLE, true, "logger.console enabled:{default:true}")
 	flag.Parse()
 	if len(flagProfile) == 0 {
 		flagProfile = profile
