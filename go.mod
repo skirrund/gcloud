@@ -5,16 +5,16 @@ go 1.17
 require (
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.0+incompatible
-	github.com/apache/pulsar-client-go v0.8.0
-	github.com/coocood/freecache v1.2.0
+	github.com/apache/pulsar-client-go v0.8.1
+	github.com/coocood/freecache v1.2.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.10.0
-	github.com/go-redis/redis/v8 v8.11.4
-	github.com/google/uuid v1.3.0
+	github.com/go-redis/redis/v8 v8.11.5
+	github.com/google/uuid v1.1.2
 	github.com/json-iterator/go v1.1.12
 	github.com/lestrrat-go/strftime v1.0.5
 	github.com/nacos-group/nacos-sdk-go/v2 v2.0.1
@@ -30,8 +30,8 @@ require (
 	go.uber.org/zap v1.21.0
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/mysql v1.2.3
-	gorm.io/gorm v1.22.5
+	gorm.io/driver/mysql v1.3.3
+	gorm.io/gorm v1.23.4
 )
 
 require (
@@ -48,7 +48,6 @@ require (
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/danieljoos/wincred v1.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
