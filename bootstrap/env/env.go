@@ -2,11 +2,12 @@ package env
 
 import (
 	bytes2 "bytes"
-	"github.com/skirrund/gcloud/server"
 	"io"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/skirrund/gcloud/server"
 
 	"github.com/skirrund/gcloud/logger"
 	"github.com/spf13/viper"

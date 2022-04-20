@@ -1,4 +1,4 @@
-package utils
+package idworker
 
 import (
 	"errors"
@@ -45,7 +45,7 @@ func NewWorkerWithRedis(r *redis.RedisClient, appName string) (*Worker, error) {
 /**
 @desc 初始化一个节点
 @auth jerry.shi 2021-05-24
- */
+*/
 func newWorker(workerId int64) (*Worker, error) {
 	// 要先检测workerId是否在上面定义的范围内
 	if workerId < 0 || workerId > workerMax {
@@ -66,7 +66,7 @@ func (w *Worker) GetIdWithPrefix(prefix string) string {
 /**
 @desc 获取id
 @auth jerry.shi 2021-05-24
- */
+*/
 func (w *Worker) GetId() string {
 	//解决并发安全
 	w.mu.Lock()
@@ -116,7 +116,7 @@ func (w *Worker) GetId() string {
 @auth liuguoqiang 2020-06-16
 @param
 @return
- */
+*/
 func (w *Worker) Now() int64 {
 	return time.Now().Unix()
 }

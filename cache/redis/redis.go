@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/logger"
+	"github.com/skirrund/gcloud/utils"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -70,7 +72,16 @@ var redisClient *RedisClient
 
 var once sync.Once
 
+func defaultOptions() Options {
+	opts := Options{}
+	utils.NewOptions(env.GetInstance(), &opts)
+	return opts
+}
+
 func GetClient() *RedisClient {
+	if redisClient == nil {
+		redisClient = NewClient(defaultOptions())
+	}
 	return redisClient
 }
 

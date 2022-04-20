@@ -14,9 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	sentinel "github.com/alibaba/sentinel-golang/api"
-	"github.com/alibaba/sentinel-golang/core/base"
-
 	"github.com/opentracing/opentracing-go"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
@@ -71,7 +68,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine)) 
 	s.Use(gp.Middleware())
 	// metrics采样
 	s.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	s.Use(sentinelMiddleware)
+	//s.Use(sentinelMiddleware)
 	initSwagger(s)
 
 	pprof.Register(s)
@@ -107,52 +104,52 @@ func cors(c *gin.Context) {
 	}
 }
 
-func sentinelMiddleware(c *gin.Context) {
-	var args []interface{}
-	rawQuery := c.Request.URL.RawQuery
-	if len(rawQuery) > 0 {
-		params := strings.Split(rawQuery, "&")
-		for _, param := range params {
-			kv := strings.Split(param, "=")
-			if len(kv) > 1 && len(kv[1]) > 0 {
-				args = append(args, kv[1])
-			}
-		}
-	}
-	if c.Request.Method == "POST" {
-		c.Request.ParseForm()
-		for _, v := range c.Request.PostForm {
-			args = append(args, v)
-		}
-	}
-	requestUri := c.Request.RequestURI
-	if strings.Contains(requestUri, "?") {
-		requestUri = requestUri[0:strings.Index(requestUri, "?")]
-	}
-	entry, b := sentinel.Entry(requestUri, sentinel.WithTrafficType(base.Inbound), sentinel.WithArgs(args...))
-	if b != nil {
-		c.Abort()
-		switch b.BlockType() {
-		case base.BlockTypeCircuitBreaking:
-			c.JSON(200, response.DEGRADE_EXCEPTION)
-			return
-		case base.BlockTypeFlow:
-			c.JSON(200, response.FLOW_EXCEPTION)
-			return
-		case base.BlockTypeHotSpotParamFlow:
-			c.JSON(200, response.PARAM_FLOW_EXCEPTION)
-			return
-		case base.BlockTypeSystemFlow:
-			c.JSON(200, response.SYSTEM_BLOCK_EXCEPTION)
-			return
-		case base.BlockTypeIsolation:
-			c.JSON(200, response.AUTHORITY_EXCEPTION)
-			return
-		}
-	}
-	c.Next()
-	entry.Exit()
-}
+// func sentinelMiddleware(c *gin.Context) {
+// 	var args []interface{}
+// 	rawQuery := c.Request.URL.RawQuery
+// 	if len(rawQuery) > 0 {
+// 		params := strings.Split(rawQuery, "&")
+// 		for _, param := range params {
+// 			kv := strings.Split(param, "=")
+// 			if len(kv) > 1 && len(kv[1]) > 0 {
+// 				args = append(args, kv[1])
+// 			}
+// 		}
+// 	}
+// 	if c.Request.Method == "POST" {
+// 		c.Request.ParseForm()
+// 		for _, v := range c.Request.PostForm {
+// 			args = append(args, v)
+// 		}
+// 	}
+// 	requestUri := c.Request.RequestURI
+// 	if strings.Contains(requestUri, "?") {
+// 		requestUri = requestUri[0:strings.Index(requestUri, "?")]
+// 	}
+// 	entry, b := sentinel.Entry(requestUri, sentinel.WithTrafficType(base.Inbound), sentinel.WithArgs(args...))
+// 	if b != nil {
+// 		c.Abort()
+// 		switch b.BlockType() {
+// 		case base.BlockTypeCircuitBreaking:
+// 			c.JSON(200, response.DEGRADE_EXCEPTION)
+// 			return
+// 		case base.BlockTypeFlow:
+// 			c.JSON(200, response.FLOW_EXCEPTION)
+// 			return
+// 		case base.BlockTypeHotSpotParamFlow:
+// 			c.JSON(200, response.PARAM_FLOW_EXCEPTION)
+// 			return
+// 		case base.BlockTypeSystemFlow:
+// 			c.JSON(200, response.SYSTEM_BLOCK_EXCEPTION)
+// 			return
+// 		case base.BlockTypeIsolation:
+// 			c.JSON(200, response.AUTHORITY_EXCEPTION)
+// 			return
+// 		}
+// 	}
+// 	c.Next()
+// 	entry.Exit()
+// }
 
 func loggingMiddleware(ctx *gin.Context) {
 	start := time.Now()
