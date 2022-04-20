@@ -149,28 +149,23 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	}
 }
 
-func Bootstrap(reader io.Reader, fileType string, options Options) *Application {
-	if MthApplication == nil {
-		MthApplication = StartBase(reader, fileType)
-	}
-	MthApplication.StartLogger()
-	MthApplication.ConfigCenter = options.ConfigCenter
-	MthApplication.Registry = options.Registry
-	MthApplication.Redis = options.Redis
+func (app *Application) Bootstrap(options Options) {
+	app.StartLogger()
+	app.ConfigCenter = options.ConfigCenter
+	app.Registry = options.Registry
+	app.Redis = options.Redis
 	if options.Redis != nil {
 		worker, _ := idworker.NewWorkerWithRedis(options.Redis, MthApplication.BootOptions.ServerName)
-		MthApplication.IdWorker = worker
+		app.IdWorker = worker
 	}
-	MthApplication.Mq = options.Mq
-	return MthApplication
+	app.Mq = options.Mq
 }
 
-func BootstrapAll(reader io.Reader, fileType string, options Options) *Application {
-	MthApplication = Bootstrap(reader, fileType, options)
+func (app *Application) BootstrapAll(options Options) {
+	app.Bootstrap(options)
 	//MthApplication.SentinelInit()
 	//MthApplication.StartRedis()
 	MthApplication.StartDb()
-	return MthApplication
 }
 
 func (app *Application) StartLogger() {
@@ -229,12 +224,9 @@ func (app *Application) StartWebServer(routerProvider func(engine *gin.Engine)) 
 }
 
 func delayFunction(f func()) {
-	timer := time.NewTimer(1 * time.Second)
-
-	select {
-	case <-timer.C:
+	time.AfterFunc(1*time.Second, func() {
 		f()
-	}
+	})
 }
 
 // func sentinelNacosInit(entity *sentinel_config.Entity) bool {
