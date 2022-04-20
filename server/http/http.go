@@ -95,7 +95,7 @@ func getMultipartFormData(params map[string]interface{}, files map[string]*reque
 	var err error
 	defer bodyWriter.Close()
 	log := env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY)
-	if files != nil && len(files) > 0 {
+	if len(files) > 0 {
 		var reader io.Reader
 		for k, v := range files {
 			if v == nil {
@@ -172,7 +172,7 @@ func getUrlWithParams(urlStr string, params map[string]interface{}) string {
 		logger.Info("[http] getUrlWithParams:", params)
 	}
 	var p string
-	if params != nil {
+	if len(params) > 0 {
 		for k, v := range params {
 			if s, ok := v.(string); ok {
 				p = p + "&" + k + "=" + url.QueryEscape(s)
@@ -186,10 +186,8 @@ func getUrlWithParams(urlStr string, params map[string]interface{}) string {
 		}
 	}
 
-	if strings.HasPrefix(p, "&") {
-		p = p[1:]
-	}
-	if strings.Index(urlStr, "?") != -1 {
+	p = strings.TrimPrefix(p, "&")
+	if strings.Contains(urlStr, "?") {
 		urlStr += p
 	} else {
 		urlStr = urlStr + "?" + p
@@ -197,69 +195,54 @@ func getUrlWithParams(urlStr string, params map[string]interface{}) string {
 	return urlStr
 }
 
-func GetUrl(url string, params map[string]interface{}, result interface{}) (int, error) {
-	req := getRequest(getUrlWithParams(url, params), http.MethodGet, nil, nil, false, result, DEFAULT_TIMEOUT*time.Second)
+func GetUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
+	req := getRequest(getUrlWithParams(url, params), http.MethodGet, headers, nil, false, result, DEFAULT_TIMEOUT*time.Second)
 	return lb.GetInstance().Run(req)
 }
 
-func Get(serviceName string, path string, params map[string]interface{}, result interface{}) (int, error) {
-	req := getRequestLb(serviceName, getUrlWithParams(path, params), http.MethodGet, nil, nil, false, result, DEFAULT_TIMEOUT*time.Second)
+func Get(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
+	req := getRequestLb(serviceName, getUrlWithParams(path, params), http.MethodGet, headers, nil, false, result, DEFAULT_TIMEOUT*time.Second)
 	return lb.GetInstance().Run(req)
 }
 
-func PostUrl(url string, params map[string]interface{}, result interface{}) (int, error) {
-	req := getRequest(url, http.MethodPost, nil, getFormData(params), false, result, DEFAULT_TIMEOUT*time.Second)
+func PostUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
+	req := getRequest(url, http.MethodPost, headers, getFormData(params), false, result, DEFAULT_TIMEOUT*time.Second)
 	return lb.GetInstance().Run(req)
 }
-func PostFile(url string, params map[string]interface{}, files map[string]*request.File, result interface{}) (int, error) {
+func PostFile(url string, headers map[string]string, params map[string]interface{}, files map[string]*request.File, result interface{}) (int, error) {
 	reader, ct := getMultipartFormData(params, files)
-	headers := map[string]string{"Content-Type": ct}
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+	headers["Content-Type"] = ct
 	req := getRequest(url, http.MethodPost, headers, reader, false, result, DEFAULT_TIMEOUT*time.Second)
 	req.HasFile = true
 	return lb.GetInstance().Run(req)
 }
 
-func Post(serviceName string, path string, params map[string]interface{}, result interface{}) (int, error) {
-	req := getRequestLb(serviceName, path, http.MethodPost, nil, getFormData(params), false, result, DEFAULT_TIMEOUT*time.Second)
-	return lb.GetInstance().Run(req)
-}
-
-func PostWithHeaderUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
-	req := getRequest(url, http.MethodPost, headers, getFormData(params), false, result, DEFAULT_TIMEOUT*time.Second)
-	return lb.GetInstance().Run(req)
-}
-
-func PostWithHeader(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
+func Post(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
 	req := getRequestLb(serviceName, path, http.MethodPost, headers, getFormData(params), false, result, DEFAULT_TIMEOUT*time.Second)
 	return lb.GetInstance().Run(req)
 }
 
-func PostJSONUrl(url string, params interface{}, result interface{}) (int, error) {
-	req := getRequest(url, http.MethodPost, nil, getJSONData(params), true, result, DEFAULT_TIMEOUT*time.Second)
+func PostJSONUrl(url string, headers map[string]string, params interface{}, result interface{}) (int, error) {
+	var reader io.Reader
+	if p, ok := params.(string); ok {
+		reader = strings.NewReader(p)
+	} else {
+		reader = getJSONData(params)
+	}
+	req := getRequest(url, http.MethodPost, headers, reader, true, result, DEFAULT_TIMEOUT*time.Second)
 	return lb.GetInstance().Run(req)
 }
 
-func PostJSONStringUrl(url string, params string, result interface{}) (int, error) {
-	req := getRequest(url, http.MethodPost, nil, strings.NewReader(params), true, result, DEFAULT_TIMEOUT*time.Second)
-	return lb.GetInstance().Run(req)
-}
-
-func PostJSONString(serviceName string, path string, params string, result interface{}) (int, error) {
-	req := getRequestLb(serviceName, path, http.MethodPost, nil, strings.NewReader(params), true, result, DEFAULT_TIMEOUT*time.Second)
-	return lb.GetInstance().Run(req)
-}
-
-func PostJSON(serviceName string, path string, params interface{}, result interface{}) (int, error) {
-	req := getRequestLb(serviceName, path, http.MethodPost, nil, getJSONData(params), true, result, DEFAULT_TIMEOUT*time.Second)
-	return lb.GetInstance().Run(req)
-}
-
-func PostJSONWithHeaderUrl(url string, headers map[string]string, params interface{}, result interface{}) (int, error) {
-	req := getRequest(url, http.MethodPost, headers, getJSONData(params), true, result, DEFAULT_TIMEOUT*time.Second)
-	return lb.GetInstance().Run(req)
-}
-
-func PostJSONWithHeader(serviceName string, path string, headers map[string]string, params interface{}, result interface{}) (int, error) {
-	req := getRequestLb(serviceName, path, http.MethodPost, headers, getJSONData(params), true, result, DEFAULT_TIMEOUT*time.Second)
+func PostJSON(serviceName string, path string, headers map[string]string, params interface{}, result interface{}) (int, error) {
+	var reader io.Reader
+	if p, ok := params.(string); ok {
+		reader = strings.NewReader(p)
+	} else {
+		reader = getJSONData(params)
+	}
+	req := getRequestLb(serviceName, path, http.MethodPost, headers, reader, true, result, DEFAULT_TIMEOUT*time.Second)
 	return lb.GetInstance().Run(req)
 }

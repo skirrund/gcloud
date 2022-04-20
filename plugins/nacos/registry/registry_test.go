@@ -1,9 +1,10 @@
 package nacos_registry
 
 import (
+	"testing"
+
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/registry"
-	"testing"
 )
 
 func TestRegistry(t *testing.T) {
@@ -24,7 +25,4 @@ func TestRegistry(t *testing.T) {
 	}
 	reg := NewRegistry(ops)
 	reg.RegisterInstance()
-	for {
-
-	}
 }
