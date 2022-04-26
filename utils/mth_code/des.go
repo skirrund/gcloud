@@ -23,8 +23,8 @@ func PKCS5UnPadding(origData []byte) []byte {
 	return origData[:(length - unpadding)]
 }
 
-func MthDesEncrypt(ciphertext string) (string, error) {
-	k, err := base64.RawURLEncoding.DecodeString(DEFAULT_KEY)
+func MthDesEncryptByKey(ciphertext string, key string) (string, error) {
+	k, err := base64.RawURLEncoding.DecodeString(key)
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +36,7 @@ func MthDesEncrypt(ciphertext string) (string, error) {
 	bs := block.BlockSize()
 	src := PKCS5Padding([]byte(ciphertext), bs)
 	if len(src)%bs != 0 {
-		return "", errors.New("Need a multiple of the blocksize")
+		return "", errors.New("need a multiple of the blocksize")
 	}
 	out := make([]byte, len(src))
 	dst := out
@@ -48,8 +48,12 @@ func MthDesEncrypt(ciphertext string) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(out), nil
 }
 
-func MthDesDecrypt(ciphertext string) (string, error) {
-	k, err := base64.RawURLEncoding.DecodeString(DEFAULT_KEY)
+func MthDesEncrypt(ciphertext string) (string, error) {
+	return MthDesEncryptByKey(ciphertext, DEFAULT_KEY)
+}
+
+func MthDesDecryptByKey(ciphertext string, key string) (string, error) {
+	k, err := base64.RawURLEncoding.DecodeString(key)
 	if err != nil {
 		return "", err
 	}
@@ -74,4 +78,8 @@ func MthDesDecrypt(ciphertext string) (string, error) {
 	}
 	out = PKCS5UnPadding(out)
 	return string(out), nil
+}
+
+func MthDesDecrypt(ciphertext string) (string, error) {
+	return MthDesDecryptByKey(ciphertext, DEFAULT_KEY)
 }
