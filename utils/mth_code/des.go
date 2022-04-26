@@ -24,6 +24,9 @@ func PKCS5UnPadding(origData []byte) []byte {
 }
 
 func MthDesEncryptByKey(ciphertext string, key string) (string, error) {
+	if len(ciphertext) == 0 {
+		return ciphertext, nil
+	}
 	k, err := base64.RawURLEncoding.DecodeString(key)
 	if err != nil {
 		return "", err
@@ -53,6 +56,9 @@ func MthDesEncrypt(ciphertext string) (string, error) {
 }
 
 func MthDesDecryptByKey(ciphertext string, key string) (string, error) {
+	if len(ciphertext) == 0 {
+		return ciphertext, nil
+	}
 	k, err := base64.RawURLEncoding.DecodeString(key)
 	if err != nil {
 		return "", err
