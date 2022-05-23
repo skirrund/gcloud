@@ -212,7 +212,6 @@ func getEndpoint() string {
 }
 
 func getSelfDomain() bool {
-	return true
 	cfg := env.GetInstance()
 	return cfg.GetBool(selfDomainKey)
 }
