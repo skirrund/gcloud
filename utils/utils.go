@@ -19,7 +19,7 @@ import (
 	cc "github.com/skirrund/gcloud/config"
 
 	"github.com/google/uuid"
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -38,10 +38,7 @@ func IsIdNoCorrect(idNo string) bool {
 		return true
 	}
 	match, _ = regexp.MatchString(REGX_ID_PATTERN_18, idNo)
-	if match {
-		return true
-	}
-	return false
+	return match
 }
 
 func VerifyEmailFormat(email string) bool {
@@ -76,32 +73,23 @@ func NewOptions(config cc.IConfig, opts interface{}) {
 			switch v.Kind() {
 			case reflect.String:
 				v.SetString(config.GetString(tag))
-				break
 			case reflect.Slice:
 				s := reflect.ValueOf(config.GetStringSlice(tag))
 				v.Set(s)
-				break
 			case reflect.Int:
 				v.SetInt(config.GetInt64(tag))
-				break
 			case reflect.Int8:
 				v.SetInt(config.GetInt64(tag))
-				break
 			case reflect.Int16:
 				v.SetInt(config.GetInt64(tag))
-				break
 			case reflect.Int32:
 				v.SetInt(config.GetInt64(tag))
-				break
 			case reflect.Int64:
 				v.SetInt(config.GetInt64(tag))
-				break
 			case reflect.Bool:
 				v.SetBool(config.GetBool(tag))
-				break
 			case reflect.Float32:
 				v.SetFloat(config.GetFloat64(tag))
-				break
 			}
 		}
 	}
@@ -110,15 +98,14 @@ func NewOptions(config cc.IConfig, opts interface{}) {
 
 func Mask(str string, before int, after int) string {
 	str = strings.TrimSpace(str)
-	l := len(str)
+	chs := []rune(str)
+	l := len(chs)
 	if l == 0 {
 		return str
 	} else if l <= before+after {
 		return str
 	} else {
-		chs := []rune(str)
 		i := before
-
 		for k := l - after; i < k; i++ {
 			chs[i] = '*'
 		}
@@ -214,7 +201,6 @@ func Contains2(obj interface{}, target interface{}) bool {
 	return false
 }
 
-
 func UnmarshalFromString(str string, obj interface{}) error {
 	return jsoniter.UnmarshalFromString(str, obj)
 }
@@ -286,7 +272,7 @@ func GetStringParamsMapFromUrl(paramsStr string) map[string]string {
 	for _, p := range strs {
 		valuePair = strings.Split(p, "=")
 		if len(valuePair) != 1 {
-			if strings.Index(valuePair[1], "%") != -1 {
+			if strings.Contains(valuePair[1], "%") {
 				v, err := url.QueryUnescape(valuePair[1])
 				if err == nil {
 					valuePair[1] = v
