@@ -2,10 +2,11 @@ package http
 
 import (
 	"testing"
+
+	"github.com/skirrund/gcloud/utils"
 )
 
 func TestGet(t *testing.T) {
-	var r string
-	code, err := GetUrl("https://www.baidu.com", nil, nil, &r)
-	t.Log(code, "::", err)
+	s, _ := utils.MarshalToString(1)
+	t.Log(s)
 }
