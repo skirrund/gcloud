@@ -13,6 +13,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode/utf8"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/skirrund/gcloud/logger"
@@ -161,13 +162,13 @@ func loggingMiddleware(ctx *gin.Context) {
 	}
 	ctx.Next()
 	strBody := strings.Trim(blw.bodyBuf.String(), "\n")
-	if len(strBody) > MAX_PRINT_BODY_LEN {
+	if utf8.RuneCountInString(strBody) > MAX_PRINT_BODY_LEN {
 		strBody = strBody[:(MAX_PRINT_BODY_LEN - 1)]
 	}
 	if len(bb) > MAX_PRINT_BODY_LEN {
 		bb = bb[:(MAX_PRINT_BODY_LEN - 1)]
 	}
-	defer requestEnd(ctx, start, strBody, string(bb))
+	go requestEnd(ctx, start, strBody, string(bb))
 }
 
 func zipkinMiddleware(c *gin.Context) {
