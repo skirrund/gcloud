@@ -39,7 +39,7 @@ type Server struct {
 
 const MAX_PRINT_BODY_LEN = 1024
 
-var reg = regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif).*$`)
+var reg = regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif|svg|webp|bmp).*$`)
 
 type bodyLogWriter struct {
 	gin.ResponseWriter
