@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -38,6 +39,8 @@ type Server struct {
 
 const MAX_PRINT_BODY_LEN = 1024
 
+var reg = regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif).*$`)
+
 type bodyLogWriter struct {
 	gin.ResponseWriter
 	bodyBuf *bytes.Buffer
@@ -58,7 +61,6 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine)) 
 		logger.Error("[GIN] recover:", recovered)
 
 		c.JSON(200, response.Fail(fmt.Sprintf("%v", recovered)))
-		return
 		//		c.AbortWithStatus(http.StatusInternalServerError)
 	}))
 	s.Use(cors)
@@ -197,6 +199,9 @@ func requestEnd(ctx *gin.Context, start time.Time, strBody string, reqBody strin
 	}
 	if strings.HasPrefix(uri, "/swagger") {
 		return
+	}
+	if reg.MatchString(uri) {
+		strBody = "ignore..."
 	}
 	logger.Info("\n [GIN] uri:", uri,
 		"\n [GIN] content-type:", req.Header.Get("content-type"),
