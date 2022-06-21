@@ -170,7 +170,13 @@ func loggingMiddleware(ctx *gin.Context) {
 	if len(bb) > MAX_PRINT_BODY_LEN {
 		bb = bb[:(MAX_PRINT_BODY_LEN - 1)]
 	}
-	go requestEnd(ctx, start, strBody, string(bb))
+	req := ctx.Request
+	uri := req.RequestURI
+	uri1, _ := url.QueryUnescape(uri)
+	ct := req.Header.Get("content-type")
+	method := req.Method
+	rct := ctx.Request.Response.Header.Get("content-type")
+	go requestEnd(uri1, ct, method, rct, start, strBody, string(bb))
 }
 
 func zipkinMiddleware(c *gin.Context) {
@@ -191,9 +197,7 @@ func zipkinMiddleware(c *gin.Context) {
 	c.Next()
 }
 
-func requestEnd(ctx *gin.Context, start time.Time, strBody string, reqBody string) {
-	req := ctx.Request
-	uri, _ := url.QueryUnescape(req.RequestURI)
+func requestEnd(uri string, contentType string, method string, responseContextType string, start time.Time, strBody string, reqBody string) {
 	if strings.HasPrefix(uri, "/metrics") {
 		strBody = "ignore..."
 	}
@@ -204,9 +208,10 @@ func requestEnd(ctx *gin.Context, start time.Time, strBody string, reqBody strin
 		return
 	}
 	logger.Info("\n [GIN] uri:", uri,
-		"\n [GIN] content-type:", req.Header.Get("content-type"),
-		"\n [GIN] method:", req.Method,
+		"\n [GIN] content-type:", contentType,
+		"\n [GIN] method:", method,
 		"\n [GIN] body:"+reqBody,
+		"\n [GIN] response-context-type:"+responseContextType,
 		"\n [GIN] response:"+strBody,
 		"\n [GIN] cost:"+strconv.FormatInt(time.Since(start).Milliseconds(), 10)+"ms")
 }
