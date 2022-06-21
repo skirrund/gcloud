@@ -39,7 +39,7 @@ type Server struct {
 
 const MAX_PRINT_BODY_LEN = 1024
 
-var reg = regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif|svg|webp|bmp).*$`)
+var reg = regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif|svg|webp|bmp|html|htm).*$`)
 
 type bodyLogWriter struct {
 	gin.ResponseWriter
@@ -175,8 +175,7 @@ func loggingMiddleware(ctx *gin.Context) {
 	uri1, _ := url.QueryUnescape(uri)
 	ct := req.Header.Get("content-type")
 	method := req.Method
-	rct := ctx.Request.Response.Header.Get("content-type")
-	go requestEnd(uri1, ct, method, rct, start, strBody, string(bb))
+	go requestEnd(uri1, ct, method, start, strBody, string(bb))
 }
 
 func zipkinMiddleware(c *gin.Context) {
@@ -197,7 +196,7 @@ func zipkinMiddleware(c *gin.Context) {
 	c.Next()
 }
 
-func requestEnd(uri string, contentType string, method string, responseContextType string, start time.Time, strBody string, reqBody string) {
+func requestEnd(uri string, contentType string, method string, start time.Time, strBody string, reqBody string) {
 	if strings.HasPrefix(uri, "/metrics") {
 		strBody = "ignore..."
 	}
@@ -211,7 +210,6 @@ func requestEnd(uri string, contentType string, method string, responseContextTy
 		"\n [GIN] content-type:", contentType,
 		"\n [GIN] method:", method,
 		"\n [GIN] body:"+reqBody,
-		"\n [GIN] response-context-type:"+responseContextType,
 		"\n [GIN] response:"+strBody,
 		"\n [GIN] cost:"+strconv.FormatInt(time.Since(start).Milliseconds(), 10)+"ms")
 }
