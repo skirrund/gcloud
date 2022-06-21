@@ -201,7 +201,7 @@ func requestEnd(ctx *gin.Context, start time.Time, strBody string, reqBody strin
 		return
 	}
 	if reg.MatchString(uri) {
-		strBody = "ignore..."
+		return
 	}
 	logger.Info("\n [GIN] uri:", uri,
 		"\n [GIN] content-type:", req.Header.Get("content-type"),
