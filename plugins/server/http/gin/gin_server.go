@@ -52,7 +52,7 @@ func (w bodyLogWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
-func NewServer(options server.Options, routerProvider func(engine *gin.Engine)) server.Server {
+func NewServer(options server.Options, routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) server.Server {
 	srv := &Server{}
 	srv.Options = options
 	gin.SetMode(gin.ReleaseMode)
@@ -69,6 +69,11 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine)) 
 	//zipkin.InitZipkinTracer(s)
 	gp := prometheus.New(s)
 	s.Use(gp.Middleware())
+	if len(middleware) > 0 {
+		for i := range middleware {
+			s.Use(middleware[i])
+		}
+	}
 	// metrics采样
 	s.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	//s.Use(sentinelMiddleware)

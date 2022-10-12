@@ -201,8 +201,8 @@ func (app *Application) ShutDown() {
 	logger.Sync()
 }
 
-func (app *Application) StartWebServerWith(options server.Options, routerProvider func(engine *gin.Engine)) {
-	srv := mthGin.NewServer(options, routerProvider)
+func (app *Application) StartWebServerWith(options server.Options, routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) {
+	srv := mthGin.NewServer(options, routerProvider, middleware...)
 	if app.Registry != nil {
 		delayFunction(func() {
 			err := app.Registry.RegisterInstance()
@@ -214,13 +214,13 @@ func (app *Application) StartWebServerWith(options server.Options, routerProvide
 	srv.Run(app.ShutDown)
 }
 
-func (app *Application) StartWebServer(routerProvider func(engine *gin.Engine)) {
+func (app *Application) StartWebServer(routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) {
 	ops := app.BootOptions
 	options := server.Options{
 		ServerName: ops.ServerName,
 		Address:    ops.ServerAddress,
 	}
-	app.StartWebServerWith(options, routerProvider)
+	app.StartWebServerWith(options, routerProvider, middleware...)
 }
 
 func delayFunction(f func()) {
