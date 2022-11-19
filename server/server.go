@@ -52,11 +52,10 @@ func RegisterEventHook(name string, hook ...EventHook) error {
 	en := EventName(name)
 	v, ok := eventHooks.EventHook[en]
 	var list []EventHook
-	if ok {
-		v = append(v, hook...)
-	} else {
+	if !ok {
 		v = list
 	}
+	v = append(v, hook...)
 	eventHooks.Lock()
 	eventHooks.EventHook[en] = v
 	defer eventHooks.Unlock()
