@@ -28,12 +28,12 @@ type EventName string
 const (
 	StartupEvent         EventName = "startup"
 	ShutdownEvent        EventName = "shutdown"
-	CertRenewEvent                 = "certrenew"
-	InstanceStartupEvent           = "instancestartup"
-	InstanceRestartEvent           = "instancerestart"
-	RegistryChangeEvent            = "registryChange"
+	CertRenewEvent       EventName = "certrenew"
+	InstanceStartupEvent EventName = "instancestartup"
+	InstanceRestartEvent EventName = "instancerestart"
+	RegistryChangeEvent  EventName = "registryChange"
 	//ConfigChangeEvent should use the all config data as info
-	ConfigChangeEvent = "configChange"
+	ConfigChangeEvent EventName = "configChange"
 )
 
 type EventHook func(eventType EventName, eventInfo interface{}) error
@@ -43,21 +43,20 @@ var eventHooks = struct {
 	EventHook map[EventName][]EventHook
 }{EventHook: make(map[EventName][]EventHook)}
 
-func RegisterEventHook(name string, hook ...EventHook) error {
+func RegisterEventHook(name EventName, hook ...EventHook) error {
 	if name == "" {
 		logger.Error("[server] event hook must have a name")
 		return errors.New("[server] event hook must have a name")
 	}
 	logger.Info("[server] RegisterEventHook:"+name, hook)
-	en := EventName(name)
-	v, ok := eventHooks.EventHook[en]
+	v, ok := eventHooks.EventHook[name]
 	var list []EventHook
 	if !ok {
 		v = list
 	}
 	v = append(v, hook...)
 	eventHooks.Lock()
-	eventHooks.EventHook[en] = v
+	eventHooks.EventHook[name] = v
 	defer eventHooks.Unlock()
 	return nil
 }
