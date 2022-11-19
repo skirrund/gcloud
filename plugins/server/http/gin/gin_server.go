@@ -70,9 +70,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	gp := prometheus.New(s)
 	s.Use(gp.Middleware())
 	if len(middleware) > 0 {
-		for i := range middleware {
-			s.Use(middleware[i])
-		}
+		s.Use(middleware...)
 	}
 	// metrics采样
 	s.GET("/metrics", gin.WrapH(promhttp.Handler()))
