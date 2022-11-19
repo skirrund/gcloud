@@ -51,8 +51,11 @@ func RegisterEventHook(name string, hook ...EventHook) error {
 	logger.Info("[server] RegisterEventHook:"+name, hook)
 	en := EventName(name)
 	v, ok := eventHooks.EventHook[en]
+	var list []EventHook
 	if ok {
 		v = append(v, hook...)
+	} else {
+		v = list
 	}
 	eventHooks.Lock()
 	eventHooks.EventHook[en] = v
