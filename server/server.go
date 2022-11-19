@@ -27,7 +27,7 @@ type EventName string
 
 const (
 	StartupEvent         EventName = "startup"
-	ShutdownEvent                  = "shutdown"
+	ShutdownEvent        EventName = "shutdown"
 	CertRenewEvent                 = "certrenew"
 	InstanceStartupEvent           = "instancestartup"
 	InstanceRestartEvent           = "instancerestart"
@@ -38,18 +38,25 @@ const (
 
 type EventHook func(eventType EventName, eventInfo interface{}) error
 
-var eventHooks = &sync.Map{}
+var eventHooks = struct {
+	sync.Mutex
+	EventHook map[EventName][]EventHook
+}{EventHook: make(map[EventName][]EventHook)}
 
-func RegisterEventHook(name string, hook EventHook) error {
+func RegisterEventHook(name string, hook ...EventHook) error {
 	if name == "" {
 		logger.Error("[server] event hook must have a name")
 		return errors.New("[server] event hook must have a name")
 	}
 	logger.Info("[server] RegisterEventHook:"+name, hook)
-	_, dup := eventHooks.LoadOrStore(name, hook)
-	if dup {
-		logger.Error("[server] hook named " + name + " already registered")
+	en := EventName(name)
+	v, ok := eventHooks.EventHook[en]
+	if ok {
+		v = append(v, hook...)
 	}
+	eventHooks.Lock()
+	eventHooks.EventHook[en] = v
+	defer eventHooks.Unlock()
 	return nil
 }
 
@@ -57,15 +64,15 @@ func RegisterEventHook(name string, hook EventHook) error {
 // argument. This is a blocking function. Hook developers should
 // use 'go' keyword if they don't want to block Caddy.
 func EmitEvent(event EventName, info interface{}) {
-	eventHooks.Range(func(k, v interface{}) bool {
-		logger.Info("[server] EmitEvent exec ", k.(string))
-		if e, _ := k.(string); e == string(event) {
-			err := v.(EventHook)(event, info)
+	funcs, ok := eventHooks.EventHook[event]
+	if ok {
+		logger.Info("[server] EmitEvent exec ", event)
+		for i := range funcs {
+			f := funcs[i]
+			err := f(event, info)
 			if err != nil {
-				logger.Infof("[server] error on '%s' hook: %v", k.(string), err)
+				logger.Infof("[server] error on '%s' hook: %v", event, err)
 			}
 		}
-
-		return true
-	})
+	}
 }
