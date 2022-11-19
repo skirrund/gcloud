@@ -47,10 +47,11 @@ const (
 )
 
 type ConsumerOptions struct {
-	Topic            string
-	SubscriptionName string
-	SubscriptionType SubscriptionType
-	MessageListener  consumer.Consumer
-	ACKMode          ACKMode
-	RetryTimes       uint32
+	Topic                 string
+	SubscriptionName      string
+	SubscriptionType      SubscriptionType
+	MessageListener       consumer.Consumer
+	ACKMode               ACKMode
+	RetryTimes            uint32
+	MaxMessageChannelSize uint32
 }
