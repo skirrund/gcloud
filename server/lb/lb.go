@@ -3,15 +3,17 @@ package lb
 import (
 	"crypto/tls"
 	"errors"
-	"github.com/skirrund/gcloud/bootstrap/env"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/skirrund/gcloud/bootstrap/env"
 
 	"github.com/skirrund/gcloud/plugins/zipkin"
 
@@ -32,6 +34,8 @@ const (
 	RetryOnAllOperations            = "server.http.retry.allOperations"
 	MaxRetriesOnNextServiceInstance = "server.http.retry.maxRetriesOnNextServiceInstance"
 	RetryableStatusCodes            = "server.http.retry.retryableStatusCodes"
+	ProtocolHttp                    = "http://"
+	ProtocolHttps                   = "https://"
 )
 
 var once sync.Once
@@ -125,13 +129,18 @@ func (s *ServerPool) getService(name string) *service {
 		logger.Info("[LB] load from cache")
 		return v.(*service)
 	} else {
-		ins, err := bootstrap.MthApplication.Registry.SelectInstances(name)
-		logger.Info("[LB] load from nacos")
-		if err != nil {
+		if bootstrap.MthApplication != nil && bootstrap.MthApplication.Registry != nil {
+			ins, err := bootstrap.MthApplication.Registry.SelectInstances(name)
+			logger.Info("[LB] load from registry")
+			if err != nil {
+				return nil
+			}
+			bootstrap.MthApplication.Registry.Subscribe(name)
+			return s.SetService(name, ins)
+		} else {
+			logger.Warn("[LB] registry not found")
 			return nil
 		}
-		bootstrap.MthApplication.Registry.Subscribe(name)
-		return s.SetService(name, ins)
 	}
 }
 
@@ -152,6 +161,20 @@ func (s *service) GetNextPeer() *registry.Instance {
 
 }
 
+func getUrl(serviceName string, path string) string {
+	if !strings.HasPrefix(serviceName, ProtocolHttp) && !strings.HasPrefix(serviceName, ProtocolHttps) {
+		serviceName = ProtocolHttp + serviceName
+	}
+	if strings.HasSuffix(serviceName, "/") {
+		serviceName = utils.SubStr(serviceName, 0, len(serviceName)-1)
+	}
+	if strings.HasPrefix(path, "/") {
+		return serviceName + path
+	} else {
+		return serviceName + "/" + path
+	}
+}
+
 // lb对接收到的请求 进行负载均衡
 func (s *ServerPool) Run(req *request.Request) (int, error) {
 	logger.Info("[LB] >>>>>>LbOptions", req.LbOptions)
@@ -160,7 +183,9 @@ func (s *ServerPool) Run(req *request.Request) (int, error) {
 	}
 	srv := s.getService(req.ServiceName)
 	if srv == nil {
-		return 0, errors.New("no available service for " + req.ServiceName)
+		req.Url = getUrl(req.ServiceName, req.Path)
+		logger.Warn("no available service for " + req.ServiceName)
+		return do(req)
 	}
 
 	lbo := req.LbOptions
@@ -293,7 +318,7 @@ func do(req *request.Request) (statusCode int, err error) {
 	}
 	defer response.Body.Close()
 	sc := response.StatusCode
-	b, err := ioutil.ReadAll(response.Body)
+	b, err := io.ReadAll(response.Body)
 	if err != nil {
 		logger.Error("[http] response body read error:", url)
 		return sc, err
