@@ -107,14 +107,14 @@ func (s *ServerPool) regChange(eventType server.EventName, eventInfo interface{}
 		logger.Info("[LB] registry change:", eventInfo)
 		if info, ok := eventInfo.(map[string][]*registry.Instance); ok {
 			for k, v := range info {
-				s.SetService(k, v)
+				s.setService(k, v)
 			}
 		}
 	}
 	return nil
 }
 
-func (s *ServerPool) SetService(name string, instances []*registry.Instance) *service {
+func (s *ServerPool) setService(name string, instances []*registry.Instance) *service {
 	srv := &service{
 		Instances: instances,
 		Current:   -1,
@@ -123,7 +123,7 @@ func (s *ServerPool) SetService(name string, instances []*registry.Instance) *se
 	return srv
 }
 
-func (s *ServerPool) getService(name string) *service {
+func (s *ServerPool) GetService(name string) *service {
 	v, ok := s.Services.Load(name)
 	if ok && v != nil {
 		logger.Info("[LB] load from cache")
@@ -136,7 +136,7 @@ func (s *ServerPool) getService(name string) *service {
 				return nil
 			}
 			bootstrap.MthApplication.Registry.Subscribe(name)
-			return s.SetService(name, ins)
+			return s.setService(name, ins)
 		} else {
 			logger.Warn("[LB] registry not found")
 			return nil
@@ -161,7 +161,7 @@ func (s *service) GetNextPeer() *registry.Instance {
 
 }
 
-func getUrl(serviceName string, path string) string {
+func (s *ServerPool) GetUrl(serviceName string, path string) string {
 	if !strings.HasPrefix(serviceName, ProtocolHttp) && !strings.HasPrefix(serviceName, ProtocolHttps) {
 		serviceName = ProtocolHttp + serviceName
 	}
@@ -181,9 +181,9 @@ func (s *ServerPool) Run(req *request.Request) (int, error) {
 	if len(req.ServiceName) == 0 {
 		return do(req)
 	}
-	srv := s.getService(req.ServiceName)
+	srv := s.GetService(req.ServiceName)
 	if srv == nil {
-		req.Url = getUrl(req.ServiceName, req.Path)
+		req.Url = s.GetUrl(req.ServiceName, req.Path)
 		logger.Warn("no available service for " + req.ServiceName)
 		return do(req)
 	}
