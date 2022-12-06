@@ -181,3 +181,6 @@ func (nc *env) GetBool(key string) bool {
 func (nc *env) GetFloat64(key string) float64 {
 	return nc.config.GetFloat64(key)
 }
+func (nc *env) UnmarshalKey(key string, objPtr interface{}) error {
+	return nc.config.UnmarshalKey(key, objPtr)
+}
