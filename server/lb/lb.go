@@ -77,7 +77,7 @@ func GetClient() *http.Client {
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 			MaxConnsPerHost:       0,
-			MaxIdleConnsPerHost:   2,
+			MaxIdleConnsPerHost:   20,
 		}
 		timeOut := env.GetInstance().GetInt(ConnectionTimeout)
 		if timeOut <= 0 {
