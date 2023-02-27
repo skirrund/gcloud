@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/skirrund/gcloud/logger"
@@ -19,7 +18,7 @@ const (
 )
 
 func (t DateTime) MarshalJSON() ([]byte, error) {
-	var stamp = fmt.Sprintf("\"%s\"", time.Time(t.Time).Format(TimeFormat))
+	stamp := t.Time.Format(TimeFormat)
 	return []byte(stamp), nil
 }
 
@@ -29,7 +28,7 @@ func (t DateTime) IsZero() bool {
 
 func (t *DateTime) UnmarshalJSON(b []byte) error {
 	str := string(b)
-	pt, err := time.ParseInLocation(`"`+TimeFormat+`"`, str, time.Local)
+	pt, err := time.ParseInLocation(TimeFormat, str, time.Local)
 	if err != nil {
 		logger.Error("[DateTime] format error:" + str)
 		return err
@@ -41,7 +40,7 @@ func (t *DateTime) UnmarshalJSON(b []byte) error {
 }
 
 func (t DateTime) Format() string {
-	return fmt.Sprintf("\"%s\"", time.Time(t.Time).Format(TimeFormat))
+	return t.Time.Format(TimeFormat)
 }
 
 func (t *DateTime) Scan(value interface{}) error {
@@ -55,12 +54,12 @@ func (t *DateTime) Scan(value interface{}) error {
 }
 
 func (t DateTime) String() string {
-	return time.Time(t.Time).Format(TimeFormat)
+	return t.Time.Format(TimeFormat)
 }
 
 func (t DateTime) Value() (driver.Value, error) {
 	if t.Time.IsZero() {
 		return nil, nil
 	}
-	return time.Time(t.Time), nil
+	return t.Time, nil
 }
