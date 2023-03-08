@@ -18,8 +18,8 @@ import (
 
 	cc "github.com/skirrund/gcloud/config"
 
+	sonic "github.com/bytedance/sonic"
 	"github.com/google/uuid"
-	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -202,23 +202,23 @@ func Contains2(obj interface{}, target interface{}) bool {
 }
 
 func UnmarshalFromString(str string, obj interface{}) error {
-	return jsoniter.UnmarshalFromString(str, obj)
+	return sonic.UnmarshalString(str, obj)
 }
 
 func Unmarshal(bytes []byte, obj interface{}) error {
-	return jsoniter.Unmarshal(bytes, obj)
+	return sonic.Unmarshal(bytes, obj)
 }
 
 func Marshal(obj interface{}) ([]byte, error) {
-	return jsoniter.Marshal(obj)
+	return sonic.Marshal(obj)
 }
 
 func MarshalToString(obj interface{}) (string, error) {
-	return jsoniter.MarshalToString(obj)
+	return sonic.MarshalString(obj)
 }
 
 func GenerateCode(size int) string {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 	str := ""
 	for i := 0; i < size; i++ {
 		str += strconv.FormatInt(rand.Int63n(8)+1, 10)

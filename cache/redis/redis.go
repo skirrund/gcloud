@@ -11,7 +11,7 @@ import (
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/utils"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisClient struct {
@@ -90,31 +90,30 @@ func NewClient(opts Options) *RedisClient {
 		redisClient = &RedisClient{}
 		logger.Info("[redis] init client:", opts)
 		rdb := redis.NewUniversalClient(&redis.UniversalOptions{
-			Addrs:              opts.Addrs,
-			Username:           opts.Username,
-			Password:           opts.Password,
-			DB:                 opts.DB,
-			Dialer:             opts.Dialer,
-			OnConnect:          opts.OnConnect,
-			SentinelPassword:   opts.SentinelPassword,
-			MaxRetries:         opts.MaxRetries,
-			MinRetryBackoff:    opts.MinRetryBackoff,
-			MaxRetryBackoff:    opts.MaxRetryBackoff,
-			DialTimeout:        opts.DialTimeout,
-			ReadTimeout:        opts.ReadTimeout,
-			WriteTimeout:       opts.WriteTimeout,
-			PoolSize:           opts.PoolSize,
-			MinIdleConns:       opts.MinIdleConns,
-			MaxConnAge:         opts.MaxConnAge,
-			PoolTimeout:        opts.PoolTimeout,
-			IdleTimeout:        opts.IdleTimeout,
-			IdleCheckFrequency: opts.IdleCheckFrequency,
-			TLSConfig:          opts.TLSConfig,
-			MaxRedirects:       opts.MaxRedirects,
-			ReadOnly:           opts.ReadOnly,
-			RouteByLatency:     opts.RouteByLatency,
-			RouteRandomly:      opts.RouteRandomly,
-			MasterName:         opts.MasterName,
+			Addrs:            opts.Addrs,
+			Username:         opts.Username,
+			Password:         opts.Password,
+			DB:               opts.DB,
+			Dialer:           opts.Dialer,
+			OnConnect:        opts.OnConnect,
+			SentinelPassword: opts.SentinelPassword,
+			MaxRetries:       opts.MaxRetries,
+			MinRetryBackoff:  opts.MinRetryBackoff,
+			MaxRetryBackoff:  opts.MaxRetryBackoff,
+			DialTimeout:      opts.DialTimeout,
+			ReadTimeout:      opts.ReadTimeout,
+			WriteTimeout:     opts.WriteTimeout,
+			PoolSize:         opts.PoolSize,
+			MinIdleConns:     opts.MinIdleConns,
+			ConnMaxLifetime:  opts.MaxConnAge,
+			PoolTimeout:      opts.PoolTimeout,
+			ConnMaxIdleTime:  opts.IdleTimeout,
+			TLSConfig:        opts.TLSConfig,
+			MaxRedirects:     opts.MaxRedirects,
+			ReadOnly:         opts.ReadOnly,
+			RouteByLatency:   opts.RouteByLatency,
+			RouteRandomly:    opts.RouteRandomly,
+			MasterName:       opts.MasterName,
 		})
 		redisClient.client = rdb
 		err := redisClient.Ping()
@@ -255,7 +254,7 @@ func (r *RedisClient) ZIncrBy(key string, member string, score float64) float64 
 	return bc.Val()
 }
 func (r *RedisClient) ZAdd(key string, member string, score float64) int64 {
-	bc := r.client.ZAdd(ctx, key, &redis.Z{
+	bc := r.client.ZAdd(ctx, key, redis.Z{
 		Score:  score,
 		Member: member,
 	})

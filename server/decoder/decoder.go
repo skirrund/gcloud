@@ -4,8 +4,7 @@ import (
 	"strings"
 
 	"github.com/skirrund/gcloud/logger"
-
-	"github.com/json-iterator/go"
+	"github.com/skirrund/gcloud/utils"
 )
 
 const (
@@ -61,7 +60,7 @@ func (d JSONDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
 		copy(*bs, resp)
 		return d, nil
 	}
-	err := jsoniter.Unmarshal(resp, obj)
+	err := utils.Unmarshal(resp, obj)
 	if err != nil {
 		logger.Info("[http] JSONDecoder error:", err.Error())
 	}
