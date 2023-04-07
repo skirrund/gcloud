@@ -29,6 +29,9 @@ func (t DateTime) IsZero() bool {
 
 func (t *DateTime) UnmarshalJSON(b []byte) error {
 	str := string(b)
+	if str == `""` {
+		return nil
+	}
 	pt, err := time.ParseInLocation(`"`+TimeFormat+`"`, str, time.Local)
 	if err != nil {
 		logger.Error("[DateTime] format error:" + str)
