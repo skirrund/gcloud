@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -71,22 +73,45 @@ func getFormData(params map[string]interface{}) io.Reader {
 	var values url.Values = make(map[string][]string)
 	log := env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY)
 	for k, v := range params {
-		if s, ok := v.(string); ok {
-			values.Add(k, s)
-			if log {
-				logger.Info("[http] getFormData string:", k, ":", logger.GetLogStr(string(s)))
+		t := reflect.TypeOf(v)
+		val := reflect.ValueOf(v)
+		kind := t.Kind()
+		switch kind {
+		case reflect.Array:
+		case reflect.Slice:
+			l := val.Len()
+			for i := 0; i < l; i++ {
+				value := val.Index(i)
+				kind1 := value.Kind()
+				switch kind1 {
+				case reflect.String:
+					values.Add(k, value.String())
+				case reflect.Bool:
+					values.Add(k, strconv.FormatBool(value.Bool()))
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					values.Add(k, strconv.FormatInt(value.Int(), 10))
+				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+					values.Add(k, strconv.FormatUint(value.Uint(), 10))
+				case reflect.Float32, reflect.Float64:
+					values.Add(k, utils.NewFromFloat(value.Float()).String())
+				default:
+					values.Add(k, value.String())
+				}
 			}
-		} else {
-			s, err := utils.MarshalToString(s)
+		case reflect.String:
+			values.Add(k, val.String())
+		default:
+			s, err := utils.MarshalToString(v)
 			if err == nil {
 				values.Add(k, s)
 			}
-			if log {
-				logger.Info("[http] getFormData:", k, ":", logger.GetLogStr(string(s)))
-			}
 		}
 	}
-	return strings.NewReader(values.Encode())
+	valuesStr := values.Encode()
+	if log {
+		logger.Info("[http] getFormData string:", valuesStr)
+	}
+	return strings.NewReader(valuesStr)
 }
 
 func getMultipartFormData(params map[string]interface{}, files map[string]*request.File) (reader io.Reader, contentType string) {
@@ -209,6 +234,11 @@ func PostUrl(url string, headers map[string]string, params map[string]interface{
 	req := getRequest(url, http.MethodPost, headers, getFormData(params), false, result, DEFAULT_TIMEOUT*time.Second)
 	return lb.GetInstance().Run(req)
 }
+func PostFormDataUrl(url string, headers map[string]string, params url.Values, result interface{}) (int, error) {
+	reader := strings.NewReader(params.Encode())
+	req := getRequest(url, http.MethodPost, headers, reader, false, result, DEFAULT_TIMEOUT*time.Second)
+	return lb.GetInstance().Run(req)
+}
 func PostFile(url string, headers map[string]string, params map[string]interface{}, files map[string]*request.File, result interface{}) (int, error) {
 	reader, ct := getMultipartFormData(params, files)
 	if headers == nil {
@@ -222,6 +252,12 @@ func PostFile(url string, headers map[string]string, params map[string]interface
 
 func Post(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
 	req := getRequestLb(serviceName, path, http.MethodPost, headers, getFormData(params), false, result, DEFAULT_TIMEOUT*time.Second)
+	return lb.GetInstance().Run(req)
+}
+
+func PostFormData(serviceName string, path string, headers map[string]string, params url.Values, result interface{}) (int, error) {
+	reader := strings.NewReader(params.Encode())
+	req := getRequestLb(serviceName, path, http.MethodPost, headers, reader, false, result, DEFAULT_TIMEOUT*time.Second)
 	return lb.GetInstance().Run(req)
 }
 
