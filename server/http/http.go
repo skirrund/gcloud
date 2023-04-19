@@ -17,6 +17,7 @@ import (
 	"github.com/skirrund/gcloud/server/lb"
 	"github.com/skirrund/gcloud/server/request"
 	"github.com/skirrund/gcloud/utils"
+	"github.com/skirrund/gcloud/utils/decimal"
 )
 
 const (
@@ -93,7 +94,7 @@ func getFormData(params map[string]interface{}) io.Reader {
 				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 					values.Add(k, strconv.FormatUint(value.Uint(), 10))
 				case reflect.Float32, reflect.Float64:
-					values.Add(k, utils.NewFromFloat(value.Float()).String())
+					values.Add(k, decimal.NewFromFloat(value.Float()).String())
 				default:
 					values.Add(k, value.String())
 				}
