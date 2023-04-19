@@ -20,7 +20,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redis/go-redis/v9 v9.0.2
-	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/viper v1.15.0
 	github.com/swaggo/files v1.0.0
 	github.com/swaggo/gin-swagger v1.3.0
