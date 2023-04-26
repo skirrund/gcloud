@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/bytedance/sonic"
+	"github.com/skirrund/gcloud/logger"
 )
 
 type TestJson struct {
@@ -25,4 +26,5 @@ func TestXxx(t *testing.T) {
 		return
 	}
 	fmt.Println(tj)
+	logger.Info("t......")
 }

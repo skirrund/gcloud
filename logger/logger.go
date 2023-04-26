@@ -16,8 +16,6 @@ var logger *zap.SugaredLogger
 
 var once sync.Once
 
-var service string
-
 const (
 	DEFAULT_FILE = "log.log"
 )
@@ -36,11 +34,11 @@ func init() {
 }
 
 func Error(args ...interface{}) {
-	withCaller().Error(args...)
+	logger.Error(args...)
 }
 
 func Fatal(args ...interface{}) {
-	withCaller().Fatal(args...)
+	logger.Fatal(args...)
 }
 
 func Infof(template string, args ...interface{}) {
@@ -48,27 +46,23 @@ func Infof(template string, args ...interface{}) {
 }
 
 func Errorf(template string, args ...interface{}) {
-	withCaller().Errorf(template, args...)
+	logger.Errorf(template, args...)
 }
 
 func Sync() {
 	logger.Sync()
 }
 
-func withCaller() *zap.SugaredLogger {
-	return logger.Desugar().WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
-}
-
 func Warn(args ...interface{}) {
-	withCaller().Warn(args...)
+	logger.Warn(args...)
 }
 
 func Warnf(template string, args ...interface{}) {
-	withCaller().Warnf(template, args...)
+	logger.Warnf(template, args...)
 }
 
 func Panic(args ...interface{}) {
-	withCaller().Panic(args...)
+	logger.Panic(args...)
 }
 
 func Info(args ...interface{}) {
@@ -101,7 +95,7 @@ func getEncoder() zapcore.Encoder {
 	return encoder
 }
 
-func getJSONEncoder() zapcore.Encoder {
+func getJSONEncoder(service string) zapcore.Encoder {
 	// 设置一些基本日志格式 具体含义还比较好理解，直接看zap源码也不难懂
 	encoder := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
 		MessageKey:  "rest",
@@ -121,9 +115,9 @@ func getJSONEncoder() zapcore.Encoder {
 	return encoder
 }
 
-func initLog(fileDir string, serviceName string, port string, console bool, maxAge time.Duration) {
+func initLog(fileDir string, serviceName string, port string, console bool, json bool, maxAge time.Duration) *zap.SugaredLogger {
 	encoder := getEncoder()
-	jsonEncoder := getJSONEncoder()
+	jsonEncoder := getJSONEncoder(serviceName)
 	// 实现两个判断日志等级的interface (其实 zapcore.*Level 自身就是 interface)
 	infoLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl > zapcore.DebugLevel
@@ -137,34 +131,57 @@ func initLog(fileDir string, serviceName string, port string, console bool, maxA
 	var core zapcore.Core
 	if console {
 		c := zapcore.AddSync(os.Stdout)
-		core = zapcore.NewTee(
-			zapcore.NewCore(encoder, writer, infoLevel),
-			zapcore.NewCore(encoder, c, infoLevel),
-			zapcore.NewCore(jsonEncoder, jWriter, infoLevel),
-		)
+		if json {
+			core = zapcore.NewTee(
+				zapcore.NewCore(encoder, writer, infoLevel),
+				zapcore.NewCore(encoder, c, infoLevel),
+				zapcore.NewCore(jsonEncoder, jWriter, infoLevel),
+			)
+		} else {
+			core = zapcore.NewTee(
+				zapcore.NewCore(encoder, writer, infoLevel),
+				zapcore.NewCore(encoder, c, infoLevel),
+			)
+		}
 	} else {
-		core = zapcore.NewTee(
-			zapcore.NewCore(encoder, writer, infoLevel),
-			zapcore.NewCore(jsonEncoder, jWriter, infoLevel),
-		)
+		if json {
+			core = zapcore.NewTee(
+				zapcore.NewCore(encoder, writer, infoLevel),
+				zapcore.NewCore(jsonEncoder, jWriter, infoLevel),
+			)
+		} else {
+			core = zapcore.NewTee(
+				zapcore.NewCore(encoder, writer, infoLevel),
+			)
+		}
 	}
 	//core = core.With([]zapcore.Field{zapcore.Field{Key: "service", Type: zapcore.StringType, String: service}})
-	logger = zap.New(core).Sugar() // 需要传入 zap.AddCaller() 才会显示打日志点的文件名和行数, 有点小坑
+	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
 }
 
-func InitLog(fileDir string, serviceName string, port string, console bool, maxAgeDay uint64) {
-	service = serviceName
+func NewLogInstance(fileDir string, serviceName string, port string, console bool, json bool, maxAgeDay uint64) *zap.SugaredLogger {
+	var logger *zap.SugaredLogger
 	once.Do(func() {
 		if maxAgeDay == 0 {
 			maxAgeDay = 7
 		}
-		initLog(fileDir, serviceName, port, console, time.Duration(maxAgeDay)*time.Hour*24)
+		logger = initLog(fileDir, serviceName, port, console, json, time.Duration(maxAgeDay)*time.Hour*24)
+	})
+	return logger
+}
+
+func InitLog(fileDir string, serviceName string, port string, console bool, maxAgeDay uint64) {
+	once.Do(func() {
+		if maxAgeDay == 0 {
+			maxAgeDay = 7
+		}
+		logger = initLog(fileDir, serviceName, port, console, true, time.Duration(maxAgeDay)*time.Hour*24)
 	})
 }
 
 func getFileName(serviceName string, port string) string {
 	host, _ := os.Hostname()
-	return "/" + serviceName + "/" + serviceName + "-" + host + "-" + port // ".log.%Y-%m-%d"
+	return "/" + serviceName + "/" + host + "-" + port // ".log.%Y-%m-%d"
 }
 
 func getWriter(fileDir string, serviceName string, port string, maxAgeDay time.Duration) io.Writer {
