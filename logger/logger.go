@@ -161,21 +161,19 @@ func initLog(fileDir string, serviceName string, port string, console bool, json
 
 func NewLogInstance(fileDir string, serviceName string, port string, console bool, json bool, maxAgeDay uint64) *zap.SugaredLogger {
 	var logger *zap.SugaredLogger
+	if maxAgeDay == 0 {
+		maxAgeDay = 7
+	}
+	logger = initLog(fileDir, serviceName, port, console, json, time.Duration(maxAgeDay)*time.Hour*24)
+	return logger
+}
+
+func InitLog(fileDir string, serviceName string, port string, console bool, json bool, maxAgeDay uint64) {
 	once.Do(func() {
 		if maxAgeDay == 0 {
 			maxAgeDay = 7
 		}
 		logger = initLog(fileDir, serviceName, port, console, json, time.Duration(maxAgeDay)*time.Hour*24)
-	})
-	return logger
-}
-
-func InitLog(fileDir string, serviceName string, port string, console bool, maxAgeDay uint64) {
-	once.Do(func() {
-		if maxAgeDay == 0 {
-			maxAgeDay = 7
-		}
-		logger = initLog(fileDir, serviceName, port, console, true, time.Duration(maxAgeDay)*time.Hour*24)
 	})
 }
 

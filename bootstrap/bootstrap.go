@@ -54,6 +54,7 @@ type BootstrapOptions struct {
 	Host          string
 	LoggerDir     string
 	LoggerConsole bool
+	LoggerJson    bool
 	Config        config.IConfig
 }
 
@@ -95,6 +96,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	var flagLogdir string
 	var flagLogMaxAge uint64
 	var flagConsoleLog bool
+	var flagJsonLog bool
 	flag.StringVar(&flagProfile, env.SERVER_PROFILE_KEY, "", "server profile:[dev,test,prod...]")
 	flag.StringVar(&flagCfgFile, env.SERVER_CONFIGFILE_KEY, "", "server config file")
 	flag.StringVar(&flagSn, env.SERVER_SERVERNAME_KEY, "", "server name")
@@ -102,6 +104,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	flag.StringVar(&flagLogdir, env.LOGGER_DIR_KEY, "", "logDir")
 	flag.Uint64Var(&flagLogMaxAge, env.LOGGER_MAXAGE_KEY, 7, "log maxAge:day   default:7")
 	flag.BoolVar(&flagConsoleLog, env.LOGGER_CONSOLE, true, "logger.console enabled:{default:true}")
+	flag.BoolVar(&flagJsonLog, env.LOGGER_JSON, false, "logger.json enabled:{default:false}")
 	flag.Parse()
 	if len(flagProfile) == 0 {
 		flagProfile = profile
@@ -136,6 +139,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	cfg.Set(env.LOGGER_MAXAGE_KEY, flagLogMaxAge)
 	cfg.Set(env.LOGGER_CONSOLE, flagConsoleLog)
 	cfg.Set(env.SERVER_CONFIGFILE_KEY, flagCfgFile)
+	cfg.Set(env.LOGGER_JSON, flagJsonLog)
 	cfg.LoadProfileBaseConfig(flagProfile, fileType)
 	return BootstrapOptions{
 		ServerAddress: flagAddress,
@@ -144,6 +148,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 		ServerName:    flagSn,
 		LoggerDir:     flagLogdir,
 		LoggerConsole: flagConsoleLog,
+		LoggerJson:    flagJsonLog,
 		Host:          host,
 		Config:        env.GetInstance(),
 	}
@@ -171,7 +176,7 @@ func (app *Application) BootstrapAll(options Options) {
 func (app *Application) StartLogger() {
 	ops := app.BootOptions
 	maxAge := env.GetInstance().GetUint64WithDefault(env.LOGGER_MAXAGE_KEY, 7)
-	logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), ops.LoggerConsole, maxAge)
+	logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), ops.LoggerConsole, ops.LoggerJson, maxAge)
 }
 
 func (app *Application) StartDb() {

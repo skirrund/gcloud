@@ -26,6 +26,7 @@ const (
 	LOGGER_DIR_KEY        = "logger.dir"
 	LOGGER_MAXAGE_KEY     = "logger.maxAge"
 	LOGGER_CONSOLE        = "logger.console"
+	LOGGER_JSON           = "logger.json"
 	ZIPKIN_URL_KEY        = "zipkin.url"
 )
 
