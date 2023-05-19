@@ -1,15 +1,20 @@
 package http
 
 import (
-	"fmt"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestGet(t *testing.T) {
-	var p = make(map[string]interface{})
-	p["p"] = "1"
-	p["p2"] = 2
-	p["array"] = []float64{1.12345, 2.1234567}
-	r := getFormData(p)
-	fmt.Println(r)
+	var resp []byte
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			PostFormDataUrlWithTimeout("https://www.baidu.com", nil, nil, &resp, 15*time.Second)
+		}()
+	}
+	wg.Wait()
 }

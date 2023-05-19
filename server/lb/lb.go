@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	DEFAULT_TIMEOUT                 = 10
+	default_timeout                 = 10 * time.Second
 	ConnectionTimeout               = "server.http.client.timeout"
 	RetryOnConnectionFailure        = "server.http.retry.onConnectionFailure"
 	RetryEnabled                    = "server.http.retry.enabled"
@@ -39,8 +39,6 @@ const (
 )
 
 var once sync.Once
-var once1 sync.Once
-
 var defaultTransport *http.Transport
 
 type ServerPool struct {
@@ -54,41 +52,52 @@ type service struct {
 
 var sp *ServerPool
 
-var httpClient *http.Client
-
-func init() {
-
+type clientMap struct {
+	Clients map[time.Duration]*http.Client
+	Mu      sync.Mutex
 }
 
-func GetClient() *http.Client {
-	if httpClient != nil {
-		return httpClient
+var clients clientMap
+
+func init() {
+	clients = clientMap{Clients: make(map[time.Duration]*http.Client)}
+	defaultTransport = &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //不校验服务端证书
+		DialContext: (&net.Dialer{
+			Timeout:   3 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       30 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxConnsPerHost:       0,
+		MaxIdleConnsPerHost:   20,
 	}
-	once1.Do(func() {
-		defaultTransport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //不校验服务端证书
-			DialContext: (&net.Dialer{
-				Timeout:   3 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext,
-			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       30 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			MaxConnsPerHost:       0,
-			MaxIdleConnsPerHost:   20,
+	GetClient(default_timeout)
+}
+func GetClient(timeout time.Duration) *http.Client {
+	if c, ok := clients.Clients[timeout]; ok {
+		return c
+	}
+	if timeout <= 0 {
+		cfgTimeout := env.GetInstance().GetInt64(ConnectionTimeout)
+		if cfgTimeout > 0 {
+			timeout = time.Duration(cfgTimeout) * time.Second
 		}
-		timeOut := env.GetInstance().GetInt(ConnectionTimeout)
-		if timeOut <= 0 {
-			timeOut = DEFAULT_TIMEOUT
-		}
-		httpClient = &http.Client{
-			Timeout:   time.Duration(timeOut) * time.Second,
-			Transport: defaultTransport,
-		}
-	})
-	return httpClient
+	}
+	clients.Mu.Lock()
+	defer clients.Mu.Unlock()
+	if c, ok := clients.Clients[timeout]; ok {
+		return c
+	}
+	hc := &http.Client{
+		Timeout:   timeout,
+		Transport: defaultTransport,
+	}
+	clients.Clients[timeout] = hc
+	return hc
 }
 
 func GetInstance() *ServerPool {
@@ -97,7 +106,10 @@ func GetInstance() *ServerPool {
 	}
 	once.Do(func() {
 		sp = &ServerPool{}
-		server.RegisterEventHook(server.RegistryChangeEvent, server.EventHook(sp.regChange))
+		err := server.RegisterEventHook(server.RegistryChangeEvent, server.EventHook(sp.regChange))
+		if err != nil {
+			logger.Error("[LB]:", err)
+		}
 	})
 	return sp
 }
@@ -135,7 +147,10 @@ func (s *ServerPool) GetService(name string) *service {
 			if err != nil {
 				return nil
 			}
-			bootstrap.MthApplication.Registry.Subscribe(name)
+			err = bootstrap.MthApplication.Registry.Subscribe(name)
+			if err != nil {
+				logger.Error("[LB] ", err.Error())
+			}
 			return s.setService(name, ins)
 		} else {
 			logger.Warn("[LB] registry not found")
@@ -255,92 +270,86 @@ func setHeader(header http.Header, headers map[string]string) {
 }
 
 func do(req *request.Request) (statusCode int, err error) {
-	var request *http.Request
+	var doRequest *http.Request
 	var response *http.Response
-	url := req.Url
-	if len(url) == 0 {
+	reqUrl := req.Url
+	if len(reqUrl) == 0 {
 		return 0, errors.New("[http] request url  is empty")
 	}
 	params := req.Params
-	timeOut := req.TimeOut
 	headers := req.Headers
 	isJson := req.IsJson
 	respResult := req.RespResult
-
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("[[http]] recover :", err)
 		}
 	}()
-
 	if req.Method == "POST" {
 		if params == nil {
 			logger.Warn("[http] NewRequest with body nil")
 		}
-		request, err = http.NewRequest(http.MethodPost, url, params)
+		doRequest, err = http.NewRequest(http.MethodPost, reqUrl, params)
 		if err != nil {
-			logger.Error("[http] NewRequest error:", err, ",", url)
+			logger.Error("[http] NewRequest error:", err, ",", reqUrl)
 			return statusCode, err
 		}
 		if isJson {
-			request.Header.Set("Content-Type", "application/json;charset=utf-8")
+			doRequest.Header.Set("Content-Type", "application/json;charset=utf-8")
 		} else if req.HasFile {
 
 		} else {
-			request.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
+			doRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
 		}
 
 	} else {
-		request, err = http.NewRequest(http.MethodGet, url, nil)
+		doRequest, err = http.NewRequest(http.MethodGet, reqUrl, nil)
 	}
 	if err != nil {
-		logger.Error("[http] NewRequest error:", err, ",", url)
+		logger.Error("[http] NewRequest error:", err, ",", reqUrl)
 		return statusCode, err
 	}
-
-	if timeOut == 0 {
-		timeOut = DEFAULT_TIMEOUT * time.Second
-	}
-	setHeader(request.Header, headers)
-
+	setHeader(doRequest.Header, headers)
 	start := time.Now()
-
-	defer requestEnd(url, start)
-	span, err := zipkin.WrapHttp(request, req.ServiceName)
+	defer requestEnd(reqUrl, start)
+	span, err := zipkin.WrapHttp(doRequest, req.ServiceName)
 	if err == nil {
 		defer span.Finish()
 	}
-	response, err = GetClient().Do(request)
-
+	timeOut := req.TimeOut
+	if timeOut == 0 {
+		timeOut = default_timeout
+	}
+	httpC := GetClient(timeOut)
+	response, err = httpC.Do(doRequest)
 	if err != nil {
-		logger.Error("[http] client.Do error:", err.Error(), ",", url, ",")
+		logger.Error("[http] client.Do error:", err.Error(), ",", reqUrl, ",")
 		return 0, err
 	}
 	defer response.Body.Close()
 	sc := response.StatusCode
 	b, err := io.ReadAll(response.Body)
 	if err != nil {
-		logger.Error("[http] response body read error:", url)
+		logger.Error("[http] response body read error:", reqUrl)
 		return sc, err
 	}
 	if sc != http.StatusOK {
-		logger.Error("[http] StatusCode error:", sc, ",", url, ",", string(b))
+		logger.Error("[http] StatusCode error:", sc, ",", reqUrl, ",", string(b))
 		return sc, errors.New("http code error:" + strconv.FormatInt(int64(sc), 10))
 	}
 
 	ct := response.Header.Get("Content-Type")
 	logger.Info("[http] response content-type:", ct)
 	d, err := decoder.GetDecoder(ct).DecoderObj(b, respResult)
-	_, ok := d.(decoder.StringDecoder)
-	_, ok1 := d.(decoder.JSONDecoder)
-	if ok || ok1 {
+	_, ok := d.(decoder.StreamDecoder)
+	if !ok {
 		str := string(b)
 		if len(str) > 1000 {
 			str = utils.SubStr(str, 0, 1000)
 		}
 		logger.Info("[http] response:", str)
 	} else {
-		logger.Info("[http] response:strean not log")
+		logger.Info("[http] response:stream not log")
 	}
 
 	return sc, nil

@@ -1,6 +1,7 @@
 package decoder
 
 import (
+	"encoding/xml"
 	"strings"
 
 	"github.com/skirrund/gcloud/logger"
@@ -21,9 +22,13 @@ type StringDecoder struct{}
 type StreamDecoder struct{}
 type JSONDecoder struct{}
 
+type XmlDecoder struct{}
+
 var jsonDecoder = JSONDecoder{}
 var stringDecoder = StringDecoder{}
 var streamDecoder = StreamDecoder{}
+
+var xmlDecoder = XmlDecoder{}
 
 func (d StreamDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
 	if bs, ok := obj.(*[]byte); ok {
@@ -67,6 +72,22 @@ func (d JSONDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
 	return d, err
 }
 
+func (d XmlDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
+	if str, ok := obj.(*string); ok {
+		*str = string(resp)
+		return d, nil
+	} else if bs, ok := obj.(*[]byte); ok {
+		*bs = make([]byte, len(resp))
+		copy(*bs, resp)
+		return d, nil
+	}
+	err := xml.Unmarshal(resp, obj)
+	if err != nil {
+		logger.Info("[http] XmlDecoder error:", err.Error())
+	}
+	return d, err
+}
+
 func GetDecoder(ct string) Decoder {
 	ct = strings.ToLower(ct)
 	if strings.Contains(ct, MEDIA_JSON) {
@@ -76,7 +97,7 @@ func GetDecoder(ct string) Decoder {
 	} else if strings.Contains(ct, MEDIA_HTML) {
 		return stringDecoder
 	} else if strings.Contains(ct, MEDIA_XML) {
-		return stringDecoder
+		return xmlDecoder
 	} else {
 		return streamDecoder
 	}

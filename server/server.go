@@ -56,8 +56,8 @@ func RegisterEventHook(name EventName, hook ...EventHook) error {
 	}
 	v = append(v, hook...)
 	eventHooks.Lock()
-	eventHooks.EventHook[name] = v
 	defer eventHooks.Unlock()
+	eventHooks.EventHook[name] = v
 	return nil
 }
 

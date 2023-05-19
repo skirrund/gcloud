@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.7+incompatible
-	github.com/bytedance/sonic v1.8.6
+	github.com/bytedance/sonic v1.8.8
 	github.com/coocood/freecache v1.2.3
 	github.com/disintegration/imaging v1.6.2
 	github.com/gin-contrib/pprof v1.4.0
@@ -19,14 +19,14 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
-	github.com/redis/go-redis/v9 v9.0.2
+	github.com/redis/go-redis/v9 v9.0.4
 	github.com/spf13/viper v1.15.0
 	github.com/swaggo/files v1.0.0
 	github.com/swaggo/gin-swagger v1.3.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/text v0.7.0
-	gorm.io/driver/mysql v1.4.7
-	gorm.io/gorm v1.24.6
+	gorm.io/driver/mysql v1.5.0
+	gorm.io/gorm v1.25.1
 )
 
 require (
