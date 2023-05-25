@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/skirrund/gcloud/utils/worker"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"syscall"
@@ -58,7 +60,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	gin.SetMode(gin.ReleaseMode)
 	s := gin.New()
 	s.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
-		logger.Error("[GIN] recover:", recovered)
+		logger.Error("[GIN] recover:", recovered, "\n", string(debug.Stack()))
 
 		c.JSON(200, response.Fail(fmt.Sprintf("%v", recovered)))
 		//		c.AbortWithStatus(http.StatusInternalServerError)
@@ -178,25 +180,29 @@ func loggingMiddleware(ctx *gin.Context) {
 	uri1, _ := url.QueryUnescape(uri)
 	ct := req.Header.Get("content-type")
 	method := req.Method
-	go requestEnd(uri1, ct, method, start, strBody, string(bb))
+	worker.AsyncExecute(func() {
+		requestEnd(uri1, ct, method, start, strBody, string(bb))
+	})
 }
 
 func zipkinMiddleware(c *gin.Context) {
 	t := zipkin.GetTracer()
 	if t != nil {
 		// 将tracer注入到gin的中间件中
-		go func(method string, fp string, header http.Header, tracer opentracing.Tracer) {
-			carrier := opentracing.HTTPHeadersCarrier(header)
-			clientContext, err := tracer.Extract(opentracing.HTTPHeaders, carrier)
+		worker.AsyncExecute(func() {
+			carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
+			clientContext, err := t.Extract(opentracing.HTTPHeaders, carrier)
 			var serverSpan opentracing.Span
+			method := c.Request.Method
+			fp := c.FullPath()
 			if err == nil {
-				serverSpan = tracer.StartSpan(
+				serverSpan = t.StartSpan(
 					method+" "+fp, opentracing.FollowsFrom(clientContext))
 			} else {
-				serverSpan = tracer.StartSpan(method + " " + fp)
+				serverSpan = t.StartSpan(method + " " + fp)
 			}
 			defer serverSpan.Finish()
-		}(c.Request.Method, c.FullPath(), c.Request.Header, t)
+		})
 	}
 	c.Next()
 }
