@@ -3,7 +3,6 @@ package local
 import (
 	"bytes"
 	"encoding/gob"
-	"sync"
 
 	"github.com/skirrund/gcloud/logger"
 
@@ -11,13 +10,10 @@ import (
 )
 
 var cache *freecache.Cache
-var once sync.Once
 
 func init() {
-	once.Do(func() {
-		cacheSize := 200 * 1024 * 1024
-		cache = freecache.NewCache(cacheSize)
-	})
+	cacheSize := 200 * 1024 * 1024
+	cache = freecache.NewCache(cacheSize)
 }
 
 func Get(key string) interface{} {

@@ -9,11 +9,14 @@ import (
 var wg sync.WaitGroup
 
 func TestAsyncExecute(t *testing.T) {
-	for i := 0; i <= 10; i++ {
+	a, b, c, d := 1, 2, 3, 4
+	ids := []*int{&a, &b, &c, &d}
+	for i := range ids {
 		wg.Add(1)
-		x := i
+		//wg.Add(1)
+		x := ids[i]
 		AsyncExecute(func() {
-			demo(x)
+			demo(*x)
 		})
 	}
 	wg.Wait()
