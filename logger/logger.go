@@ -191,7 +191,7 @@ func getWriter(fileDir string, serviceName string, port string, maxAgeDay time.D
 	log.Println("[logger]start init logger file:" + fileDir + fileName)
 	hook, err := rotatelogs.New(
 		fileDir+fileName+".log.%Y-%m-%d", // 没有使用go风格反人类的format格式%Y-%m-%d-%H
-		rotatelogs.WithLinkName(fileDir+fileName+".log"),
+		//rotatelogs.WithLinkName(fileDir+fileName+".log"),
 		rotatelogs.WithMaxAge(maxAgeDay),
 		rotatelogs.WithRotationTime(time.Hour),
 		rotatelogs.WithHandler(rotatelogs.HandlerFunc(func(e rotatelogs.Event) {
@@ -216,7 +216,7 @@ func getWriterJSON(fileDir string, serviceName string, port string) io.Writer {
 	log.Println("[logger]start init logger file:" + fileDir + fileName)
 	hook, err := rotatelogs.New(
 		fileDir+fileName+".%Y-%m-%d.json", // 没有使用go风格反人类的format格式%Y-%m-%d-%H
-		rotatelogs.WithLinkName(fileDir+fileName+".json"),
+		//rotatelogs.WithLinkName(fileDir+fileName+".json"),
 		rotatelogs.WithMaxAge(time.Hour*24*3),
 		rotatelogs.WithRotationTime(time.Hour),
 		rotatelogs.WithHandler(rotatelogs.HandlerFunc(func(e rotatelogs.Event) {
