@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/skirrund/gcloud/server"
 	"github.com/skirrund/gcloud/utils/idworker"
 
@@ -21,11 +22,9 @@ import (
 	db "github.com/skirrund/gcloud/datasource"
 	"github.com/skirrund/gcloud/mq"
 
-	mthGin "github.com/skirrund/gcloud/plugins/server/http/gin"
+	gfiber "github.com/skirrund/gcloud/plugins/server/http/gfiber"
 
 	"github.com/skirrund/gcloud/bootstrap/env"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Options struct {
@@ -206,8 +205,12 @@ func (app *Application) ShutDown() {
 	logger.Sync()
 }
 
-func (app *Application) StartWebServerWith(options server.Options, routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) {
-	srv := mthGin.NewServer(options, routerProvider, middleware...)
+func (app *Application) StartWebServerWith(options server.Options, routerProvider func(engine *fiber.App), middleware ...fiber.Handler) {
+	middlewares := make([]any, len(middleware))
+	for i, m := range middleware {
+		middlewares[i] = m
+	}
+	srv := gfiber.NewServer(options, routerProvider, middlewares...)
 	if app.Registry != nil {
 		delayFunction(func() {
 			err := app.Registry.RegisterInstance()
@@ -219,7 +222,7 @@ func (app *Application) StartWebServerWith(options server.Options, routerProvide
 	srv.Run(app.ShutDown)
 }
 
-func (app *Application) StartWebServer(routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) {
+func (app *Application) StartWebServer(routerProvider func(engine *fiber.App), middleware ...fiber.Handler) {
 	ops := app.BootOptions
 	options := server.Options{
 		ServerName: ops.ServerName,

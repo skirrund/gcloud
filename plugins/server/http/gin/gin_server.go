@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/skirrund/gcloud/utils/worker"
 	"io"
 	"net/http"
 	"net/url"
@@ -17,6 +16,8 @@ import (
 	"syscall"
 	"time"
 	"unicode/utf8"
+
+	"github.com/skirrund/gcloud/utils/worker"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/skirrund/gcloud/logger"
