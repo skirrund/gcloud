@@ -1,20 +1,13 @@
 package http
 
 import (
-	"sync"
 	"testing"
-	"time"
+
+	"github.com/skirrund/gcloud/server/lb"
 )
 
 func TestGet(t *testing.T) {
 	var resp []byte
-	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			PostFormDataUrlWithTimeout("https://www.baidu.com", nil, nil, &resp, 15*time.Second)
-		}()
-	}
-	wg.Wait()
+	lb.GetInstance().SetHttpClient(lb.FastHttpClient{})
+	GetUrl("http://127.0.0.1:32766/v1/article/test?t1=t1&t2=t2&t3=t3", nil, nil, &resp)
 }

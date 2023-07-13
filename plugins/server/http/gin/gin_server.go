@@ -19,7 +19,6 @@ import (
 
 	"github.com/skirrund/gcloud/utils/worker"
 
-	"github.com/opentracing/opentracing-go"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
 	"github.com/skirrund/gcloud/plugins/zipkin"
@@ -30,9 +29,6 @@ import (
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
-
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Server struct {
@@ -67,7 +63,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 		//		c.AbortWithStatus(http.StatusInternalServerError)
 	}))
 	//s.Use(cors)
-	s.Use(zipkinMiddleware)
+	//s.Use(zipkinMiddleware)
 	s.Use(loggingMiddleware)
 	//zipkin.InitZipkinTracer(s)
 	gp := prometheus.New(s)
@@ -78,7 +74,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	// metrics采样
 	s.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	//s.Use(sentinelMiddleware)
-	initSwagger(s)
+	//initSwagger(s)
 
 	pprof.Register(s)
 	routerProvider(s)
@@ -86,9 +82,9 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	return srv
 }
 
-func initSwagger(e *gin.Engine) {
-	e.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-}
+// func initSwagger(e *gin.Engine) {
+// 	e.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+// }
 
 // func cors(c *gin.Context) {
 // 	method := c.Request.Method
@@ -186,27 +182,27 @@ func loggingMiddleware(ctx *gin.Context) {
 	})
 }
 
-func zipkinMiddleware(c *gin.Context) {
-	t := zipkin.GetTracer()
-	if t != nil {
-		// 将tracer注入到gin的中间件中
-		worker.AsyncExecute(func() {
-			carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
-			clientContext, err := t.Extract(opentracing.HTTPHeaders, carrier)
-			var serverSpan opentracing.Span
-			method := c.Request.Method
-			fp := c.FullPath()
-			if err == nil {
-				serverSpan = t.StartSpan(
-					method+" "+fp, opentracing.FollowsFrom(clientContext))
-			} else {
-				serverSpan = t.StartSpan(method + " " + fp)
-			}
-			defer serverSpan.Finish()
-		})
-	}
-	c.Next()
-}
+// func zipkinMiddleware(c *gin.Context) {
+// 	t := zipkin.GetTracer()
+// 	if t != nil {
+// 		// 将tracer注入到gin的中间件中
+// 		worker.AsyncExecute(func() {
+// 			carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
+// 			clientContext, err := t.Extract(opentracing.HTTPHeaders, carrier)
+// 			var serverSpan opentracing.Span
+// 			method := c.Request.Method
+// 			fp := c.FullPath()
+// 			if err == nil {
+// 				serverSpan = t.StartSpan(
+// 					method+" "+fp, opentracing.FollowsFrom(clientContext))
+// 			} else {
+// 				serverSpan = t.StartSpan(method + " " + fp)
+// 			}
+// 			defer serverSpan.Finish()
+// 		})
+// 	}
+// 	c.Next()
+// }
 
 func requestEnd(uri string, contentType string, method string, start time.Time, strBody string, reqBody string) {
 	if strings.HasPrefix(uri, "/metrics") {

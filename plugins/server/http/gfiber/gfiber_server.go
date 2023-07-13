@@ -35,6 +35,7 @@ func NewServer(options server.Options, routerProvider func(engine *fiber.App), m
 	srv := &Server{}
 	srv.Options = options
 	cfg := fiber.Config{
+		Concurrency:  options.Concurrency,
 		BodyLimit:    100 * 1024 * 1024,
 		ReadTimeout:  5 * time.Minute,
 		WriteTimeout: 5 * time.Minute,
