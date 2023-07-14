@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/skirrund/gcloud/server"
 
@@ -15,6 +14,7 @@ import (
 
 type env struct {
 	config *viper.Viper
+	base   map[string]interface{}
 }
 
 const (
@@ -32,11 +32,11 @@ const (
 )
 
 var e *env
-var once sync.Once
 
 func init() {
 	e = &env{
 		config: viper.New(),
+		base:   make(map[string]interface{}),
 	}
 	server.RegisterEventHook(server.ConfigChangeEvent, e.MergeConfig)
 }
@@ -66,7 +66,9 @@ func (e *env) LoadProfileBaseConfig(profile string, configType string) {
 				pcfg.SetConfigType(ct)
 				err = pcfg.ReadConfig(bytes2.NewReader(contents))
 				if err == nil {
-					e.config.MergeConfigMap(pcfg.AllSettings())
+					settings := pcfg.AllSettings()
+					e.config.MergeConfigMap(settings)
+					e.base = e.config.AllSettings()
 				}
 			}
 		} else {
@@ -75,13 +77,17 @@ func (e *env) LoadProfileBaseConfig(profile string, configType string) {
 	}
 }
 
-func (e *env) SetBaseConfig(reader io.Reader, configType string) {
-	once.Do(func() {
-		bc := e.config
-		bc.SetConfigType(configType)
-		bc.SetConfigName("bootstrap")
-		bc.ReadConfig(reader)
-	})
+func (e *env) SetBaseConfig(reader io.Reader, configType string) error {
+	cfg := e.config
+	cfg.SetConfigType(configType)
+	cfg.SetConfigName("base")
+	err := cfg.ReadConfig(reader)
+	if err != nil {
+		logger.Error("[ENV] SetBaseConfig error", err.Error())
+		return err
+	}
+	e.base = cfg.AllSettings()
+	return nil
 }
 
 func (e *env) MergeConfig(eventType server.EventName, eventInfo interface{}) (err error) {
