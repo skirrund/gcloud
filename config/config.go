@@ -16,8 +16,8 @@ type IConfig interface {
 	GetBool(key string) bool
 	Set(key string, value interface{})
 	GetFloat64(key string) float64
-	Shutdown()
+	Shutdown() error
 	Read() error
-	Watch()
+	Watch() error
 	GetStringMapString(key string) map[string]string
 }
