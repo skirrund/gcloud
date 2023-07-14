@@ -2,9 +2,7 @@ package lb
 
 import (
 	"errors"
-	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -180,7 +178,7 @@ func (s *ServerPool) Run(req *request.Request) (int, error) {
 		return 0, errors.New("request url  is empty")
 	}
 	status, err := s.client.Exec(req)
-	if checkRetry(err, status) {
+	if s.client.CheckRetry(err, status) {
 		logger.Info("[LB] retry next:", req.ServiceName)
 		retrys += 1
 		lbo.Retrys = retrys
@@ -191,30 +189,6 @@ func (s *ServerPool) Run(req *request.Request) (int, error) {
 	}
 	return status, err
 
-}
-
-func checkRetry(err error, status int) bool {
-	if err != nil {
-		ue, ok := err.(*url.Error)
-		logger.Info("[LB] checkRetry error *url.Error:", ok)
-		if ok {
-			if ue.Err != nil {
-				no, ok := ue.Err.(*net.OpError)
-				if ok && no.Op == "dial" {
-					return true
-				}
-			}
-		} else {
-			no, ok := err.(*net.OpError)
-			if ok && no.Op == "dial" {
-				return true
-			}
-		}
-		if status == 404 || status == 502 || status == 504 {
-			return true
-		}
-	}
-	return false
 }
 
 func requestEnd(url string, start time.Time) {

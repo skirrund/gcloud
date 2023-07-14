@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -127,4 +128,31 @@ func setFasthttpHeader(header *fasthttp.RequestHeader, headers map[string]string
 	for k, v := range headers {
 		header.Set(k, v)
 	}
+}
+
+func (FastHttpClient) CheckRetry(err error, status int) bool {
+	if err != nil {
+		if err == fasthttp.ErrDialTimeout {
+			return true
+		}
+		ue, ok := err.(*url.Error)
+		logger.Info("[LB] checkRetry error *url.Error:", ok)
+		if ok {
+			if ue.Err != nil {
+				no, ok := ue.Err.(*net.OpError)
+				if ok && no.Op == "dial" {
+					return true
+				}
+			}
+		} else {
+			no, ok := err.(*net.OpError)
+			if ok && no.Op == "dial" {
+				return true
+			}
+		}
+		if status == 404 || status == 502 || status == 504 {
+			return true
+		}
+	}
+	return false
 }
