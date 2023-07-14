@@ -98,13 +98,14 @@ func (e *env) MergeConfig(eventType server.EventName, eventInfo interface{}) (er
 	return
 }
 
-func (e *env) Shutdown() {
-
+func (e *env) Shutdown() error {
+	return nil
 }
 func (e *env) Read() error {
 	return nil
 }
-func (e *env) Watch() {
+func (e *env) Watch() error {
+	return nil
 }
 
 func (nc *env) Get(key string) interface{} {
