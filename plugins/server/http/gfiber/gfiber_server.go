@@ -5,10 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"regexp"
 	"runtime/debug"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -16,20 +13,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/skirrund/gcloud/logger"
+	"github.com/skirrund/gcloud/plugins/server/http/gfiber/middleware"
 	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/server"
 	"github.com/skirrund/gcloud/utils/validator"
-	"github.com/skirrund/gcloud/utils/worker"
 )
 
 type Server struct {
 	Srv     *fiber.App
 	Options server.Options
 }
-
-const MAX_PRINT_BODY_LEN = 2048
-
-var reg = regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif|svg|webp|bmp|html|htm).*$`)
 
 func NewServer(options server.Options, routerProvider func(engine *fiber.App), middleware ...any) server.Server {
 	srv := &Server{}
@@ -81,52 +74,8 @@ func getCfg() []any {
 			c.JSON(response.Fail(fmt.Sprintf("%v", e)))
 		},
 	}
-	handlers = append(handlers, recover.New(recoverCfg), loggingMiddleware)
+	handlers = append(handlers, recover.New(recoverCfg), middleware.LoggingMiddleware)
 	return handlers
-}
-
-func loggingMiddleware(ctx *fiber.Ctx) error {
-	start := time.Now()
-	reqBody := getLogBodyStr(ctx.Body())
-	req := ctx.Request()
-	uri := string(req.URI().FullURI())
-	sUri := string(req.URI().RequestURI())
-	ct := string(req.Header.ContentType())
-	method := string(req.Header.Method())
-	err := ctx.Next()
-	if strings.HasPrefix(sUri, "/metrics") {
-		return err
-	}
-	if strings.HasPrefix(sUri, "/swagger") {
-		return err
-	}
-	if reg.MatchString(sUri) {
-		return err
-	}
-	bb := ctx.Response().Body()
-	respStatus := ctx.Response().StatusCode()
-	respBody := getLogBodyStr(bb)
-	worker.AsyncExecute(func() {
-		requestEnd(uri, ct, method, reqBody, respBody, strconv.FormatInt(int64(respStatus), 10), start)
-	})
-	return err
-}
-
-func getLogBodyStr(bb []byte) string {
-	if len(bb) > MAX_PRINT_BODY_LEN {
-		bb = bb[:(MAX_PRINT_BODY_LEN - 1)]
-	}
-	return string(bb)
-}
-
-func requestEnd(uri, ct, method, reqBody, respBody, respStatus string, start time.Time) {
-	logger.Info("\n [Fiber] uri:", uri,
-		"\n [Fiber] content-type:", ct,
-		"\n [Fiber] method:", method,
-		"\n [Fiber] body:"+reqBody,
-		"\n [Fiber] status:"+respStatus,
-		"\n [Fiber] response:"+respBody,
-		"\n [Fiber] cost:"+strconv.FormatInt(time.Since(start).Milliseconds(), 10)+"ms")
 }
 
 func (server *Server) Shutdown() {

@@ -1,25 +1,17 @@
 package gin
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
-	"regexp"
 	"runtime/debug"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
-	"unicode/utf8"
-
-	"github.com/skirrund/gcloud/utils/worker"
 
 	"github.com/skirrund/gcloud/logger"
+	gm "github.com/skirrund/gcloud/plugins/server/http/gin/middleware"
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
 	"github.com/skirrund/gcloud/plugins/zipkin"
 	"github.com/skirrund/gcloud/response"
@@ -36,21 +28,6 @@ type Server struct {
 	Options server.Options
 }
 
-const MAX_PRINT_BODY_LEN = 1024
-
-var reg = regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif|svg|webp|bmp|html|htm).*$`)
-
-type bodyLogWriter struct {
-	gin.ResponseWriter
-	bodyBuf *bytes.Buffer
-}
-
-func (w bodyLogWriter) Write(b []byte) (int, error) {
-	//memory copy here!
-	w.bodyBuf.Write(b)
-	return w.ResponseWriter.Write(b)
-}
-
 func NewServer(options server.Options, routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) server.Server {
 	srv := &Server{}
 	srv.Options = options
@@ -64,7 +41,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	}))
 	//s.Use(cors)
 	//s.Use(zipkinMiddleware)
-	s.Use(loggingMiddleware)
+	s.Use(gm.LoggingMiddleware)
 	//zipkin.InitZipkinTracer(s)
 	gp := prometheus.New(s)
 	s.Use(gp.Middleware())
@@ -156,32 +133,6 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 // 	entry.Exit()
 // }
 
-func loggingMiddleware(ctx *gin.Context) {
-	start := time.Now()
-	blw := bodyLogWriter{bodyBuf: bytes.NewBufferString(""), ResponseWriter: ctx.Writer}
-	ctx.Writer = blw
-	bb, err := io.ReadAll(ctx.Request.Body)
-	if err == nil {
-		ctx.Request.Body = io.NopCloser(bytes.NewBuffer(bb))
-	}
-	ctx.Next()
-	strBody := strings.Trim(blw.bodyBuf.String(), "\n")
-	if utf8.RuneCountInString(strBody) > MAX_PRINT_BODY_LEN {
-		strBody = strBody[:(MAX_PRINT_BODY_LEN - 1)]
-	}
-	if len(bb) > MAX_PRINT_BODY_LEN {
-		bb = bb[:(MAX_PRINT_BODY_LEN - 1)]
-	}
-	req := ctx.Request
-	uri := req.RequestURI
-	uri1, _ := url.QueryUnescape(uri)
-	ct := req.Header.Get("content-type")
-	method := req.Method
-	worker.AsyncExecute(func() {
-		requestEnd(uri1, ct, method, start, strBody, string(bb))
-	})
-}
-
 // func zipkinMiddleware(c *gin.Context) {
 // 	t := zipkin.GetTracer()
 // 	if t != nil {
@@ -203,24 +154,6 @@ func loggingMiddleware(ctx *gin.Context) {
 // 	}
 // 	c.Next()
 // }
-
-func requestEnd(uri string, contentType string, method string, start time.Time, strBody string, reqBody string) {
-	if strings.HasPrefix(uri, "/metrics") {
-		strBody = "ignore..."
-	}
-	if strings.HasPrefix(uri, "/swagger") {
-		return
-	}
-	if reg.MatchString(uri) {
-		return
-	}
-	logger.Info("\n [GIN] uri:", uri,
-		"\n [GIN] content-type:", contentType,
-		"\n [GIN] method:", method,
-		"\n [GIN] body:"+reqBody,
-		"\n [GIN] response:"+strBody,
-		"\n [GIN] cost:"+strconv.FormatInt(time.Since(start).Milliseconds(), 10)+"ms")
-}
 
 func (server *Server) Shutdown() {
 	defer zipkin.Close()
