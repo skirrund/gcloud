@@ -5,9 +5,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/server"
-	"github.com/skirrund/gcloud/utils/validator"
 )
 
 type Test struct {
@@ -25,13 +23,13 @@ func TestFiberServer(t *testing.T) {
 			vals := QueryArray(context, "a")
 			fmt.Println(vals)
 
-			d := &Test{}
-			if err := ShouldBindBody(context, d); err != nil {
-				context.JSON(response.Fail(validator.ErrResp(err)))
-				return nil
-			}
+			// d := &Test{}
+			// if err := ShouldBindBody(context, d); err != nil {
+			// 	context.JSON(response.Fail(validator.ErrResp(err)))
+			// 	return nil
+			// }
 			context.JSON("test")
-			return nil
+			return server.Error{Code: "2000000", Msg: "123"}
 		})
 	})
 	srv.Run(func() {

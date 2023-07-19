@@ -40,9 +40,24 @@ func NewServer(options server.Options, routerProvider func(engine *fiber.App), m
 				} else {
 					c.SendStatus(e.Code)
 				}
+			} else if e, ok := err.(*server.Error); ok {
+				resp := response.Response{
+					Code:       e.Code,
+					Message:    e.Msg,
+					SubMessage: e.SubMsg,
+					Success:    false,
+				}
+				c.JSON(resp)
+			} else if e, ok := err.(server.Error); ok {
+				resp := response.Response{
+					Code:       e.Code,
+					Message:    e.Msg,
+					SubMessage: e.SubMsg,
+					Success:    false,
+				}
+				c.JSON(resp)
 			} else {
 				logger.Error("[Fiber] error:", err, "\n", string(debug.Stack()))
-				c.JSON(response.Fail(err.Error()))
 			}
 			return nil
 		},
