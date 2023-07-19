@@ -21,11 +21,7 @@ import (
 	db "github.com/skirrund/gcloud/datasource"
 	"github.com/skirrund/gcloud/mq"
 
-	mthGin "github.com/skirrund/gcloud/plugins/server/http/gin"
-
 	"github.com/skirrund/gcloud/bootstrap/env"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Options struct {
@@ -47,15 +43,16 @@ type Application struct {
 }
 
 type BootstrapOptions struct {
-	Profile       string
-	ServerAddress string
-	ServerPort    uint64
-	ServerName    string
-	Host          string
-	LoggerDir     string
-	LoggerConsole bool
-	LoggerJson    bool
-	Config        config.IConfig
+	Profile              string
+	ServerAddress        string
+	ServerPort           uint64
+	ServerName           string
+	Host                 string
+	LoggerDir            string
+	LoggerConsole        bool
+	LoggerJson           bool
+	Config               config.IConfig
+	MaxServerConcurrency int
 }
 
 var MthApplication *Application
@@ -72,8 +69,9 @@ func StartBase(reader io.Reader, fileType string) *Application {
 		log.Println("[Bootstrap]init BootstrapOptions properties:[Profile=" + bo.Profile + "]" + ",[ServerName=" + bo.ServerName + "],[Bind=" + bo.ServerAddress + "]" + ",[LoggerDir=" + bo.LoggerDir + "]")
 	}
 	so := server.Options{
-		ServerName: bo.ServerName,
-		Address:    bo.ServerAddress,
+		ServerName:  bo.ServerName,
+		Address:     bo.ServerAddress,
+		Concurrency: bo.MaxServerConcurrency,
 	}
 	MthApplication.ServerOptions = so
 	return MthApplication
@@ -89,6 +87,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	sn := cfg.GetString(env.SERVER_SERVERNAME_KEY)
 	ld := cfg.GetString(env.LOGGER_DIR_KEY)
 	cfgFile := cfg.GetString(env.SERVER_CONFIGFILE_KEY)
+	fasthttpConcurrency := cfg.GetInt(env.FASTHTTP_concurrency_key)
 	var flagProfile string
 	var flagCfgFile string
 	var flagSn string
@@ -97,6 +96,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	var flagLogMaxAge uint64
 	var flagConsoleLog bool
 	var flagJsonLog bool
+	var flagFasthttpConcurrency int
 	flag.StringVar(&flagProfile, env.SERVER_PROFILE_KEY, "", "server profile:[dev,test,prod...]")
 	flag.StringVar(&flagCfgFile, env.SERVER_CONFIGFILE_KEY, "", "server config file")
 	flag.StringVar(&flagSn, env.SERVER_SERVERNAME_KEY, "", "server name")
@@ -105,6 +105,7 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	flag.Uint64Var(&flagLogMaxAge, env.LOGGER_MAXAGE_KEY, 7, "log maxAge:day   default:7")
 	flag.BoolVar(&flagConsoleLog, env.LOGGER_CONSOLE, true, "logger.console enabled:{default:true}")
 	flag.BoolVar(&flagJsonLog, env.LOGGER_JSON, false, "logger.json enabled:{default:false}")
+	flag.IntVar(&flagFasthttpConcurrency, env.FASTHTTP_concurrency_key, 256*1024, "fasthttp.concurrency :{default:256*1024}")
 	flag.Parse()
 	if len(flagProfile) == 0 {
 		flagProfile = profile
@@ -131,6 +132,9 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	if len(flagLogdir) == 0 {
 		flagLogdir = ld
 	}
+	if flagFasthttpConcurrency == 0 {
+		flagFasthttpConcurrency = fasthttpConcurrency
+	}
 	cfg.Set(env.SERVER_ADDRESS_KEY, flagAddress)
 	cfg.Set(env.SERVER_PORT_KEY, port)
 	cfg.Set(env.SERVER_PROFILE_KEY, flagProfile)
@@ -140,17 +144,19 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	cfg.Set(env.LOGGER_CONSOLE, flagConsoleLog)
 	cfg.Set(env.SERVER_CONFIGFILE_KEY, flagCfgFile)
 	cfg.Set(env.LOGGER_JSON, flagJsonLog)
+	cfg.Set(env.FASTHTTP_concurrency_key, flagFasthttpConcurrency)
 	cfg.LoadProfileBaseConfig(flagProfile, fileType)
 	return BootstrapOptions{
-		ServerAddress: flagAddress,
-		ServerPort:    port,
-		Profile:       flagProfile,
-		ServerName:    flagSn,
-		LoggerDir:     flagLogdir,
-		LoggerConsole: flagConsoleLog,
-		LoggerJson:    flagJsonLog,
-		Host:          host,
-		Config:        env.GetInstance(),
+		ServerAddress:        flagAddress,
+		ServerPort:           port,
+		Profile:              flagProfile,
+		ServerName:           flagSn,
+		LoggerDir:            flagLogdir,
+		LoggerConsole:        flagConsoleLog,
+		LoggerJson:           flagJsonLog,
+		Host:                 host,
+		Config:               env.GetInstance(),
+		MaxServerConcurrency: flagFasthttpConcurrency,
 	}
 }
 
@@ -206,8 +212,7 @@ func (app *Application) ShutDown() {
 	logger.Sync()
 }
 
-func (app *Application) StartWebServerWith(options server.Options, routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) {
-	srv := mthGin.NewServer(options, routerProvider, middleware...)
+func (app *Application) StartWebServer(srv server.Server) {
 	if app.Registry != nil {
 		delayFunction(func() {
 			err := app.Registry.RegisterInstance()
@@ -217,15 +222,6 @@ func (app *Application) StartWebServerWith(options server.Options, routerProvide
 		})
 	}
 	srv.Run(app.ShutDown)
-}
-
-func (app *Application) StartWebServer(routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) {
-	ops := app.BootOptions
-	options := server.Options{
-		ServerName: ops.ServerName,
-		Address:    ops.ServerAddress,
-	}
-	app.StartWebServerWith(options, routerProvider, middleware...)
 }
 
 func delayFunction(f func()) {

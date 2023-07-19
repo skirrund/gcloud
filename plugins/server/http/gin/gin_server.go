@@ -1,25 +1,17 @@
 package gin
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"github.com/skirrund/gcloud/utils/worker"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
-	"regexp"
 	"runtime/debug"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
-	"unicode/utf8"
 
-	"github.com/opentracing/opentracing-go"
 	"github.com/skirrund/gcloud/logger"
+	gm "github.com/skirrund/gcloud/plugins/server/http/gin/middleware"
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
 	"github.com/skirrund/gcloud/plugins/zipkin"
 	"github.com/skirrund/gcloud/response"
@@ -29,29 +21,11 @@ import (
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
-
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Server struct {
 	Srv     *gin.Engine
 	Options server.Options
-}
-
-const MAX_PRINT_BODY_LEN = 1024
-
-var reg = regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif|svg|webp|bmp|html|htm).*$`)
-
-type bodyLogWriter struct {
-	gin.ResponseWriter
-	bodyBuf *bytes.Buffer
-}
-
-func (w bodyLogWriter) Write(b []byte) (int, error) {
-	//memory copy here!
-	w.bodyBuf.Write(b)
-	return w.ResponseWriter.Write(b)
 }
 
 func NewServer(options server.Options, routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) server.Server {
@@ -66,8 +40,8 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 		//		c.AbortWithStatus(http.StatusInternalServerError)
 	}))
 	//s.Use(cors)
-	s.Use(zipkinMiddleware)
-	s.Use(loggingMiddleware)
+	//s.Use(zipkinMiddleware)
+	s.Use(gm.LoggingMiddleware)
 	//zipkin.InitZipkinTracer(s)
 	gp := prometheus.New(s)
 	s.Use(gp.Middleware())
@@ -77,7 +51,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	// metrics采样
 	s.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	//s.Use(sentinelMiddleware)
-	initSwagger(s)
+	//initSwagger(s)
 
 	pprof.Register(s)
 	routerProvider(s)
@@ -85,9 +59,9 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	return srv
 }
 
-func initSwagger(e *gin.Engine) {
-	e.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-}
+// func initSwagger(e *gin.Engine) {
+// 	e.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+// }
 
 // func cors(c *gin.Context) {
 // 	method := c.Request.Method
@@ -159,71 +133,27 @@ func initSwagger(e *gin.Engine) {
 // 	entry.Exit()
 // }
 
-func loggingMiddleware(ctx *gin.Context) {
-	start := time.Now()
-	blw := bodyLogWriter{bodyBuf: bytes.NewBufferString(""), ResponseWriter: ctx.Writer}
-	ctx.Writer = blw
-	bb, err := io.ReadAll(ctx.Request.Body)
-	if err == nil {
-		ctx.Request.Body = io.NopCloser(bytes.NewBuffer(bb))
-	}
-	ctx.Next()
-	strBody := strings.Trim(blw.bodyBuf.String(), "\n")
-	if utf8.RuneCountInString(strBody) > MAX_PRINT_BODY_LEN {
-		strBody = strBody[:(MAX_PRINT_BODY_LEN - 1)]
-	}
-	if len(bb) > MAX_PRINT_BODY_LEN {
-		bb = bb[:(MAX_PRINT_BODY_LEN - 1)]
-	}
-	req := ctx.Request
-	uri := req.RequestURI
-	uri1, _ := url.QueryUnescape(uri)
-	ct := req.Header.Get("content-type")
-	method := req.Method
-	worker.AsyncExecute(func() {
-		requestEnd(uri1, ct, method, start, strBody, string(bb))
-	})
-}
-
-func zipkinMiddleware(c *gin.Context) {
-	t := zipkin.GetTracer()
-	if t != nil {
-		// 将tracer注入到gin的中间件中
-		worker.AsyncExecute(func() {
-			carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
-			clientContext, err := t.Extract(opentracing.HTTPHeaders, carrier)
-			var serverSpan opentracing.Span
-			method := c.Request.Method
-			fp := c.FullPath()
-			if err == nil {
-				serverSpan = t.StartSpan(
-					method+" "+fp, opentracing.FollowsFrom(clientContext))
-			} else {
-				serverSpan = t.StartSpan(method + " " + fp)
-			}
-			defer serverSpan.Finish()
-		})
-	}
-	c.Next()
-}
-
-func requestEnd(uri string, contentType string, method string, start time.Time, strBody string, reqBody string) {
-	if strings.HasPrefix(uri, "/metrics") {
-		strBody = "ignore..."
-	}
-	if strings.HasPrefix(uri, "/swagger") {
-		return
-	}
-	if reg.MatchString(uri) {
-		return
-	}
-	logger.Info("\n [GIN] uri:", uri,
-		"\n [GIN] content-type:", contentType,
-		"\n [GIN] method:", method,
-		"\n [GIN] body:"+reqBody,
-		"\n [GIN] response:"+strBody,
-		"\n [GIN] cost:"+strconv.FormatInt(time.Since(start).Milliseconds(), 10)+"ms")
-}
+// func zipkinMiddleware(c *gin.Context) {
+// 	t := zipkin.GetTracer()
+// 	if t != nil {
+// 		// 将tracer注入到gin的中间件中
+// 		worker.AsyncExecute(func() {
+// 			carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
+// 			clientContext, err := t.Extract(opentracing.HTTPHeaders, carrier)
+// 			var serverSpan opentracing.Span
+// 			method := c.Request.Method
+// 			fp := c.FullPath()
+// 			if err == nil {
+// 				serverSpan = t.StartSpan(
+// 					method+" "+fp, opentracing.FollowsFrom(clientContext))
+// 			} else {
+// 				serverSpan = t.StartSpan(method + " " + fp)
+// 			}
+// 			defer serverSpan.Finish()
+// 		})
+// 	}
+// 	c.Next()
+// }
 
 func (server *Server) Shutdown() {
 	defer zipkin.Close()

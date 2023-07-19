@@ -13,8 +13,9 @@ type Server interface {
 }
 
 type Options struct {
-	ServerName string
-	Address    string
+	ServerName  string
+	Address     string
+	Concurrency int
 	//Container  Server
 	//	Registry   registry.IRegistry
 	//	Config     config.IConfig

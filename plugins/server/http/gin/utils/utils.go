@@ -73,7 +73,7 @@ func ShouldBindAndValidate(ctx *gin.Context, data interface{}) bool {
 		ctx.JSON(200, response.Fail(err.Error()))
 		return false
 	}
-	err = validator.Validate(data)
+	err = validator.ValidateStruct(data)
 	if err != nil {
 		SendJSON(ctx, response.ValidateError(err.Error()))
 		return false

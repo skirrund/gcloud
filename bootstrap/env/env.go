@@ -18,16 +18,17 @@ type env struct {
 }
 
 const (
-	SERVER_ADDRESS_KEY    = "server.address"
-	SERVER_PORT_KEY       = "server.port"
-	SERVER_PROFILE_KEY    = "server.profile"
-	SERVER_CONFIGFILE_KEY = "server.config.file"
-	SERVER_SERVERNAME_KEY = "server.name"
-	LOGGER_DIR_KEY        = "logger.dir"
-	LOGGER_MAXAGE_KEY     = "logger.maxAge"
-	LOGGER_CONSOLE        = "logger.console"
-	LOGGER_JSON           = "logger.json"
-	ZIPKIN_URL_KEY        = "zipkin.url"
+	SERVER_ADDRESS_KEY       = "server.address"
+	SERVER_PORT_KEY          = "server.port"
+	SERVER_PROFILE_KEY       = "server.profile"
+	SERVER_CONFIGFILE_KEY    = "server.config.file"
+	SERVER_SERVERNAME_KEY    = "server.name"
+	LOGGER_DIR_KEY           = "logger.dir"
+	LOGGER_MAXAGE_KEY        = "logger.maxAge"
+	LOGGER_CONSOLE           = "logger.console"
+	LOGGER_JSON              = "logger.json"
+	ZIPKIN_URL_KEY           = "zipkin.url"
+	FASTHTTP_concurrency_key = "fasthttp.concurrency"
 )
 
 var e *env
