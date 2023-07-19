@@ -22,6 +22,9 @@ func TestFiberServer(t *testing.T) {
 	}
 	srv := NewServer(options, func(engine *fiber.App) {
 		engine.Post("/test", func(context *fiber.Ctx) error {
+			vals := QueryArray(context, "a")
+			fmt.Println(vals)
+
 			d := &Test{}
 			if err := ShouldBindBody(context, d); err != nil {
 				context.JSON(response.Fail(validator.ErrResp(err)))

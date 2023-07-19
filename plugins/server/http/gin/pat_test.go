@@ -2,10 +2,11 @@ package gin
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/skirrund/gcloud/server"
 	"regexp"
 	"testing"
+
+	"github.com/gin-gonic/gin"
+	"github.com/skirrund/gcloud/server"
 )
 
 func TestXxx(t *testing.T) {
@@ -19,8 +20,9 @@ func TestGinServer(t *testing.T) {
 		Address:    ":8080",
 	}
 	srv := NewServer(options, func(engine *gin.Engine) {
-		engine.GET("/test", func(context *gin.Context) {
-			panic("test")
+		engine.POST("/test", func(context *gin.Context) {
+			v := context.QueryArray("a")
+			fmt.Println(v)
 			//		context.JSON(200, "test")
 		})
 	})

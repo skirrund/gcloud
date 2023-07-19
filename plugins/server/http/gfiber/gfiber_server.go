@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 
@@ -144,4 +145,93 @@ func ShouldBindHeader(ctx *fiber.Ctx, obj any) error {
 		return err
 	}
 	return validator.ValidateStruct(obj)
+}
+
+func GetHeader(ctx *fiber.Ctx, key string) string {
+	return string(ctx.Request().Header.Peek(key))
+}
+
+func CheckQueryParamsWithErrorMsg(name string, v *string, errorMsg string, ctx *fiber.Ctx) bool {
+	str := ctx.Query(name)
+	return CheckParamsWithErrorMsg(name, str, v, errorMsg, ctx)
+}
+
+func CheckHeaderParamsWithErrorMsg(name string, v *string, errorMsg string, ctx *fiber.Ctx) bool {
+	str := GetHeader(ctx, name)
+	return CheckParamsWithErrorMsg(name, str, v, errorMsg, ctx)
+}
+
+func CheckParamsWithErrorMsg(name string, str string, v *string, errorMsg string, ctx *fiber.Ctx) bool {
+	*v = str
+	if len(str) == 0 {
+		if len(errorMsg) == 0 {
+			ctx.JSON(response.ValidateError(name + "不能为空"))
+		} else {
+			ctx.JSON(response.ValidateError(errorMsg))
+		}
+		return false
+	}
+	return true
+}
+
+func CheckPostFormParamsWithErrorMsg(name string, v *string, errorMsg string, ctx *fiber.Ctx) bool {
+	str := ctx.FormValue(name)
+	if len(str) == 0 {
+		str = ctx.Query(name)
+	}
+	return CheckParamsWithErrorMsg(name, str, v, errorMsg, ctx)
+}
+
+func CheckQueryParams(name string, v *string, ctx *fiber.Ctx) bool {
+	return CheckQueryParamsWithErrorMsg(name, v, "", ctx)
+}
+
+func CheckPostFormParams(name string, v *string, ctx *fiber.Ctx) bool {
+	return CheckPostFormParamsWithErrorMsg(name, v, "", ctx)
+}
+
+func CheckHeaderParams(name string, v *string, ctx *fiber.Ctx) bool {
+	return CheckHeaderParamsWithErrorMsg(name, v, "", ctx)
+}
+func QueryArray(ctx *fiber.Ctx, name string) []string {
+	array := ctx.Context().QueryArgs().PeekMulti(name)
+	var params []string
+	if len(array) > 0 {
+		for _, a := range array {
+			if len(a) == 0 {
+				continue
+			}
+			v := string(a)
+			if strings.Contains(v, ",") {
+				tmp := strings.Split(v, ",")
+				params = append(params, tmp...)
+			} else {
+				params = append(params, v)
+			}
+		}
+	}
+	return params
+}
+func PostFormArray(ctx *fiber.Ctx, name string) []string {
+	array := ctx.Context().PostArgs().PeekMulti(name)
+	var params []string
+	if len(array) > 0 {
+		for _, a := range array {
+			if len(a) == 0 {
+				continue
+			}
+			v := string(a)
+			if strings.Contains(v, ",") {
+				tmp := strings.Split(v, ",")
+				params = append(params, tmp...)
+			} else {
+				params = append(params, v)
+			}
+		}
+	}
+	if len(params) > 0 {
+		return params
+	} else {
+		return QueryArray(ctx, name)
+	}
 }
