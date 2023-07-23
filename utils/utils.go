@@ -47,6 +47,32 @@ func VerifyEmailFormat(email string) bool {
 	return reg.MatchString(email)
 }
 
+// 身份证号获取年龄
+func GetAgeFromIdNum(idNum string) int {
+	return GetAgeFromIdNumEndTime(idNum, time.Now())
+}
+
+// 身份证号获取到某一时间点年龄
+func GetAgeFromIdNumEndTime(idNum string, endTime time.Time) int {
+	str := SubStr(idNum, 6, 8)
+	age, err := time.ParseInLocation("20060102", str, time.Local)
+	if err != nil {
+		return 0
+	}
+	actYear := endTime.Year()
+	actMonth := endTime.Month()
+	actDay := endTime.Day()
+	ageYear := age.Year()
+	ageMonth := age.Month()
+	ageDay := age.Day()
+	yearInterval := actYear - ageYear
+	// 如果 d1的 月-日 小于 d2的 月-日 那么 yearInterval-- 这样就得到了相差的年数
+	if actMonth < ageMonth || (actMonth == ageMonth && actDay < ageDay) {
+		yearInterval--
+	}
+	return yearInterval
+}
+
 func NewOptions(config cc.IConfig, opts interface{}) {
 	t := reflect.TypeOf(opts)
 	kind := t.Kind()
