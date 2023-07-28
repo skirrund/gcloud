@@ -159,6 +159,7 @@ func ShouldBindHeader(ctx *fiber.Ctx, obj any) error {
 	if err != nil {
 		return err
 	}
+
 	return validator.ValidateStruct(obj)
 }
 

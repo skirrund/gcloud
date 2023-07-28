@@ -19,9 +19,10 @@ func TestFiberServer(t *testing.T) {
 		Address:    ":8080",
 	}
 	srv := NewServer(options, func(engine *fiber.App) {
-		engine.Post("/test/:a", func(context *fiber.Ctx) error {
-			vals := context.Params("a")
-			fmt.Println(vals)
+		engine.Post("/test", func(context *fiber.Ctx) error {
+			req := make(map[string]string)
+			err := ShouldBindBody(context, &req)
+			fmt.Println(err)
 
 			// d := &Test{}
 			// if err := ShouldBindBody(context, d); err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	enTranslations "github.com/go-playground/validator/v10/translations/en"
 	zhTranslations "github.com/go-playground/validator/v10/translations/zh"
+	"github.com/skirrund/gcloud/logger"
 )
 
 // 定义一个全局翻译器
@@ -28,6 +29,12 @@ func InitValidatorDefault(locale string) (err error) {
 
 func ValidateStruct(obj any) error {
 	err := ValidateEntry.Struct(obj)
+	if err != nil {
+		if e, ok := err.(*validator.InvalidValidationError); ok {
+			logger.Error("InvalidValidationError[Type Not Supported]:", e.Error())
+			return nil
+		}
+	}
 	return err
 }
 
