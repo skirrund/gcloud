@@ -9,8 +9,9 @@ import (
 )
 
 type Test struct {
-	Id  int64 `validate:"required,gte=6" `
-	Id2 int64 `validate:"required,gte=2" `
+	Id   int64
+	Id2  int64
+	Code string
 }
 
 func TestFiberServer(t *testing.T) {
@@ -20,9 +21,10 @@ func TestFiberServer(t *testing.T) {
 	}
 	srv := NewServer(options, func(engine *fiber.App) {
 		engine.Post("/test", func(context *fiber.Ctx) error {
-			req := make(map[string]string)
-			err := ShouldBindBody(context, &req)
-			fmt.Println(err)
+			req := Test{}
+			ShouldBindBody(context, &req)
+			ac := context.Query("ac")
+			fmt.Println(req, ac)
 
 			// d := &Test{}
 			// if err := ShouldBindBody(context, d); err != nil {

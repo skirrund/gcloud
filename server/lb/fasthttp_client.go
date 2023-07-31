@@ -3,6 +3,7 @@ package lb
 import (
 	"crypto/tls"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -61,13 +62,15 @@ func (FastHttpClient) Exec(req *request.Request) (statusCode int, err error) {
 		}
 	}()
 	if req.Method != http.MethodGet && req.Method != http.MethodHead && params != nil {
-		doRequest.SetBodyStream(params, -1)
+		bodyBytes, _ := io.ReadAll(params)
+		doRequest.SetBody(bodyBytes)
+		//doRequest.SetBodyStream(params, -1)
 		if isJson {
-			reqHeader.Set("Content-Type", "application/json;charset=utf-8")
+			reqHeader.SetContentType("application/json;charset=utf-8")
 		} else if req.HasFile {
 
 		} else {
-			reqHeader.Set("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
+			reqHeader.SetContentType("application/x-www-form-urlencoded;charset=utf-8")
 		}
 	}
 	setFasthttpHeader(reqHeader, headers)
