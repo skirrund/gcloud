@@ -1,11 +1,11 @@
 package response
 
-type Response struct {
-	Code       string      `json:"code"`
-	Message    string      `json:"message"`
-	SubMessage string      `json:"subMessage"`
-	Result     interface{} `json:"result"`
-	Success    bool        `json:"success"`
+type Response[T any] struct {
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	SubMessage string `json:"subMessage"`
+	Result     T      `json:"result"`
+	Success    bool   `json:"success"`
 }
 
 type Msginfo struct {
@@ -56,12 +56,12 @@ func (mi Msginfo) String() string {
 	return mi.Code + ":" + mi.Message
 }
 
-func (resp *Response) IsSuccess() bool {
+func (resp *Response[T]) IsSuccess() bool {
 	return resp.Code == SUCCESS
 }
 
-func CreateMsgInfo(msgInfo Msginfo, subMsg string) Response {
-	return Response{
+func CreateMsgInfo[T any](msgInfo Msginfo, subMsg string) Response[T] {
+	return Response[T]{
 		Code:       msgInfo.Code,
 		Message:    msgInfo.Message,
 		SubMessage: subMsg,
@@ -69,32 +69,32 @@ func CreateMsgInfo(msgInfo Msginfo, subMsg string) Response {
 	}
 }
 
-func ValidateError(subMsg string) Response {
-	return Response{
+func ValidateError[T any](subMsg string) Response[T] {
+	return Response[T]{
 		Code:       VALIDATE_API_ERROR.Code,
 		Message:    VALIDATE_API_ERROR.Message,
 		SubMessage: subMsg,
 	}
 }
 
-func CreateMsgInfoResult(msgInfo Msginfo, result interface{}) Response {
-	return Response{
+func CreateMsgInfoResult[T any](msgInfo Msginfo, result T) Response[T] {
+	return Response[T]{
 		Code:    msgInfo.Code,
 		Message: msgInfo.Message,
 		Result:  result,
 	}
 }
 
-func Fail(msg string) Response {
-	return Response{
+func Fail[T any](msg string) Response[T] {
+	return Response[T]{
 		Code:    EXCEPTION.Code,
 		Message: msg,
 		Success: false,
 	}
 }
 
-func FailSubMsg(subMsg string) Response {
-	return Response{
+func FailSubMsg[T any](subMsg string) Response[T] {
+	return Response[T]{
 		Code:       EXCEPTION.Code,
 		Message:    EXCEPTION.Message,
 		Success:    false,
@@ -102,8 +102,8 @@ func FailSubMsg(subMsg string) Response {
 	}
 }
 
-func DefaultFailSubMsg(subMsg string) Response {
-	return Response{
+func DefaultFailSubMsg[T any](subMsg string) Response[T] {
+	return Response[T]{
 		Code:       EXCEPTION.Code,
 		Message:    EXCEPTION.Message,
 		Success:    false,
@@ -111,8 +111,8 @@ func DefaultFailSubMsg(subMsg string) Response {
 	}
 }
 
-func FailSubMsgResult(msg string, subMsg string, result interface{}) Response {
-	return Response{
+func FailSubMsgResult[T any](msg string, subMsg string, result T) Response[T] {
+	return Response[T]{
 		Code:       EXCEPTION.Code,
 		Message:    msg,
 		Success:    false,
@@ -120,8 +120,8 @@ func FailSubMsgResult(msg string, subMsg string, result interface{}) Response {
 		Result:     result,
 	}
 }
-func Success(data interface{}) Response {
-	return Response{
+func Success[T any](data T) Response[T] {
+	return Response[T]{
 		Code:    SUCCESS_MSG.Code,
 		Result:  data,
 		Message: SUCCESS_MSG.Message,
@@ -129,8 +129,8 @@ func Success(data interface{}) Response {
 	}
 }
 
-func Create(code string, msg string, subMsg string, data interface{}) Response {
-	return Response{
+func Create[T any](code string, msg string, subMsg string, data T) Response[T] {
+	return Response[T]{
 		Code:       code,
 		Result:     data,
 		Message:    msg,

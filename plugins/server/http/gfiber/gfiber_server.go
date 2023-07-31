@@ -36,12 +36,12 @@ func NewServer(options server.Options, routerProvider func(engine *fiber.App), m
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			if e, ok := err.(*fiber.Error); ok {
 				if e.Code == fiber.StatusInternalServerError {
-					c.JSON(response.Fail(err.Error()))
+					c.JSON(response.Fail[any](err.Error()))
 				} else {
 					c.SendStatus(e.Code)
 				}
 			} else if e, ok := err.(*server.Error); ok {
-				resp := response.Response{
+				resp := response.Response[any]{
 					Code:       e.Code,
 					Message:    e.Msg,
 					SubMessage: e.SubMsg,
@@ -49,7 +49,7 @@ func NewServer(options server.Options, routerProvider func(engine *fiber.App), m
 				}
 				c.JSON(resp)
 			} else if e, ok := err.(server.Error); ok {
-				resp := response.Response{
+				resp := response.Response[any]{
 					Code:       e.Code,
 					Message:    e.Msg,
 					SubMessage: e.SubMsg,
@@ -87,7 +87,7 @@ func getCfg() []any {
 		EnableStackTrace: true,
 		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
 			logger.Error("[Fiber] recover:", e, "\n", string(debug.Stack()))
-			c.JSON(response.Fail(fmt.Sprintf("%v", e)))
+			c.JSON(response.Fail[any](fmt.Sprintf("%v", e)))
 		},
 	}
 	handlers = append(handlers, recover.New(recoverCfg), middleware.LoggingMiddleware)
@@ -181,9 +181,9 @@ func CheckParamsWithErrorMsg(name string, str string, v *string, errorMsg string
 	*v = str
 	if len(str) == 0 {
 		if len(errorMsg) == 0 {
-			ctx.JSON(response.ValidateError(name + "不能为空"))
+			ctx.JSON(response.ValidateError[any](name + "不能为空"))
 		} else {
-			ctx.JSON(response.ValidateError(errorMsg))
+			ctx.JSON(response.ValidateError[any](errorMsg))
 		}
 		return false
 	}

@@ -36,7 +36,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	s.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		logger.Error("[GIN] recover:", recovered, "\n", string(debug.Stack()))
 
-		c.JSON(200, response.Fail(fmt.Sprintf("%v", recovered)))
+		c.JSON(200, response.Fail[any](fmt.Sprintf("%v", recovered)))
 		//		c.AbortWithStatus(http.StatusInternalServerError)
 	}))
 	//s.Use(cors)
