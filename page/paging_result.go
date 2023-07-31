@@ -1,34 +1,34 @@
 package page
 
-type PagingResult struct {
-	Count     int64       `json:"count"`
-	Current   int         `json:"current"`
-	PageSize  int         `json:"pageSize"`
-	Results   interface{} `json:"results"`
-	TotalPage int64       `json:"totalPage"`
+type PagingResult[T any] struct {
+	Count     int64 `json:"count"`
+	Current   int   `json:"current"`
+	PageSize  int   `json:"pageSize"`
+	Results   T     `json:"results"`
+	TotalPage int64 `json:"totalPage"`
 }
 
-func (pr *PagingResult) GetTotalPage() int64 {
+func (pr *PagingResult[T]) GetTotalPage() int64 {
 	if pr.PageSize == 0 {
 		pr.PageSize = 10
 	}
 	return (pr.Count + int64(pr.PageSize) - 1) / int64(pr.PageSize)
 }
 
-func (pr *PagingResult) SetTotalPage() {
+func (pr *PagingResult[T]) SetTotalPage() {
 	pr.TotalPage = pr.GetTotalPage()
 }
 
-func NewPagingResult(paging *Paging, count int64) *PagingResult {
-	return &PagingResult{
+func NewPagingResult[T any](paging Paging, count int64) *PagingResult[T] {
+	return &PagingResult[T]{
 		Current:  paging.Page,
 		PageSize: paging.PageSize,
 		Count:    count,
 	}
 }
 
-func NewPagingResult2(paging Paging) *PagingResult {
-	return &PagingResult{
+func NewPagingResult2[T any](paging Paging) *PagingResult[T] {
+	return &PagingResult[T]{
 		Current:  paging.Page,
 		PageSize: paging.PageSize,
 	}
