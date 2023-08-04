@@ -1,6 +1,7 @@
 package gfiber
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -136,7 +137,11 @@ func ShouldBindBody(ctx *fiber.Ctx, obj any) error {
 	if err != nil {
 		return err
 	}
-	return validator.ValidateStruct(obj)
+	err = validator.ValidateStruct(obj)
+	if err != nil {
+		return errors.New(validator.ErrResp(err))
+	}
+	return nil
 }
 
 func ShouldBindParams(ctx *fiber.Ctx, obj any) error {
@@ -144,7 +149,11 @@ func ShouldBindParams(ctx *fiber.Ctx, obj any) error {
 	if err != nil {
 		return err
 	}
-	return validator.ValidateStruct(obj)
+	err = validator.ValidateStruct(obj)
+	if err != nil {
+		return errors.New(validator.ErrResp(err))
+	}
+	return nil
 }
 
 func ShouldBindQuery(ctx *fiber.Ctx, obj any) error {
@@ -152,15 +161,22 @@ func ShouldBindQuery(ctx *fiber.Ctx, obj any) error {
 	if err != nil {
 		return err
 	}
-	return validator.ValidateStruct(obj)
+	err = validator.ValidateStruct(obj)
+	if err != nil {
+		return errors.New(validator.ErrResp(err))
+	}
+	return nil
 }
 func ShouldBindHeader(ctx *fiber.Ctx, obj any) error {
 	err := ctx.ReqHeaderParser(obj)
 	if err != nil {
 		return err
 	}
-
-	return validator.ValidateStruct(obj)
+	err = validator.ValidateStruct(obj)
+	if err != nil {
+		return errors.New(validator.ErrResp(err))
+	}
+	return nil
 }
 
 func GetHeader(ctx *fiber.Ctx, key string) string {
