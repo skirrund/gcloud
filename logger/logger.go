@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var logger *zap.SugaredLogger
+var Logger *zap.SugaredLogger
 
 var once sync.Once
 
@@ -30,43 +30,43 @@ func init() {
 	core := zapcore.NewTee(
 		zapcore.NewCore(encoder, c, infoLevel),
 	)
-	logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
+	Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
 }
 
 func Error(args ...interface{}) {
-	logger.Error(args...)
+	Logger.Error(args...)
 }
 
 func Fatal(args ...interface{}) {
-	logger.Fatal(args...)
+	Logger.Fatal(args...)
 }
 
 func Infof(template string, args ...interface{}) {
-	logger.Infof(template, args...)
+	Logger.Infof(template, args...)
 }
 
 func Errorf(template string, args ...interface{}) {
-	logger.Errorf(template, args...)
+	Logger.Errorf(template, args...)
 }
 
 func Sync() {
-	logger.Sync()
+	Logger.Sync()
 }
 
 func Warn(args ...interface{}) {
-	logger.Warn(args...)
+	Logger.Warn(args...)
 }
 
 func Warnf(template string, args ...interface{}) {
-	logger.Warnf(template, args...)
+	Logger.Warnf(template, args...)
 }
 
 func Panic(args ...interface{}) {
-	logger.Panic(args...)
+	Logger.Panic(args...)
 }
 
 func Info(args ...interface{}) {
-	logger.Info(args...)
+	Logger.Info(args...)
 }
 
 func GetLogStr(needLog string) string {
@@ -173,7 +173,7 @@ func InitLog(fileDir string, serviceName string, port string, console bool, json
 		if maxAgeDay == 0 {
 			maxAgeDay = 7
 		}
-		logger = initLog(fileDir, serviceName, port, console, json, time.Duration(maxAgeDay)*time.Hour*24)
+		Logger = initLog(fileDir, serviceName, port, console, json, time.Duration(maxAgeDay)*time.Hour*24)
 	})
 }
 
