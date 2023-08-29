@@ -7,6 +7,6 @@ import (
 
 func TestLogger(t *testing.T) {
 	initLog("logger", "test", "111", true, false, 1*time.Hour)
-	logger.Info("info.......")
+	Logger.Info("info.......")
 	Warn("warn.....")
 }
