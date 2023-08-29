@@ -98,7 +98,7 @@ func getCfg() []any {
 func (server *Server) Shutdown() {
 }
 
-func (server *Server) Run(graceful func()) {
+func (server *Server) Run(graceful ...func()) {
 	// srv := &http.Server{
 	// 	Addr:         server.Options.Address,
 	// 	Handler:      server.Srv,
@@ -116,16 +116,18 @@ func (server *Server) Run(graceful func()) {
 	<-quit
 	logger.Info("[Fiber]Shutting down server...")
 	if err := server.Srv.Shutdown(); err != nil {
-		grace(server, graceful)
+		grace(server, graceful...)
 		logger.Panic("[Fiber]Server forced to shutdown:", err)
 	}
-	grace(server, graceful)
+	grace(server, graceful...)
 	logger.Info("[Fiber]server has been shutdown")
 }
 
-func grace(server *Server, g func()) {
+func grace(server *Server, g ...func()) {
 	server.Shutdown()
-	g()
+	for _, f := range g {
+		f()
+	}
 }
 
 // ShouldBindBody binds the request body to a struct.

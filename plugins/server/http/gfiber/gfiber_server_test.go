@@ -14,6 +14,14 @@ type Test struct {
 	Code string
 }
 
+type WxAuthReq struct {
+	Signature    string `form:"signature" query:"signature" binding:"required,min=1" validate:"required,min=1"`
+	Timestamp    string `form:"timestamp" query:"timestamp" binding:"required,min=1" validate:"required,min=1"`
+	Nonce        string `form:"nonce" query:"nonce" binding:"required,min=1" validate:"required,min=1"`
+	EncryptType  string `form:"encrypt_type" query:"encrypt_type"`
+	MsgSignature string `form:"msg_signature" query:"msg_signature"`
+}
+
 func TestFiberServer(t *testing.T) {
 	options := server.Options{
 		ServerName: "fiber_test",
@@ -21,10 +29,9 @@ func TestFiberServer(t *testing.T) {
 	}
 	srv := NewServer(options, func(engine *fiber.App) {
 		engine.Post("/test", func(context *fiber.Ctx) error {
-			req := Test{}
-			ShouldBindBody(context, &req)
-			ac := context.Query("ac")
-			fmt.Println(req, ac)
+			req := WxAuthReq{}
+			ShouldBindQuery(context, &req)
+			fmt.Printf("%+v", req)
 
 			// d := &Test{}
 			// if err := ShouldBindBody(context, d); err != nil {

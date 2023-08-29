@@ -159,7 +159,7 @@ func (server *Server) Shutdown() {
 	defer zipkin.Close()
 }
 
-func (server *Server) Run(graceful func()) {
+func (server *Server) Run(graceful ...func()) {
 	srv := &http.Server{
 		Addr:         server.Options.Address,
 		Handler:      server.Srv,
@@ -179,14 +179,17 @@ func (server *Server) Run(graceful func()) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		grace(server, graceful)
+		grace(server, graceful...)
 		logger.Panic("[GIN]Server forced to shutdown:", err)
+		return
 	}
-	grace(server, graceful)
+	grace(server, graceful...)
 	logger.Info("[GIN]server has been shutdown")
 }
 
-func grace(server *Server, g func()) {
+func grace(server *Server, g ...func()) {
 	server.Shutdown()
-	g()
+	for _, f := range g {
+		f()
+	}
 }

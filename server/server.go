@@ -8,7 +8,7 @@ import (
 )
 
 type Server interface {
-	Run(graceful func())
+	Run(graceful ...func())
 	Shutdown()
 }
 

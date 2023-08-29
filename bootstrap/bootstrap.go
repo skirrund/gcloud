@@ -212,7 +212,7 @@ func (app *Application) ShutDown() {
 	logger.Sync()
 }
 
-func (app *Application) StartWebServer(srv server.Server) {
+func (app *Application) StartWebServer(srv server.Server, gracefulShutDown ...func()) {
 	if app.Registry != nil {
 		delayFunction(func() {
 			err := app.Registry.RegisterInstance()
@@ -221,7 +221,10 @@ func (app *Application) StartWebServer(srv server.Server) {
 			}
 		})
 	}
-	srv.Run(app.ShutDown)
+	var gfuncs []func()
+	gfuncs = append(gfuncs, app.ShutDown)
+	gfuncs = append(gfuncs, gracefulShutDown...)
+	srv.Run(gfuncs...)
 }
 
 func delayFunction(f func()) {
