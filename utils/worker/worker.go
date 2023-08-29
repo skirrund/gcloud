@@ -6,31 +6,31 @@ import (
 	"github.com/skirrund/gcloud/logger"
 )
 
-type Worker struct {
+type worker struct {
 	quene chan struct{}
 	Limit uint64
 }
 
-var DefaultWorker Worker
+var DefaultWorker worker
 
 const (
 	DefaultLimit uint64 = 512
 )
 
 func init() {
-	DefaultWorker = Worker{
+	DefaultWorker = worker{
 		quene: make(chan struct{}, DefaultLimit),
 		Limit: DefaultLimit,
 	}
 }
 
-func Init(limit uint64) Worker {
-	return Worker{
+func Init(limit uint64) worker {
+	return worker{
 		quene: make(chan struct{}, limit),
 		Limit: limit,
 	}
 }
-func (w Worker) Execute(f func()) {
+func (w worker) Execute(f func()) {
 	w.quene <- struct{}{}
 	go func() {
 		defer func() {
