@@ -1,12 +1,10 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/bytedance/sonic"
-	"github.com/skirrund/gcloud/logger"
+	"github.com/skirrund/gcloud/utils/mth_code"
 )
 
 type TestJson struct {
@@ -17,14 +15,7 @@ type TestJson struct {
 }
 
 func TestXxx(t *testing.T) {
-	s := `{"id":1,"name":"test","type":"1","t":""}`
-	tj := &TestJson{}
-	err := sonic.ConfigStd.UnmarshalFromString(s, tj)
-	err = json.Unmarshal([]byte(s), tj)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(tj)
-	logger.Info("t......")
+	str, err := mth_code.MthDesDecrypt("_mpCipyuv1XroqO1Xsda2GKPVeMa7RUl")
+	str1, _ := mth_code.MthDesEncrypt("422429197108230024")
+	fmt.Println(str, err, str1)
 }

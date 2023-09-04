@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/skirrund/gcloud/logger"
 )
@@ -16,6 +17,7 @@ type Options struct {
 	ServerName  string
 	Address     string
 	Concurrency int
+	IdleTimeout time.Duration
 	//Container  Server
 	//	Registry   registry.IRegistry
 	//	Config     config.IConfig
