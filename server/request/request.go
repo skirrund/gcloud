@@ -22,7 +22,6 @@ type Request struct {
 	Headers     map[string]string
 	Params      io.Reader
 	IsJson      bool
-	RespResult  interface{}
 	TimeOut     time.Duration
 	Method      string
 	LbOptions   *LbOptions

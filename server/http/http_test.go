@@ -3,16 +3,25 @@ package http
 import (
 	"fmt"
 	"testing"
+	"time"
 
-	"github.com/skirrund/gcloud/server/lb"
+	"github.com/skirrund/gcloud/response"
+	"github.com/skirrund/gcloud/server/decoder"
 )
 
-func TestGet(t *testing.T) {
-	var resp []byte
-	lb.GetInstance().SetHttpClient(lb.FastHttpClient{})
-	params := map[string]string{"code": "5a8fdab9a0ddfc3c0d5d16331dd394ab1d21d3e66c365c694fdea57bd8b38fca"}
-	PostJSONUrl("https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=71_mpMPZl0rKXP-HWjF5iDHBnqHVgRvgoA0wH85GxXQewm8-J45gv4PMG49gW6llKeIfWjQNgIXbeA5nMYpkVvE8p8MTHQuYxmocK7wbq2Z3v1gLFLh3ZAvSHLFOnkLMIaAJAABX", nil, params, &resp)
+func TestXxx(t *testing.T) {
+	var b []byte
+	params := map[string]interface{}{"locationUrl": "https%3A%2F%2Ftest-h5.mediext.com%2Fhealth%2F%3FcardTypeCode%3D160%23%2Fhealth-rainbow-activation"}
+	r := response.Response[any]{}
+	_, err := PostJSONUrl("https://test-h5.mediext.com/gateway/wx/v1/check", nil, params, &r)
+	fmt.Println(string(b), err)
+	time.Sleep(3 * time.Second)
+}
 
-	//PostJSONUrl("http://127.0.0.1:8080/test?ac=testsetsetset", nil, params, &resp)
-	fmt.Println(string(resp))
+func TestDecoder(t *testing.T) {
+	de := decoder.StringDecoder{}
+	resp := []byte("哈喽a")
+	var b []byte
+	de.DecoderObj(resp, &b)
+	fmt.Println(string(b))
 }

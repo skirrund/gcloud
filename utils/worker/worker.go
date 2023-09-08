@@ -1,61 +1,56 @@
 package worker
 
 import (
+	"math"
 	"runtime/debug"
+	"time"
 
+	"github.com/panjf2000/ants/v2"
 	"github.com/skirrund/gcloud/logger"
 )
 
 type worker struct {
-	quene chan struct{}
-	Limit uint64
+	p     *ants.Pool
+	Limit int
 }
 
 var DefaultWorker worker
 
 const (
-	DefaultLimit uint64 = 512
+	DefaultLimit int = math.MaxUint16
 )
 
 func init() {
+	p, err := ants.NewPool(DefaultLimit, ants.WithExpiryDuration(10*time.Second))
+	if err != nil {
+		panic(err)
+	}
 	DefaultWorker = worker{
-		quene: make(chan struct{}, DefaultLimit),
+		p:     p,
 		Limit: DefaultLimit,
 	}
 }
 
-func Init(limit uint64) worker {
+func Init(limit int) worker {
+	p, _ := ants.NewPool(DefaultLimit, ants.WithExpiryDuration(10*time.Second))
 	return worker{
-		quene: make(chan struct{}, limit),
+		p:     p,
 		Limit: limit,
 	}
 }
-func (w worker) Execute(f func()) {
-	w.quene <- struct{}{}
-	go func() {
-		defer func() {
-			<-w.quene
-		}()
-		execute(f)
-	}()
+func (w worker) Release() {
+	w.p.Release()
 }
 
-func execute(f func()) {
+func (w worker) Execute(f func()) error {
+	return w.p.Submit(f)
+}
+
+func AsyncExecute(f func()) error {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("[worker] error recover :", err, "\n", string(debug.Stack()))
 		}
 	}()
-	f()
-}
-
-func AsyncExecute(f func()) {
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("[worker] error recover :", err, "\n", string(debug.Stack()))
-			}
-		}()
-		f()
-	}()
+	return DefaultWorker.p.Submit(f)
 }

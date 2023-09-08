@@ -11,6 +11,7 @@ import (
 
 	"github.com/skirrund/gcloud/server"
 	"github.com/skirrund/gcloud/utils/idworker"
+	"github.com/skirrund/gcloud/utils/worker"
 
 	"github.com/skirrund/gcloud/cache/redis"
 	"github.com/skirrund/gcloud/config"
@@ -209,6 +210,7 @@ func (app *Application) ShutDown() {
 	if redisClient := app.Redis; redisClient != nil {
 		redisClient.Close()
 	}
+	worker.DefaultWorker.Release()
 	logger.Sync()
 }
 

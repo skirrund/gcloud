@@ -14,12 +14,13 @@ import (
 	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/plugins/zipkin"
-	"github.com/skirrund/gcloud/server/decoder"
 	"github.com/skirrund/gcloud/server/request"
-	"github.com/skirrund/gcloud/utils"
+	gResp "github.com/skirrund/gcloud/server/response"
 )
 
-type NetHttpClient struct{}
+type NetHttpClient struct {
+	httpClient *http.Client
+}
 
 type clientMap struct {
 	Clients map[time.Duration]*http.Client
@@ -69,17 +70,17 @@ func GetClient(timeout time.Duration) *http.Client {
 	return hc
 }
 
-func (NetHttpClient) Exec(req *request.Request) (statusCode int, err error) {
+func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	var doRequest *http.Request
 	var response *http.Response
 	reqUrl := req.Url
+	r = &gResp.Response{}
 	if len(reqUrl) == 0 {
-		return 0, errors.New("[http] request url  is empty")
+		return r, errors.New("[http] request url  is empty")
 	}
 	params := req.Params
 	headers := req.Headers
 	isJson := req.IsJson
-	respResult := req.RespResult
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("[[http]] recover :", err)
@@ -92,7 +93,7 @@ func (NetHttpClient) Exec(req *request.Request) (statusCode int, err error) {
 		doRequest, err = http.NewRequest(http.MethodPost, reqUrl, params)
 		if err != nil {
 			logger.Error("[http] NewRequest error:", err, ",", reqUrl)
-			return statusCode, err
+			return r, err
 		}
 		if isJson {
 			doRequest.Header.Set("Content-Type", "application/json;charset=utf-8")
@@ -107,11 +108,9 @@ func (NetHttpClient) Exec(req *request.Request) (statusCode int, err error) {
 	}
 	if err != nil {
 		logger.Error("[http] NewRequest error:", err, ",", reqUrl)
-		return statusCode, err
+		return r, err
 	}
 	setHeader(doRequest.Header, headers)
-	start := time.Now()
-	defer requestEnd(reqUrl, start)
 	span, err := zipkin.WrapHttp(doRequest, req.ServiceName)
 	if err == nil {
 		defer span.Finish()
@@ -124,35 +123,24 @@ func (NetHttpClient) Exec(req *request.Request) (statusCode int, err error) {
 	response, err = httpC.Do(doRequest)
 	if err != nil {
 		logger.Error("[http] client.Do error:", err.Error(), ",", reqUrl, ",")
-		return 0, err
+		return r, err
 	}
 	defer response.Body.Close()
 	sc := response.StatusCode
+	r.StatusCode = sc
+	ct := response.Header.Get("Content-Type")
+	r.ContentType = ct
 	b, err := io.ReadAll(response.Body)
+	r.Body = b
 	if err != nil {
 		logger.Error("[http] response body read error:", reqUrl)
-		return sc, err
+		return r, err
 	}
 	if sc != http.StatusOK {
 		logger.Error("[http] StatusCode error:", sc, ",", reqUrl, ",", string(b))
-		return sc, errors.New("http code error:" + strconv.FormatInt(int64(sc), 10))
+		return r, errors.New("http code error:" + strconv.FormatInt(int64(sc), 10))
 	}
-
-	ct := response.Header.Get("Content-Type")
-	logger.Info("[http] response content-type:", ct)
-	d, err := decoder.GetDecoder(ct).DecoderObj(b, respResult)
-	_, ok := d.(decoder.StreamDecoder)
-	if !ok {
-		str := string(b)
-		if len(str) > 1000 {
-			str = utils.SubStr(str, 0, 1000)
-		}
-		logger.Info("[http] response:", str)
-	} else {
-		logger.Info("[http] response:stream not log")
-	}
-
-	return sc, nil
+	return r, nil
 }
 
 func setHeader(header http.Header, headers map[string]string) {

@@ -12,13 +12,16 @@ import (
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/registry"
 	"github.com/skirrund/gcloud/server"
+	"github.com/skirrund/gcloud/server/decoder"
 	"github.com/skirrund/gcloud/server/http/client"
 	"github.com/skirrund/gcloud/server/request"
+	"github.com/skirrund/gcloud/server/response"
 	"github.com/skirrund/gcloud/utils"
+	"github.com/skirrund/gcloud/utils/worker"
 )
 
 const (
-	default_timeout                 = 10 * time.Second
+	default_timeout                 = 30 * time.Second
 	ConnectionTimeout               = "server.http.client.timeout"
 	RetryOnConnectionFailure        = "server.http.retry.onConnectionFailure"
 	RetryEnabled                    = "server.http.retry.enabled"
@@ -141,17 +144,48 @@ func (s *ServerPool) GetUrl(serviceName string, path string) string {
 	}
 }
 
+func unmarshal(resp *response.Response, respResult any) error {
+	ct := resp.ContentType
+	body := resp.Body
+	if len(body) > 0 {
+		d, err := decoder.GetDecoder(ct).DecoderObj(body, respResult)
+		if err != nil {
+			logger.Error("[LB] response error:", err.Error())
+			return err
+		}
+		_, ok := d.(decoder.StreamDecoder)
+		if !ok {
+			str := string(body)
+			worker.DefaultWorker.Execute(func() {
+				if len(str) > 1000 {
+					str = utils.SubStr(str, 0, 1000)
+				}
+				logger.Info("[LB] response:", str)
+			})
+		} else {
+			logger.Info("[http] response:stream not log")
+		}
+	}
+	return nil
+}
+
 // lb对接收到的请求 进行负载均衡
-func (s *ServerPool) Run(req *request.Request) (int, error) {
+func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Response, error) {
 	logger.Info("[LB] >>>>>>LbOptions", req.LbOptions)
+	start := time.Now()
+	defer requestEnd(req.Url, start)
 	if len(req.ServiceName) == 0 {
-		return s.client.Exec(req)
+		resp, err := s.client.Exec(req)
+		unmarshal(resp, respResult)
+		return resp, err
 	}
 	srv := s.GetService(req.ServiceName)
 	if srv == nil {
 		req.Url = s.GetUrl(req.ServiceName, req.Path)
 		logger.Warn("no available service for " + req.ServiceName)
-		return s.client.Exec(req)
+		resp, err := s.client.Exec(req)
+		unmarshal(resp, respResult)
+		return resp, err
 	}
 
 	lbo := req.LbOptions
@@ -160,37 +194,44 @@ func (s *ServerPool) Run(req *request.Request) (int, error) {
 	}
 	retrys := lbo.Retrys
 	if retrys >= len(srv.Instances) {
+		resp := &response.Response{}
+		resp.StatusCode = lbo.CurrentStatuCode
 		logger.Info("[LB] retry all instances:", req.Url, ",instances num:", len(srv.Instances), ",retrys:", retrys)
-		return lbo.CurrentStatuCode, lbo.CurrentError
+		return resp, lbo.CurrentError
 	}
 	if retrys > lbo.MaxRetriesOnNextServiceInstance {
+		resp := &response.Response{}
+		resp.StatusCode = lbo.CurrentStatuCode
 		logger.Info("[LB] Max retry reached:", req.Url, ",", len(srv.Instances), ",", retrys)
-		return lbo.CurrentStatuCode, lbo.CurrentError
+		return resp, lbo.CurrentError
 	}
 
 	instance := srv.GetNextPeer()
 	logger.Info("[LB] get instance", instance)
 	if instance == nil {
-		return 0, errors.New("no available service" + req.ServiceName)
+		return &response.Response{}, errors.New("no available service" + req.ServiceName)
 	}
 	req.Url = instance.GetUrl() + req.Path
 	if len(req.Url) == 0 {
-		return 0, errors.New("request url  is empty")
+		return &response.Response{}, errors.New("request url  is empty")
 	}
-	status, err := s.client.Exec(req)
-	if s.client.CheckRetry(err, status) {
+	resp, err := s.client.Exec(req)
+	unmarshal(resp, respResult)
+	if s.client.CheckRetry(err, resp.StatusCode) {
 		logger.Info("[LB] retry next:", req.ServiceName)
 		retrys += 1
 		lbo.Retrys = retrys
-		lbo.CurrentStatuCode = status
+		lbo.CurrentStatuCode = resp.StatusCode
 		lbo.CurrentError = err
 		req.LbOptions = lbo
-		return s.Run(req)
+		return s.Run(req, respResult)
 	}
-	return status, err
+	return resp, err
 
 }
 
 func requestEnd(url string, start time.Time) {
-	logger.Info("[http] request url method return :", url, " elapsed:", time.Since(start).Milliseconds())
+	worker.AsyncExecute(func() {
+		logger.Infof("[http] request url method return :%s,elapsed:%dms", url, time.Since(start).Milliseconds())
+	})
 }

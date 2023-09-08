@@ -32,8 +32,9 @@ var xmlDecoder = XmlDecoder{}
 
 func (d StreamDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
 	if bs, ok := obj.(*[]byte); ok {
-		*bs = make([]byte, len(resp))
-		copy(*bs, resp)
+		*bs = resp
+		// *bs = make([]byte, len(resp))
+		// copy(*bs, resp)
 		return d, nil
 	}
 	return d, nil
@@ -44,8 +45,9 @@ func (d StringDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error)
 		*str = string(resp)
 		return d, nil
 	} else if bs, ok := obj.(*[]byte); ok {
-		*bs = make([]byte, len(resp))
-		copy(*bs, resp)
+		*bs = resp
+		// *bs = make([]byte, len(resp))
+		// copy(*bs, resp)
 		return d, nil
 	} else if _, ok := obj.([]byte); ok {
 		return d, nil
@@ -61,8 +63,9 @@ func (d JSONDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
 		*str = string(resp)
 		return d, nil
 	} else if bs, ok := obj.(*[]byte); ok {
-		*bs = make([]byte, len(resp))
-		copy(*bs, resp)
+		// *bs = make([]byte, len(resp))
+		// copy(*bs, resp)
+		*bs = resp
 		return d, nil
 	}
 	err := utils.Unmarshal(resp, obj)
@@ -77,8 +80,9 @@ func (d XmlDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
 		*str = string(resp)
 		return d, nil
 	} else if bs, ok := obj.(*[]byte); ok {
-		*bs = make([]byte, len(resp))
-		copy(*bs, resp)
+		// *bs = make([]byte, len(resp))
+		// copy(*bs, resp)
+		*bs = resp
 		return d, nil
 	}
 	err := xml.Unmarshal(resp, obj)

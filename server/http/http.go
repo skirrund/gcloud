@@ -16,6 +16,7 @@ import (
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/server/lb"
 	"github.com/skirrund/gcloud/server/request"
+	"github.com/skirrund/gcloud/server/response"
 	"github.com/skirrund/gcloud/utils"
 	"github.com/skirrund/gcloud/utils/decimal"
 )
@@ -35,20 +36,19 @@ const (
 	// RetryTimes                      = "server.http.retry.times"
 )
 
-func getRequest(url string, method string, headers map[string]string, params io.Reader, isJson bool, respResult interface{}, timeOut time.Duration) *request.Request {
+func getRequest(url string, method string, headers map[string]string, params io.Reader, isJson bool, timeOut time.Duration) *request.Request {
 	return &request.Request{
-		Url:        url,
-		Method:     method,
-		Headers:    headers,
-		Params:     params,
-		IsJson:     isJson,
-		RespResult: respResult,
-		TimeOut:    timeOut,
-		LbOptions:  request.NewDefaultLbOptions(),
+		Url:       url,
+		Method:    method,
+		Headers:   headers,
+		Params:    params,
+		IsJson:    isJson,
+		TimeOut:   timeOut,
+		LbOptions: request.NewDefaultLbOptions(),
 	}
 }
 
-func getRequestLb(serviceName string, path string, method string, headers map[string]string, params io.Reader, isJson bool, respResult interface{}, timeOut time.Duration) *request.Request {
+func getRequestLb(serviceName string, path string, method string, headers map[string]string, params io.Reader, isJson bool, timeOut time.Duration) *request.Request {
 	return &request.Request{
 		ServiceName: serviceName,
 		Path:        path,
@@ -56,7 +56,6 @@ func getRequestLb(serviceName string, path string, method string, headers map[st
 		Headers:     headers,
 		Params:      params,
 		IsJson:      isJson,
-		RespResult:  respResult,
 		TimeOut:     timeOut,
 		LbOptions:   request.NewDefaultLbOptions(),
 	}
@@ -221,99 +220,99 @@ func getUrlWithParams(urlStr string, params map[string]interface{}) string {
 	return urlStr
 }
 
-func GetUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
+func GetUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (*response.Response, error) {
 	return GetUrlWithTimeout(url, headers, params, result, default_timeout)
 }
-func GetUrlWithTimeout(url string, headers map[string]string, params map[string]interface{}, result interface{}, timeout time.Duration) (int, error) {
-	req := getRequest(getUrlWithParams(url, params), http.MethodGet, headers, nil, false, result, timeout)
-	return lb.GetInstance().Run(req)
+func GetUrlWithTimeout(url string, headers map[string]string, params map[string]interface{}, result any, timeout time.Duration) (*response.Response, error) {
+	req := getRequest(getUrlWithParams(url, params), http.MethodGet, headers, nil, false, timeout)
+	return lb.GetInstance().Run(req, result)
 }
 
-func Get(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
+func Get(serviceName string, path string, headers map[string]string, params map[string]interface{}, result any) (*response.Response, error) {
 	return GetWithTimeout(serviceName, path, headers, params, result, default_timeout)
 }
 
-func GetWithTimeout(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}, timeout time.Duration) (int, error) {
-	req := getRequestLb(serviceName, getUrlWithParams(path, params), http.MethodGet, headers, nil, false, result, timeout)
-	return lb.GetInstance().Run(req)
+func GetWithTimeout(serviceName string, path string, headers map[string]string, params map[string]interface{}, result any, timeout time.Duration) (*response.Response, error) {
+	req := getRequestLb(serviceName, getUrlWithParams(path, params), http.MethodGet, headers, nil, false, timeout)
+	return lb.GetInstance().Run(req, result)
 }
 
-func PostUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
+func PostUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (*response.Response, error) {
 	return PostUrlWithTimeout(url, headers, params, result, default_timeout)
 }
 
-func PostUrlWithTimeout(url string, headers map[string]string, params map[string]interface{}, result interface{}, timeout time.Duration) (int, error) {
-	req := getRequest(url, http.MethodPost, headers, getFormData(params), false, result, timeout)
-	return lb.GetInstance().Run(req)
+func PostUrlWithTimeout(url string, headers map[string]string, params map[string]interface{}, result any, timeout time.Duration) (*response.Response, error) {
+	req := getRequest(url, http.MethodPost, headers, getFormData(params), false, timeout)
+	return lb.GetInstance().Run(req, result)
 }
-func PostFormDataUrl(url string, headers map[string]string, params url.Values, result interface{}) (int, error) {
+func PostFormDataUrl(url string, headers map[string]string, params url.Values, result any) (*response.Response, error) {
 	return PostFormDataUrlWithTimeout(url, headers, params, result, default_timeout)
 }
-func PostFormDataUrlWithTimeout(url string, headers map[string]string, params url.Values, result interface{}, timeout time.Duration) (int, error) {
+func PostFormDataUrlWithTimeout(url string, headers map[string]string, params url.Values, result any, timeout time.Duration) (*response.Response, error) {
 	reader := strings.NewReader(params.Encode())
-	req := getRequest(url, http.MethodPost, headers, reader, false, result, timeout)
-	return lb.GetInstance().Run(req)
+	req := getRequest(url, http.MethodPost, headers, reader, false, timeout)
+	return lb.GetInstance().Run(req, result)
 }
-func PostFile(url string, headers map[string]string, params map[string]interface{}, files map[string]*request.File, result interface{}) (int, error) {
+func PostFile(url string, headers map[string]string, params map[string]interface{}, files map[string]*request.File, result any) (*response.Response, error) {
 	return PostFileWithTimeout(url, headers, params, files, result, default_timeout)
 }
 
-func PostFileWithTimeout(url string, headers map[string]string, params map[string]interface{}, files map[string]*request.File, result interface{}, timeout time.Duration) (int, error) {
+func PostFileWithTimeout(url string, headers map[string]string, params map[string]interface{}, files map[string]*request.File, result any, timeout time.Duration) (*response.Response, error) {
 	reader, ct := getMultipartFormData(params, files)
 	if headers == nil {
 		headers = make(map[string]string)
 	}
 	headers["Content-Type"] = ct
-	req := getRequest(url, http.MethodPost, headers, reader, false, result, timeout)
+	req := getRequest(url, http.MethodPost, headers, reader, false, timeout)
 	req.HasFile = true
-	return lb.GetInstance().Run(req)
+	return lb.GetInstance().Run(req, result)
 }
 
-func Post(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}) (int, error) {
+func Post(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}) (*response.Response, error) {
 	return PostWithTimeout(serviceName, path, headers, params, result, default_timeout)
 }
 
-func PostWithTimeout(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}, timeout time.Duration) (int, error) {
-	req := getRequestLb(serviceName, path, http.MethodPost, headers, getFormData(params), false, result, timeout)
-	return lb.GetInstance().Run(req)
+func PostWithTimeout(serviceName string, path string, headers map[string]string, params map[string]interface{}, result any, timeout time.Duration) (*response.Response, error) {
+	req := getRequestLb(serviceName, path, http.MethodPost, headers, getFormData(params), false, timeout)
+	return lb.GetInstance().Run(req, result)
 }
 
-func PostFormData(serviceName string, path string, headers map[string]string, params url.Values, result interface{}) (int, error) {
+func PostFormData(serviceName string, path string, headers map[string]string, params url.Values, result any) (*response.Response, error) {
 	return PostFormDataWithTimeout(serviceName, path, headers, params, result, default_timeout)
 }
 
-func PostFormDataWithTimeout(serviceName string, path string, headers map[string]string, params url.Values, result interface{}, timeout time.Duration) (int, error) {
+func PostFormDataWithTimeout(serviceName string, path string, headers map[string]string, params url.Values, result any, timeout time.Duration) (*response.Response, error) {
 	reader := strings.NewReader(params.Encode())
-	req := getRequestLb(serviceName, path, http.MethodPost, headers, reader, false, result, timeout)
-	return lb.GetInstance().Run(req)
+	req := getRequestLb(serviceName, path, http.MethodPost, headers, reader, false, timeout)
+	return lb.GetInstance().Run(req, result)
 }
 
-func PostJSONUrl(url string, headers map[string]string, params interface{}, result interface{}) (int, error) {
+func PostJSONUrl(url string, headers map[string]string, params interface{}, result interface{}) (*response.Response, error) {
 	return PostJSONUrlWithTimeout(url, headers, params, result, default_timeout)
 }
 
-func PostJSONUrlWithTimeout(url string, headers map[string]string, params interface{}, result interface{}, timeout time.Duration) (int, error) {
+func PostJSONUrlWithTimeout(url string, headers map[string]string, params any, result any, timeout time.Duration) (*response.Response, error) {
 	var reader io.Reader
 	if p, ok := params.(string); ok {
 		reader = strings.NewReader(p)
 	} else {
 		reader = getJSONData(params)
 	}
-	req := getRequest(url, http.MethodPost, headers, reader, true, result, timeout)
-	return lb.GetInstance().Run(req)
+	req := getRequest(url, http.MethodPost, headers, reader, true, timeout)
+	return lb.GetInstance().Run(req, result)
 }
 
-func PostJSON(serviceName string, path string, headers map[string]string, params interface{}, result interface{}) (int, error) {
+func PostJSON(serviceName string, path string, headers map[string]string, params interface{}, result interface{}) (*response.Response, error) {
 	return PostJSONWithTimeout(serviceName, path, headers, params, result, default_timeout)
 }
 
-func PostJSONWithTimeout(serviceName string, path string, headers map[string]string, params interface{}, result interface{}, timeout time.Duration) (int, error) {
+func PostJSONWithTimeout(serviceName string, path string, headers map[string]string, params any, result any, timeout time.Duration) (*response.Response, error) {
 	var reader io.Reader
 	if p, ok := params.(string); ok {
 		reader = strings.NewReader(p)
 	} else {
 		reader = getJSONData(params)
 	}
-	req := getRequestLb(serviceName, path, http.MethodPost, headers, reader, true, result, timeout)
-	return lb.GetInstance().Run(req)
+	req := getRequestLb(serviceName, path, http.MethodPost, headers, reader, true, timeout)
+	return lb.GetInstance().Run(req, result)
 }
