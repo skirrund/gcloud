@@ -19,7 +19,6 @@ import (
 
 	"github.com/skirrund/gcloud/registry"
 
-	db "github.com/skirrund/gcloud/datasource"
 	"github.com/skirrund/gcloud/mq"
 
 	"github.com/skirrund/gcloud/bootstrap/env"
@@ -177,7 +176,7 @@ func (app *Application) BootstrapAll(options Options) {
 	app.Bootstrap(options)
 	//MthApplication.SentinelInit()
 	//MthApplication.StartRedis()
-	MthApplication.StartDb()
+	//MthApplication.StartDb()
 }
 
 func (app *Application) StartLogger() {
@@ -186,15 +185,15 @@ func (app *Application) StartLogger() {
 	logger.InitLog(ops.LoggerDir, ops.ServerName, strconv.FormatUint(ops.ServerPort, 10), ops.LoggerConsole, ops.LoggerJson, maxAge)
 }
 
-func (app *Application) StartDb() {
-	cfg := env.GetInstance()
-	db.InitDataSource(db.Option{
-		DSN:             cfg.GetString(db.DB_DSN),
-		MaxIdleConns:    cfg.GetInt(db.DB_MAX_IDLE_CONNS),
-		MaxOpenConns:    cfg.GetInt(db.DB_MAX_OPEN_CONNS),
-		ConnMaxLifetime: cfg.GetInt(db.DB_CONN_MAX_LIFE_TIME),
-	})
-}
+// func (app *Application) StartDb() {
+// 	cfg := env.GetInstance()
+// 	db.InitDataSource(db.Option{
+// 		DSN:             cfg.GetString(db.DB_DSN),
+// 		MaxIdleConns:    cfg.GetInt(db.DB_MAX_IDLE_CONNS),
+// 		MaxOpenConns:    cfg.GetInt(db.DB_MAX_OPEN_CONNS),
+// 		ConnMaxLifetime: cfg.GetInt(db.DB_CONN_MAX_LIFE_TIME),
+// 	})
+// }
 
 func (app *Application) ShutDown() {
 
