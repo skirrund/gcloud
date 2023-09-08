@@ -145,6 +145,10 @@ func (s *ServerPool) GetUrl(serviceName string, path string) string {
 }
 
 func unmarshal(resp *response.Response, respResult any) error {
+	if resp == nil {
+		resp = &response.Response{}
+		return nil
+	}
 	ct := resp.ContentType
 	body := resp.Body
 	if len(body) > 0 {

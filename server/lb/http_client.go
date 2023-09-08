@@ -19,7 +19,6 @@ import (
 )
 
 type NetHttpClient struct {
-	httpClient *http.Client
 }
 
 type clientMap struct {
