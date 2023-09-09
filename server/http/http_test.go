@@ -11,9 +11,9 @@ import (
 
 func TestXxx(t *testing.T) {
 	var b []byte
-	params := map[string]interface{}{"locationUrl": "https%3A%2F%2Ftest-h5.mediext.com%2Fhealth%2F%3FcardTypeCode%3D160%23%2Fhealth-rainbow-activation"}
+	params := map[string]interface{}{"locationUrl": ""}
 	r := response.Response[any]{}
-	_, err := PostJSONUrl("https://test-h5.mediext.com/gateway/wx/v1/check", nil, params, &r)
+	_, err := PostJSONUrl("https://www.baidu.com", nil, params, &r)
 	fmt.Println(string(b), err)
 	time.Sleep(3 * time.Second)
 }
