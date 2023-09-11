@@ -14,6 +14,8 @@ import (
 	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/plugins/zipkin"
+	"github.com/skirrund/gcloud/server/http/cookie"
+	gCookie "github.com/skirrund/gcloud/server/http/cookie"
 	"github.com/skirrund/gcloud/server/request"
 	gResp "github.com/skirrund/gcloud/server/response"
 )
@@ -73,7 +75,10 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	var doRequest *http.Request
 	var response *http.Response
 	reqUrl := req.Url
-	r = &gResp.Response{}
+	r = &gResp.Response{
+		Cookies: make(map[string]*cookie.Cookie),
+		Headers: make(map[string][]string),
+	}
 	if len(reqUrl) == 0 {
 		return r, errors.New("[http] request url  is empty")
 	}
@@ -135,11 +140,44 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 		logger.Error("[http] response body read error:", reqUrl)
 		return r, err
 	}
+	cks := response.Cookies()
+	for _, c := range cks {
+		val, _ := url.QueryUnescape(c.Value)
+		r.Cookies[c.Name] = &gCookie.Cookie{
+			Key:      c.Name,
+			Value:    val,
+			Expire:   c.Expires,
+			MaxAge:   c.MaxAge,
+			Domain:   c.Domain,
+			Path:     c.Path,
+			HttpOnly: c.HttpOnly,
+			Secure:   c.Secure,
+			SameSite: getSameSite(c.SameSite),
+		}
+	}
+	respHeaders := response.Header
+	for k, h := range respHeaders {
+		r.Headers[k] = h
+	}
 	if sc != http.StatusOK {
 		logger.Error("[http] StatusCode error:", sc, ",", reqUrl, ",", string(b))
 		return r, errors.New("http code error:" + strconv.FormatInt(int64(sc), 10))
 	}
 	return r, nil
+}
+
+func getSameSite(sameSite http.SameSite) (s cookie.CookieSameSite) {
+	switch sameSite {
+	case http.SameSiteDefaultMode:
+		return
+	case http.SameSiteLaxMode:
+		s = cookie.CookieSameSiteLaxMode
+	case http.SameSiteStrictMode:
+		s = cookie.CookieSameSiteStrictMode
+	case http.SameSiteNoneMode:
+		s = cookie.CookieSameSiteNoneMode
+	}
+	return s
 }
 
 func setHeader(header http.Header, headers map[string]string) {

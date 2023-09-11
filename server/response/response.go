@@ -6,6 +6,6 @@ type Response struct {
 	Body        []byte
 	ContentType string
 	Cookies     map[string]*cookie.Cookie
-	Headers     map[string]string
+	Headers     map[string][]string
 	StatusCode  int
 }
