@@ -2,7 +2,6 @@ package lb
 
 import (
 	"errors"
-	"net/http"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,6 +13,7 @@ import (
 	"github.com/skirrund/gcloud/server"
 	"github.com/skirrund/gcloud/server/decoder"
 	"github.com/skirrund/gcloud/server/http/client"
+	lbClient "github.com/skirrund/gcloud/server/lb/client"
 	"github.com/skirrund/gcloud/server/request"
 	"github.com/skirrund/gcloud/server/response"
 	"github.com/skirrund/gcloud/utils"
@@ -21,7 +21,6 @@ import (
 )
 
 const (
-	default_timeout                 = 30 * time.Second
 	ConnectionTimeout               = "server.http.client.timeout"
 	RetryOnConnectionFailure        = "server.http.retry.onConnectionFailure"
 	RetryEnabled                    = "server.http.retry.enabled"
@@ -33,14 +32,11 @@ const (
 )
 
 var once sync.Once
-var defaultTransport *http.Transport
 
 type ServerPool struct {
 	Services sync.Map
 	client   client.HttpClient
 }
-
-var defaultClient NetHttpClient
 
 type service struct {
 	Instances []*registry.Instance
@@ -54,8 +50,9 @@ func GetInstance() *ServerPool {
 		return sp
 	}
 	once.Do(func() {
-		sp = &ServerPool{}
-		sp.client = defaultClient
+		sp = &ServerPool{
+			client: lbClient.NetHttpClient{},
+		}
 		err := server.RegisterEventHook(server.RegistryChangeEvent, server.EventHook(sp.regChange))
 		if err != nil {
 			logger.Error("[LB]:", err)
@@ -66,6 +63,10 @@ func GetInstance() *ServerPool {
 
 func (s *ServerPool) SetHttpClient(client client.HttpClient) {
 	s.client = client
+}
+
+func (s *ServerPool) GetHttpClient() client.HttpClient {
+	return s.client
 }
 
 func (s *ServerPool) regChange(eventType server.EventName, eventInfo interface{}) error {

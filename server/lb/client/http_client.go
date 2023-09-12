@@ -1,4 +1,4 @@
-package lb
+package client
 
 import (
 	"crypto/tls"
@@ -13,12 +13,17 @@ import (
 
 	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/logger"
-	"github.com/skirrund/gcloud/plugins/zipkin"
-	"github.com/skirrund/gcloud/server/http/cookie"
 	gCookie "github.com/skirrund/gcloud/server/http/cookie"
 	"github.com/skirrund/gcloud/server/request"
 	gResp "github.com/skirrund/gcloud/server/response"
 )
+
+const (
+	default_timeout   = 30 * time.Second
+	ConnectionTimeout = "server.http.client.timeout"
+)
+
+var defaultTransport *http.Transport
 
 type NetHttpClient struct {
 }
@@ -76,7 +81,7 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	var response *http.Response
 	reqUrl := req.Url
 	r = &gResp.Response{
-		Cookies: make(map[string]*cookie.Cookie),
+		Cookies: make(map[string]*gCookie.Cookie),
 		Headers: make(map[string][]string),
 	}
 	if len(reqUrl) == 0 {
@@ -115,10 +120,6 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 		return r, err
 	}
 	setHeader(doRequest.Header, headers)
-	span, err := zipkin.WrapHttp(doRequest, req.ServiceName)
-	if err == nil {
-		defer span.Finish()
-	}
 	timeOut := req.TimeOut
 	if timeOut == 0 {
 		timeOut = default_timeout
@@ -166,16 +167,16 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	return r, nil
 }
 
-func getSameSite(sameSite http.SameSite) (s cookie.CookieSameSite) {
+func getSameSite(sameSite http.SameSite) (s gCookie.CookieSameSite) {
 	switch sameSite {
 	case http.SameSiteDefaultMode:
 		return
 	case http.SameSiteLaxMode:
-		s = cookie.CookieSameSiteLaxMode
+		s = gCookie.CookieSameSiteLaxMode
 	case http.SameSiteStrictMode:
-		s = cookie.CookieSameSiteStrictMode
+		s = gCookie.CookieSameSiteStrictMode
 	case http.SameSiteNoneMode:
-		s = cookie.CookieSameSiteNoneMode
+		s = gCookie.CookieSameSiteNoneMode
 	}
 	return s
 }
