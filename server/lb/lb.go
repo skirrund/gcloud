@@ -220,7 +220,6 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		return &response.Response{}, errors.New("request url  is empty")
 	}
 	resp, err := s.client.Exec(req)
-	unmarshal(resp, respResult)
 	if s.client.CheckRetry(err, resp.StatusCode) {
 		logger.Info("[LB] retry next:", req.ServiceName)
 		retrys += 1
@@ -229,6 +228,8 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		lbo.CurrentError = err
 		req.LbOptions = lbo
 		return s.Run(req, respResult)
+	} else {
+		unmarshal(resp, respResult)
 	}
 	return resp, err
 

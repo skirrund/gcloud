@@ -3,19 +3,14 @@ package http
 import (
 	"fmt"
 	"testing"
-	"time"
 
-	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/server/decoder"
 )
 
 func TestXxx(t *testing.T) {
-	var b []byte
-	params := map[string]interface{}{"locationUrl": ""}
-	r := response.Response[any]{}
-	_, err := PostJSONUrl("https://www.baidu.com", nil, params, &r)
-	fmt.Println(string(b), err)
-	time.Sleep(3 * time.Second)
+	var r []byte
+	resp, err := PostJSON("test", "http://127.0.0.1:8080/test", nil, nil, &r)
+	fmt.Println(resp, err)
 }
 
 func TestDecoder(t *testing.T) {
