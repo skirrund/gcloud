@@ -10,17 +10,20 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/skirrund/gcloud/logger"
 	gm "github.com/skirrund/gcloud/plugins/server/http/gin/middleware"
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
 	"github.com/skirrund/gcloud/plugins/zipkin"
 	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/server"
+	uValidator "github.com/skirrund/gcloud/utils/validator"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 type Server struct {
@@ -192,4 +195,13 @@ func grace(server *Server, g ...func()) {
 	for _, f := range g {
 		f()
 	}
+}
+
+// InitTrans 初始化翻译器
+func InitTrans(locale string, validate binding.StructValidator) (err error) {
+	//修改gin框架中的Validator属性，实现自定制
+	if v, ok := validate.Engine().(*validator.Validate); ok {
+		return uValidator.InitValidator(locale, v)
+	}
+	return
 }
