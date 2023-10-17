@@ -61,12 +61,20 @@ func getRequestLb(serviceName string, path string, method string, headers map[st
 	}
 }
 
-func getJSONData(params interface{}) io.Reader {
-	body, _ := utils.Marshal(params)
-	if env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY) {
-		logger.Info("[http] getJSONData:", logger.GetLogStr(string(body)))
+func getJSONData(params any) io.Reader {
+	var reader io.Reader
+	if p, ok := params.(string); ok {
+		reader = strings.NewReader(p)
+	} else if b, ok := params.([]byte); ok {
+		reader = bytes.NewReader(b)
+	} else {
+		body, _ := utils.Marshal(params)
+		if env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY) {
+			logger.Info("[http] getJSONData:", logger.GetLogStr(string(body)))
+		}
+		reader = bytes.NewReader(body)
 	}
-	return bytes.NewReader(body)
+	return reader
 }
 
 func getFormData(params map[string]interface{}) io.Reader {
@@ -292,12 +300,7 @@ func PostJSONUrl(url string, headers map[string]string, params interface{}, resu
 }
 
 func PostJSONUrlWithTimeout(url string, headers map[string]string, params any, result any, timeout time.Duration) (*response.Response, error) {
-	var reader io.Reader
-	if p, ok := params.(string); ok {
-		reader = strings.NewReader(p)
-	} else {
-		reader = getJSONData(params)
-	}
+	reader := getJSONData(params)
 	req := getRequest(url, http.MethodPost, headers, reader, true, timeout)
 	return lb.GetInstance().Run(req, result)
 }
@@ -307,12 +310,7 @@ func PostJSON(serviceName string, path string, headers map[string]string, params
 }
 
 func PostJSONWithTimeout(serviceName string, path string, headers map[string]string, params any, result any, timeout time.Duration) (*response.Response, error) {
-	var reader io.Reader
-	if p, ok := params.(string); ok {
-		reader = strings.NewReader(p)
-	} else {
-		reader = getJSONData(params)
-	}
+	reader := getJSONData(params)
 	req := getRequestLb(serviceName, path, http.MethodPost, headers, reader, true, timeout)
 	return lb.GetInstance().Run(req, result)
 }
