@@ -178,8 +178,8 @@ func unmarshal(resp *response.Response, respResult any) error {
 func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Response, error) {
 	logger.Info("[LB] >>>>>>LbOptions", req.LbOptions)
 	start := time.Now()
-	defer requestEnd(req.Url, start)
 	if len(req.ServiceName) == 0 {
+		defer requestEnd(req.Url, start)
 		resp, err := s.client.Exec(req)
 		unmarshal(resp, respResult)
 		return resp, err
@@ -192,7 +192,7 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		unmarshal(resp, respResult)
 		return resp, err
 	}
-
+	defer requestEnd(req.Url, start)
 	lbo := req.LbOptions
 	if lbo == nil {
 		lbo = request.NewDefaultLbOptions()
