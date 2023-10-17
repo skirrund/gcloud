@@ -187,12 +187,12 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 	srv := s.GetService(req.ServiceName)
 	if srv == nil {
 		req.Url = s.GetUrl(req.ServiceName, req.Path)
+		defer requestEnd(req.Url, start)
 		logger.Warn("no available service for " + req.ServiceName)
 		resp, err := s.client.Exec(req)
 		unmarshal(resp, respResult)
 		return resp, err
 	}
-	defer requestEnd(req.Url, start)
 	lbo := req.LbOptions
 	if lbo == nil {
 		lbo = request.NewDefaultLbOptions()
@@ -220,6 +220,7 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 	if len(req.Url) == 0 {
 		return &response.Response{}, errors.New("request url  is empty")
 	}
+	defer requestEnd(req.Url, start)
 	resp, err := s.client.Exec(req)
 	if s.client.CheckRetry(err, resp.StatusCode) {
 		logger.Info("[LB] retry next:", req.ServiceName)
