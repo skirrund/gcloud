@@ -32,7 +32,7 @@ func init() {
 }
 
 func Init(limit int) worker {
-	p, _ := ants.NewPool(DefaultLimit, ants.WithExpiryDuration(10*time.Second))
+	p, _ := ants.NewPool(limit, ants.WithExpiryDuration(10*time.Second))
 	return worker{
 		p:     p,
 		Limit: limit,
