@@ -41,11 +41,11 @@ func init() {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //不校验服务端证书
 		DialContext: (&net.Dialer{
 			Timeout:   3 * time.Second,
-			KeepAlive: 30 * time.Second,
+			KeepAlive: 10 * time.Second,
 		}).DialContext,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
-		IdleConnTimeout:       30 * time.Second,
+		IdleConnTimeout:       10 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		MaxConnsPerHost:       0,
