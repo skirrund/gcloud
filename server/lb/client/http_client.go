@@ -136,6 +136,7 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	ct := response.Header.Get("Content-Type")
 	r.ContentType = ct
 	b, err := io.ReadAll(response.Body)
+	logger.Info("[http] response statusCode:", sc, " content-type:", ct)
 	r.Body = b
 	if err != nil {
 		logger.Error("[http] response body read error:", reqUrl)
