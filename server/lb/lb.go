@@ -29,6 +29,7 @@ const (
 	RetryableStatusCodes            = "server.http.retry.retryableStatusCodes"
 	ProtocolHttp                    = "http://"
 	ProtocolHttps                   = "https://"
+	maxRoundRobin                   = 100000000
 )
 
 var once sync.Once
@@ -114,19 +115,30 @@ func (s *ServerPool) GetService(name string) *service {
 	}
 }
 
-func (s *service) NextIndex() int {
+func (s *service) NextIndex() int64 {
 	// 通过原子操作递增 current 的值，并通过对 slice 的长度取模来获得当前索引值。所以，返回值总是介于 0 和 slice 的长度之间，毕竟我们想要的是索引值，而不是总的计数值
-	return int(atomic.AddInt64(&s.Current, 1) % int64(len(s.Instances)))
+	n := atomic.AddInt64(&s.Current, 1)
+	idx := n % int64(len(s.Instances))
+	if n > maxRoundRobin {
+		s.Current = 0
+	}
+	return idx
 }
 
 // get next instance
 func (s *service) GetNextPeer() *registry.Instance {
-	next := s.NextIndex()
-	length := len(s.Instances)
+	length := int64(len(s.Instances))
 	if length == 0 {
 		return nil
 	}
+	if length == 1 {
+		return s.Instances[0]
+	}
+	next := s.NextIndex()
 	idx := next % length
+	if idx > length-1 {
+		return s.Instances[0]
+	}
 	return s.Instances[idx]
 
 }

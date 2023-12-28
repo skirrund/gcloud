@@ -125,6 +125,7 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 		timeOut = default_timeout
 	}
 	httpC := GetClient(timeOut)
+
 	response, err = httpC.Do(doRequest)
 	if err != nil {
 		logger.Error("[http] client.Do error:", err.Error(), ",", reqUrl, ",")
