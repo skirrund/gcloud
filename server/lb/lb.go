@@ -120,7 +120,7 @@ func (s *service) NextIndex() int64 {
 	n := atomic.AddInt64(&s.Current, 1)
 	idx := n % int64(len(s.Instances))
 	if n > maxRoundRobin {
-		s.Current = 0
+		s.Current = -1
 	}
 	return idx
 }
