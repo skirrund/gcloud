@@ -1,6 +1,6 @@
 module github.com/skirrund/gcloud
 
-go 1.20
+go 1.22
 
 require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
@@ -23,6 +23,7 @@ require (
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/spf13/viper v1.18.2
 	go.uber.org/zap v1.27.0
+	go.uber.org/zap/exp v0.2.0
 	golang.org/x/text v0.14.0
 	gorm.io/driver/mysql v1.5.4
 	gorm.io/gorm v1.25.7
