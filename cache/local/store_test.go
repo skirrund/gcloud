@@ -3,6 +3,7 @@ package local
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 type TestSetStruct struct {
@@ -11,8 +12,11 @@ type TestSetStruct struct {
 }
 
 func TestSet(t *testing.T) {
-	Set("test", &TestSetStruct{Name: "test"}, 10)
-	obj := Get("test").(TestSetStruct)
-	fmt.Println(obj.Name)
+	testInt := 123
+	Set("test", TestSetStruct{Name: "test"}, 1)
+	Set("test", testInt, 1)
+	time.Sleep(3 * time.Second)
+	obj := Get("test")
+	fmt.Println(obj)
 
 }
