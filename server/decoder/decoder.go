@@ -31,6 +31,9 @@ var streamDecoder = StreamDecoder{}
 var xmlDecoder = XmlDecoder{}
 
 func (d StreamDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
+	if obj == nil {
+		return d, nil
+	}
 	if bs, ok := obj.(*[]byte); ok {
 		*bs = resp
 		// *bs = make([]byte, len(resp))
@@ -41,6 +44,9 @@ func (d StreamDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error)
 }
 
 func (d StringDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
+	if obj == nil {
+		return d, nil
+	}
 	if str, ok := obj.(*string); ok {
 		*str = string(resp)
 		return d, nil
@@ -59,6 +65,9 @@ func (d StringDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error)
 }
 
 func (d JSONDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
+	if obj == nil {
+		return d, nil
+	}
 	if str, ok := obj.(*string); ok {
 		*str = string(resp)
 		return d, nil
@@ -76,6 +85,9 @@ func (d JSONDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
 }
 
 func (d XmlDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
+	if obj == nil {
+		return d, nil
+	}
 	if str, ok := obj.(*string); ok {
 		*str = string(resp)
 		return d, nil
