@@ -139,7 +139,6 @@ func NewFromString(value string) (Decimal, error) {
 	originalInput := value
 	var intString string
 	var exp int64
-
 	// Check if number is using scientific notation
 	eIndex := strings.IndexAny(value, "Ee")
 	if eIndex != -1 {
@@ -1320,7 +1319,10 @@ func (d *Decimal) UnmarshalJSON(decimalBytes []byte) error {
 	if err != nil {
 		return fmt.Errorf("error decoding string '%s': %s", decimalBytes, err)
 	}
-
+	if len(str) == 0 {
+		*d = Zero
+		return nil
+	}
 	decimal, err := NewFromString(str)
 	*d = decimal
 	if err != nil {
@@ -1412,7 +1414,10 @@ func (d Decimal) Value() (driver.Value, error) {
 // deserialization.
 func (d *Decimal) UnmarshalText(text []byte) error {
 	str := string(text)
-
+	if len(str) == 0 {
+		*d = Zero
+		return nil
+	}
 	dec, err := NewFromString(str)
 	*d = dec
 	if err != nil {
