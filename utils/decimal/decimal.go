@@ -1311,17 +1311,16 @@ func (d Decimal) Truncate(precision int32) Decimal {
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (d *Decimal) UnmarshalJSON(decimalBytes []byte) error {
+	str := string(decimalBytes)
 	if string(decimalBytes) == "null" {
 		return nil
 	}
-
+	if str == `""` {
+		return nil
+	}
 	str, err := unquoteIfQuoted(decimalBytes)
 	if err != nil {
 		return fmt.Errorf("error decoding string '%s': %s", decimalBytes, err)
-	}
-	if len(str) == 0 {
-		*d = Zero
-		return nil
 	}
 	decimal, err := NewFromString(str)
 	*d = decimal
@@ -1414,8 +1413,7 @@ func (d Decimal) Value() (driver.Value, error) {
 // deserialization.
 func (d *Decimal) UnmarshalText(text []byte) error {
 	str := string(text)
-	if len(str) == 0 {
-		*d = Zero
+	if len(str) == 0 || str == `""` {
 		return nil
 	}
 	dec, err := NewFromString(str)
