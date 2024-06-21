@@ -87,7 +87,7 @@ func init() {
 	ContentTypes[".wmv"] = "video/x-ms-wmv"
 }
 
-func NewClient(endpoint, accessKeyID, accessKeySecret, bucketName, authVersion, region string) (c *ossClient, err error) {
+func NewClient(endpoint, accessKeyID, accessKeySecret, bucketName, region string) (c *ossClient, err error) {
 	if len(endpoint) == 0 {
 		err = errors.New("endpoint is  empty")
 		logger.Error("[alioss] error:" + err.Error())
@@ -108,16 +108,12 @@ func NewClient(endpoint, accessKeyID, accessKeySecret, bucketName, authVersion, 
 		logger.Error("[alioss] error:" + err.Error())
 		return
 	}
-	authv := oss.AuthV1
-	if len(authVersion) > 0 {
-		authv = oss.AuthVersionType(strings.ToLower(authVersion))
-		if authv == oss.AuthV4 && len(region) == 0 {
-			err = errors.New("region must not be blank when authVersion is v4")
-			logger.Error("[alioss] error:" + err.Error())
-			return
-		}
+	if len(region) == 0 {
+		err = errors.New("region must not be blank when authVersion is v4")
+		logger.Error("[alioss] error:" + err.Error())
+		return
 	}
-	cl, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.AuthVersion(authv))
+	cl, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.AuthVersion(oss.AuthV4), oss.Region(region))
 	if err != nil {
 		logger.Error("[alioss] error:" + err.Error())
 		return
