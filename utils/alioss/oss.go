@@ -3,7 +3,7 @@ package alioss
 import (
 	"encoding/base64"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"os"
 	"strings"
@@ -29,6 +29,8 @@ const (
 	bucketNameKey           = "alioss.bucketName" //"mth-core";
 	selfDomainKey           = "alioss.selfDomain"
 	nativePrefixKey         = "alioss.nativePrefix" //"=/alioss-core/";
+	authVersionKey          = "alioss.authVersion"  //"v1,v4等";
+	regionKey               = "alioss.region"
 	defaultEndpoint         = "oss-cn-shanghai.aliyuncs.com"
 	defaultSelfDomainHost   = "static-core.meditrusthealth.com"
 	defaultEndpointInternal = "oss-cn-shanghai.aliyuncs.com"
@@ -85,7 +87,7 @@ func init() {
 	ContentTypes[".wmv"] = "video/x-ms-wmv"
 }
 
-func NewClient(endpoint string, accessKeyID string, accessKeySecret string, bucketName string) (c *ossClient, err error) {
+func NewClient(endpoint, accessKeyID, accessKeySecret, bucketName, authVersion, region string) (c *ossClient, err error) {
 	if len(endpoint) == 0 {
 		err = errors.New("endpoint is  empty")
 		logger.Error("[alioss] error:" + err.Error())
@@ -106,7 +108,16 @@ func NewClient(endpoint string, accessKeyID string, accessKeySecret string, buck
 		logger.Error("[alioss] error:" + err.Error())
 		return
 	}
-	cl, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	authv := oss.AuthV1
+	if len(authVersion) > 0 {
+		authv = oss.AuthVersionType(strings.ToLower(authVersion))
+		if authv == oss.AuthV4 && len(region) == 0 {
+			err = errors.New("region must not be blank when authVersion is v4")
+			logger.Error("[alioss] error:" + err.Error())
+			return
+		}
+	}
+	cl, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.AuthVersion(authv))
 	if err != nil {
 		logger.Error("[alioss] error:" + err.Error())
 		return
@@ -115,6 +126,10 @@ func NewClient(endpoint string, accessKeyID string, accessKeySecret string, buck
 	if err != nil {
 		logger.Error("[alioss] error:" + err.Error())
 		return
+	}
+
+	if len(region) > 0 {
+		cl.SetRegion(region)
 	}
 	c = &ossClient{
 		C: b,
@@ -133,6 +148,9 @@ func NewDefaultClient() (c *ossClient, err error) {
 	accessKeyID := cfg.GetString(accessKeyIdKey)
 	accessKeySecret := cfg.GetString(accessKeySecretKey)
 	bucketName := cfg.GetStringWithDefault(bucketNameKey, "mth-core")
+	authVersion := cfg.GetStringWithDefault(authVersionKey, "v4")
+	authVersion = strings.ToLower(authVersion)
+	region := cfg.GetString(regionKey)
 	if len(endpointInternal) == 0 {
 		if len(endpointPublic) == 0 {
 			err = errors.New("[endpointInternal,endpointPublic] are both empty")
@@ -157,12 +175,24 @@ func NewDefaultClient() (c *ossClient, err error) {
 		logger.Error("[alioss] error:" + err.Error())
 		return
 	}
-	cl, err := oss.New(endpointInternal, accessKeyID, accessKeySecret)
+	authv := oss.AuthV1
+	if len(authVersion) > 0 {
+		authv = oss.AuthVersionType(strings.ToLower(authVersion))
+		if authv == oss.AuthV4 && len(region) == 0 {
+			err = errors.New("region must not be blank when authVersion is v4")
+			logger.Error("[alioss] error:" + err.Error())
+			return
+		}
+	}
+	cl, err := oss.New(endpointInternal, accessKeyID, accessKeySecret, oss.AuthVersion(authv))
 	if err != nil {
 		logger.Error("[alioss] error:" + err.Error())
 		return
 	}
 	b, err := cl.Bucket(bucketName)
+	if len(region) > 0 {
+		cl.SetRegion(region)
+	}
 	if err != nil {
 		logger.Error("[alioss] error:" + err.Error())
 		return
@@ -260,7 +290,7 @@ func (c *ossClient) getFileName(fileName string) string {
 	if i > -1 {
 		fileName = utils.SubStr(fileName, 0, i)
 	}
-	if strings.Index(fileName, "%") > -1 {
+	if strings.Contains(fileName, "%") {
 		fileName, _ = url.QueryUnescape(fileName)
 	}
 	return subStringBlackSlash(fileName)
@@ -355,7 +385,7 @@ func (c *ossClient) UploadFileBytes(key string, bs []byte, isPrivate bool, force
 }
 
 func (c *ossClient) UploadFileFile(fileName string, file *os.File, isPrivate bool, forceUpload bool) (string, error) {
-	b, err := ioutil.ReadAll(file)
+	b, err := io.ReadAll(file)
 	if err == nil {
 		return c.UploadFileBytes(fileName, b, isPrivate, forceUpload)
 	}
@@ -368,7 +398,7 @@ func (c *ossClient) GetBytes(fileName string) ([]byte, error) {
 	if ex, _ := c.C.IsObjectExist(fileName); ex {
 		obj, err := c.C.GetObject(fileName)
 		if err == nil {
-			return ioutil.ReadAll(obj)
+			return io.ReadAll(obj)
 		}
 		return nil, err
 	} else {
@@ -384,7 +414,8 @@ func (c *ossClient) GetBase64(fileName string) (string, error) {
 	return "", err
 }
 
-/**
+/*
+*
 @param fileName
 @param file
 @param isPrivate
@@ -400,7 +431,8 @@ func (c *ossClient) UploadFileWithFullUrl(fileName string, file *os.File, isPriv
 	return str, err
 }
 
-/**
+/*
+*
 @param fileName
 @param bytes
 @param isPrivate
