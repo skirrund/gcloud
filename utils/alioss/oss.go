@@ -32,7 +32,7 @@ const (
 	authVersionKey          = "alioss.authVersion"  //"v1,v4等";
 	regionKey               = "alioss.region"
 	defaultEndpoint         = "oss-cn-shanghai.aliyuncs.com"
-	defaultSelfDomainHost   = "static-core.meditrusthealth.com"
+	defaultSelfDomainHost   = "static-core.demo.com"
 	defaultEndpointInternal = "oss-cn-shanghai.aliyuncs.com"
 )
 
@@ -150,7 +150,7 @@ func NewDefaultClient() (c *ossClient, err error) {
 	bucketName := cfg.GetStringWithDefault(bucketNameKey, "mth-core")
 	authVersion := cfg.GetStringWithDefault(authVersionKey, "v4")
 	authVersion = strings.ToLower(authVersion)
-	region := cfg.GetString(regionKey)
+	region := cfg.GetStringWithDefault(regionKey, "cn-shanghai")
 	if len(endpointInternal) == 0 {
 		if len(endpointPublic) == 0 {
 			err = errors.New("[endpointInternal,endpointPublic] are both empty")
@@ -249,7 +249,7 @@ func getSelfDomain() bool {
 func getSelfDomainHost() string {
 	cfg := env.GetInstance()
 
-	return cfg.GetStringWithDefault(selfDomainHostKey, "static-core.meditrusthealth.com")
+	return cfg.GetString(selfDomainHostKey)
 }
 
 func (c *ossClient) GetFullUrl(fileName string) string {
