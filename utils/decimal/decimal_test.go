@@ -12,6 +12,7 @@ type TestObj struct {
 }
 
 func TestXxx(t *testing.T) {
+	MarshalJSONWithoutQuotes = true
 	a := 1100.1
 	b := a * 100
 	fmt.Println(b)
@@ -21,4 +22,9 @@ func TestXxx(t *testing.T) {
 	obj := &TestObj{}
 	err := utils.UnmarshalFromString(`{"testD":""}`, obj)
 	fmt.Println(err, obj.TestD)
+
+	obj.TestD = c
+	str, _ := utils.MarshalToString(obj)
+	fmt.Println(str)
+
 }

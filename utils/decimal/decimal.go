@@ -63,7 +63,7 @@ var PowPrecisionNegativeExponent = 16
 // unmarshallers (ex: Javascript's) will unmarshal JSON numbers to IEEE 754
 // double-precision floating point numbers, which means you can potentially
 // silently lose precision.
-var MarshalJSONWithoutQuotes = false
+var MarshalJSONWithoutQuotes = true
 
 // ExpMaxIterations specifies the maximum number of iterations needed to calculate
 // precise natural exponent value using ExpHullAbrham method.
