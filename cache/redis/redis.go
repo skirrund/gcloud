@@ -285,6 +285,16 @@ func (r *RedisClient) SPop(key string) string {
 	return bc.Val()
 }
 
+func (r *RedisClient) SPopN(key string, count int64) []string {
+	bc := r.client.SPopN(ctx, key, count)
+	return bc.Val()
+}
+
+func (r *RedisClient) SSize(key string) int64 {
+	bc := r.client.SCard(ctx, key)
+	return bc.Val()
+}
+
 func (r *RedisClient) LPop(key string, member ...string) string {
 	bc := r.client.LPop(ctx, key)
 	return bc.Val()
