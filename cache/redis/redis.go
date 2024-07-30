@@ -280,6 +280,11 @@ func (r *RedisClient) SAdd(key string, member ...interface{}) int64 {
 	return bc.Val()
 }
 
+func (r *RedisClient) SPop(key string) string {
+	bc := r.client.SPop(ctx, key)
+	return bc.Val()
+}
+
 func (r *RedisClient) LPop(key string, member ...string) string {
 	bc := r.client.LPop(ctx, key)
 	return bc.Val()

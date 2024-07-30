@@ -2,6 +2,7 @@ package consumer
 
 type Message struct {
 	Value           string
+	Payload         []byte
 	RedeliveryCount uint32
 }
 
