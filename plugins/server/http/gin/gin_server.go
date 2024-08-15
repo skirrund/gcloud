@@ -14,7 +14,6 @@ import (
 	"github.com/skirrund/gcloud/logger"
 	gm "github.com/skirrund/gcloud/plugins/server/http/gin/middleware"
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
-	"github.com/skirrund/gcloud/plugins/zipkin"
 	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/server"
 	uValidator "github.com/skirrund/gcloud/utils/validator"
@@ -159,7 +158,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 // }
 
 func (server *Server) Shutdown() {
-	defer zipkin.Close()
+	//defer zipkin.Close()
 }
 
 func (server *Server) Run(graceful ...func()) {

@@ -119,15 +119,18 @@ func Get() *gorm.DB {
 
 func GetWithContext(ctx context.Context) *gorm.DB {
 	odb := ctx.Value(ctxTransactionKey{})
+	var gdb *gorm.DB
 	if odb != nil {
-		tx, ok := odb.(*gorm.DB)
-		if !ok {
+		if tx, ok := odb.(*gorm.DB); ok {
+			gdb = tx
+		} else {
 			log.Panicf("unexpect context value type: %s", reflect.TypeOf(tx))
 			return nil
 		}
-		return tx
+	} else {
+		gdb = db.WithContext(ctx)
 	}
-	return db.WithContext(ctx)
+	return gdb
 }
 
 func Transaction(ctx context.Context, fc func(txctx context.Context) error) error {
