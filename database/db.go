@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/skirrund/gcloud/bootstrap/env"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -24,6 +23,10 @@ type Option struct {
 	MaxIdleConns int
 	//连接可复用的最大时间。单位分钟，默认DefaultConnMaxLifetime
 	ConnMaxLifetime int
+	//QueryFields executes the SQL query with all fields of the table
+	QueryFields bool
+	//数据源类型：MySql
+	Type string
 }
 
 const (
@@ -34,9 +37,12 @@ const (
 	DB_CONN_MAX_LIFE_TIME  = "datasource.connMaxLifetime"
 	DB_MAX_IDLE_CONNS      = "datasource.maxIdleConns"
 	DB_MAX_OPEN_CONNS      = "datasource.maxOpenConns"
+	DB_QueryFields         = "datasource.queryFields"
+	DB_TYPE                = "datasource.type"
 	DefaultConnMaxLifetime = 30 * time.Minute
 	DefaultMaxIdleConns    = 10
 	DefaultMaxOpenConns    = 50
+	DB_TYPE_MYSQL          = "mysql"
 )
 
 var db *gorm.DB
@@ -49,6 +55,8 @@ func InitDefault() {
 		MaxIdleConns:    cfg.GetInt(DB_MAX_IDLE_CONNS),
 		MaxOpenConns:    cfg.GetInt(DB_MAX_OPEN_CONNS),
 		ConnMaxLifetime: cfg.GetInt(DB_CONN_MAX_LIFE_TIME),
+		QueryFields:     cfg.GetBool(DB_QueryFields),
+		Type:            cfg.GetStringWithDefault(DB_TYPE, DB_TYPE_MYSQL),
 	})
 }
 func InitDefaultWithOption(option Option) {
@@ -60,40 +68,14 @@ func InitDataSource(option Option) *gorm.DB {
 	if len(dsn) == 0 {
 		panic("db init error: dsn is null")
 	}
-	mysqldb, err := gorm.Open(mysql.New(mysql.Config{
-		DSN: dsn,
-	}), &gorm.Config{
-		SkipDefaultTransaction: true,
-		PrepareStmt:            true,
-	})
-	if err != nil {
-		log.Panicln(err)
+	dbType := strings.ToLower(option.Type)
+	switch dbType {
+	case DB_TYPE_MYSQL:
+		return initMysql(option)
+	default:
+		return initMysql(option)
 	}
-	sqlDB, err := mysqldb.DB()
-	if err != nil {
-		log.Panicln(err)
-	} else {
-		maxIdleConns := option.MaxIdleConns
-		if maxIdleConns == 0 {
-			sqlDB.SetMaxIdleConns(DefaultMaxIdleConns)
-		} else {
-			sqlDB.SetMaxIdleConns(maxIdleConns)
-		}
-		maxOpenConns := option.MaxOpenConns
-		if maxOpenConns == 0 {
-			sqlDB.SetMaxOpenConns(DefaultMaxOpenConns)
-		} else {
-			sqlDB.SetMaxOpenConns(maxOpenConns)
-		}
-		connMaxLifetime := option.ConnMaxLifetime
-		if connMaxLifetime == 0 {
-			sqlDB.SetConnMaxLifetime(DefaultConnMaxLifetime)
-		} else {
-			sqlDB.SetConnMaxLifetime(time.Duration(connMaxLifetime) * time.Second)
-		}
-	}
-	sqlDB.Exec("set @@session.sql_mode=(SELECT CONCAT(@@session.sql_mode,',STRICT_TRANS_TABLES'))")
-	return mysqldb
+
 }
 
 func CreateInsertSql(tableName string, kv map[string]interface{}) (sql string, values []interface{}) {
