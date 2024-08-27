@@ -144,7 +144,7 @@ func NewDefaultClient() (c *ossClient, err error) {
 	accessKeyID := cfg.GetString(accessKeyIdKey)
 	accessKeySecret := cfg.GetString(accessKeySecretKey)
 	bucketName := cfg.GetStringWithDefault(bucketNameKey, "mth-core")
-	authVersion := cfg.GetStringWithDefault(authVersionKey, "v4")
+	authVersion := cfg.GetString(authVersionKey)
 	authVersion = strings.ToLower(authVersion)
 	region := cfg.GetStringWithDefault(regionKey, "cn-shanghai")
 	if len(endpointInternal) == 0 {
