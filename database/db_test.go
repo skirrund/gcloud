@@ -2,7 +2,11 @@ package database
 
 import (
 	"context"
+	"errors"
 	"testing"
+
+	"github.com/skirrund/gcloud/database/dialectors/gmysql"
+	"github.com/skirrund/gcloud/database/option"
 )
 
 type Test1Service struct {
@@ -23,15 +27,15 @@ func (Test2Service) saveTest2(ctx context.Context, data interface{}) error {
 }
 
 func TestTransaction(t *testing.T) {
-	option := Option{
-		DSN: "test_root:I#9Qvnyg@tcp(cpg3xayuo60t5jni4q8lb9rzmwkcf1se.mysql.qingcloud.link:3306)/test?charset=utf8mb4&parseTime=True&loc=Local",
+	option := option.Option{
+		DSN: "",
 	}
-	InitDataSource(option)
+	InitDefaultWithOption(option, new(gmysql.MysqlDialector))
 	t.Log("db init finished")
 	ctx := context.Background()
 	Transaction(ctx, func(txctx context.Context) error {
 		tt1 := make(map[string]interface{})
-		tt1["name"] = "tt1"
+		tt1["name"] = "tt11"
 		ts1 := Test1Service{}
 		err := ts1.saveTest1(txctx, tt1)
 		if err != nil {
@@ -44,6 +48,6 @@ func TestTransaction(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return nil
+		return errors.New("test")
 	})
 }

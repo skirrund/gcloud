@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/skirrund/gcloud/bootstrap/env"
+	"github.com/skirrund/gcloud/database/option"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -15,18 +16,8 @@ import (
 type ctxTransactionKey struct {
 }
 
-type Option struct {
-	DSN string
-	//打开数据库连接的最大数量，默认DefaultMaxOpenConns
-	MaxOpenConns int
-	//空闲连接池中连接的最大数量，默认DefaultMaxIdleConns
-	MaxIdleConns int
-	//连接可复用的最大时间。单位分钟，默认DefaultConnMaxLifetime
-	ConnMaxLifetime int
-	//QueryFields executes the SQL query with all fields of the table
-	QueryFields bool
-	//数据源类型：MySql
-	Type string
+type Dialector interface {
+	New(option option.Option) gorm.Dialector
 }
 
 const (
@@ -48,34 +39,72 @@ const (
 var db *gorm.DB
 
 // 根据项目env初始化
-func InitDefault() {
+func InitDefault(dialector Dialector) {
 	cfg := env.GetInstance()
-	db = InitDataSource(Option{
+	db = InitDataSource(option.Option{
 		DSN:             cfg.GetString(DB_DSN),
 		MaxIdleConns:    cfg.GetInt(DB_MAX_IDLE_CONNS),
 		MaxOpenConns:    cfg.GetInt(DB_MAX_OPEN_CONNS),
 		ConnMaxLifetime: cfg.GetInt(DB_CONN_MAX_LIFE_TIME),
 		QueryFields:     cfg.GetBool(DB_QueryFields),
 		Type:            cfg.GetStringWithDefault(DB_TYPE, DB_TYPE_MYSQL),
-	})
+	}, dialector)
 }
-func InitDefaultWithOption(option Option) {
-	db = InitDataSource(option)
+func InitDefaultWithOption(option option.Option, dialector Dialector) {
+	db = InitDataSource(option, dialector)
 }
 
-func InitDataSource(option Option) *gorm.DB {
+func doInit(option option.Option, dialector gorm.Dialector) *gorm.DB {
+	if len(option.Type) == 0 {
+		option.Type = DB_TYPE_MYSQL
+	}
+	gormdb, err := gorm.Open(dialector, &gorm.Config{
+		SkipDefaultTransaction: true,
+		PrepareStmt:            true,
+		QueryFields:            option.QueryFields,
+	})
+	if err != nil {
+		log.Panicln(err)
+	}
+	sqlDB, err := gormdb.DB()
+	if err != nil {
+		log.Panicln(err)
+	} else {
+		maxIdleConns := option.MaxIdleConns
+		if maxIdleConns == 0 {
+			sqlDB.SetMaxIdleConns(DefaultMaxIdleConns)
+		} else {
+			sqlDB.SetMaxIdleConns(maxIdleConns)
+		}
+		maxOpenConns := option.MaxOpenConns
+		if maxOpenConns == 0 {
+			sqlDB.SetMaxOpenConns(DefaultMaxOpenConns)
+		} else {
+			sqlDB.SetMaxOpenConns(maxOpenConns)
+		}
+		connMaxLifetime := option.ConnMaxLifetime
+		if connMaxLifetime == 0 {
+			sqlDB.SetConnMaxLifetime(DefaultConnMaxLifetime)
+		} else {
+			sqlDB.SetConnMaxLifetime(time.Duration(connMaxLifetime) * time.Second)
+		}
+	}
+	if option.Type == DB_TYPE_MYSQL {
+		sqlDB.Exec("set @@session.sql_mode=(SELECT CONCAT(@@session.sql_mode,',STRICT_TRANS_TABLES'))")
+	}
+	return gormdb
+}
+
+func InitDataSource(option option.Option, dialector Dialector) *gorm.DB {
 	dsn := option.DSN
 	if len(dsn) == 0 {
 		panic("db init error: dsn is null")
 	}
-	dbType := strings.ToLower(option.Type)
-	switch dbType {
-	case DB_TYPE_MYSQL:
-		return initMysql(option)
-	default:
-		return initMysql(option)
+	if dialector == nil {
+		panic("db init error: dialector is null")
 	}
-
+	gormDia := dialector.New(option)
+	return doInit(option, gormDia)
 }
 
 func CreateInsertSql(tableName string, kv map[string]interface{}) (sql string, values []interface{}) {
