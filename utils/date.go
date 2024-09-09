@@ -32,6 +32,9 @@ func (t *DateTime) UnmarshalJSON(b []byte) error {
 	if str == `""` {
 		return nil
 	}
+	if str == `null` {
+		return nil
+	}
 	pt, err := time.ParseInLocation(`"`+TimeFormat+`"`, str, time.Local)
 	if err != nil {
 		logger.Error("[DateTime] format error:" + str)
