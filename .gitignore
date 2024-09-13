@@ -18,3 +18,5 @@
 golist.json
 .DS_Store
 .zed
+db_test.go
+sm4_test.go

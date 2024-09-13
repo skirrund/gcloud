@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"log"
 	"reflect"
 	"strings"
@@ -62,6 +63,7 @@ func doInit(option option.Option, dialector gorm.Dialector) *gorm.DB {
 		SkipDefaultTransaction: true,
 		PrepareStmt:            true,
 		QueryFields:            option.QueryFields,
+		TranslateError:         true,
 	})
 	if err != nil {
 		log.Panicln(err)
@@ -154,4 +156,8 @@ func Transaction(ctx context.Context, fc func(txctx context.Context) error) erro
 
 func Expr(expr string, args ...interface{}) clause.Expr {
 	return gorm.Expr(expr, args)
+}
+
+func IsDuplicatedKeyError(err error) bool {
+	return errors.Is(err, gorm.ErrDuplicatedKey)
 }
