@@ -11,7 +11,7 @@ import (
 	"time"
 
 	strftime "github.com/lestrrat-go/strftime"
-	"github.com/pkg/errors"
+	"github.com/skirrund/gcloud/utils/gerrors"
 )
 
 func (c clockFn) Now() time.Time {
@@ -28,7 +28,7 @@ func New(p string, options ...Option) (*RotateLogs, error) {
 
 	pattern, err := strftime.New(p)
 	if err != nil {
-		return nil, errors.Wrap(err, `invalid strftime pattern`)
+		return nil, gerrors.Wrap(err, `invalid strftime pattern`)
 	}
 
 	var clock Clock = Local
@@ -71,7 +71,7 @@ func New(p string, options ...Option) (*RotateLogs, error) {
 	}
 
 	if maxAge > 0 && rotationCount > 0 {
-		return nil, errors.New("options MaxAge and RotationCount cannot be both set")
+		return nil, gerrors.New("options MaxAge and RotationCount cannot be both set")
 	}
 
 	if maxAge == 0 && rotationCount == 0 {
@@ -104,7 +104,7 @@ func (rl *RotateLogs) Write(p []byte) (n int, err error) {
 
 	out, err := rl.getWriterNolock(false, false)
 	if err != nil {
-		return 0, errors.Wrap(err, `failed to acquite target io.Writer`)
+		return 0, gerrors.Wrap(err, `failed to acquite target io.Writer`)
 	}
 
 	return out.Write(p)
@@ -165,11 +165,11 @@ func (rl *RotateLogs) getWriterNolock(bailOnRotateFail, useGenerationalNames boo
 
 	fh, err := CreateFile(filename)
 	if err != nil {
-		return nil, errors.Wrapf(err, `failed to create a new file %v`, filename)
+		return nil, gerrors.Wrapf(err, `failed to create a new file %v`, filename)
 	}
 
 	if err := rl.rotateNolock(filename); err != nil {
-		err = errors.Wrap(err, "failed to rotate")
+		err = gerrors.Wrap(err, "failed to rotate")
 		if bailOnRotateFail {
 			// Failure to rotate is a problem, but it's really not a great
 			// idea to stop your application just because you couldn't rename
@@ -276,31 +276,31 @@ func (rl *RotateLogs) rotateNolock(filename string) error {
 		if strings.Contains(rl.linkName, baseDir) {
 			tmp, err := filepath.Rel(linkDir, filename)
 			if err != nil {
-				return errors.Wrapf(err, `failed to evaluate relative path from %#v to %#v`, baseDir, rl.linkName)
+				return gerrors.Wrapf(err, `failed to evaluate relative path from %#v to %#v`, baseDir, rl.linkName)
 			}
 
 			linkDest = tmp
 		}
 
 		if err := os.Symlink(linkDest, tmpLinkName); err != nil {
-			return errors.Wrap(err, `failed to create new symlink`)
+			return gerrors.Wrap(err, `failed to create new symlink`)
 		}
 
 		// the directory where rl.linkName should be created must exist
 		_, err := os.Stat(linkDir)
 		if err != nil { // Assume err != nil means the directory doesn't exist
 			if err := os.MkdirAll(linkDir, 0755); err != nil {
-				return errors.Wrapf(err, `failed to create directory %s`, linkDir)
+				return gerrors.Wrapf(err, `failed to create directory %s`, linkDir)
 			}
 		}
 
 		if err := os.Rename(tmpLinkName, rl.linkName); err != nil {
-			return errors.Wrap(err, `failed to rename new symlink`)
+			return gerrors.Wrap(err, `failed to rename new symlink`)
 		}
 	}
 
 	if rl.maxAge <= 0 && rl.rotationCount <= 0 {
-		return errors.New("panic: maxAge and rotationCount are both set")
+		return gerrors.New("panic: maxAge and rotationCount are both set")
 	}
 
 	matches, err := filepath.Glob(rl.globPattern)
