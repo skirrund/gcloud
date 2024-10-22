@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/disintegration/imaging"
+	"github.com/skirrund/gcloud/imaging"
 )
 
 const (

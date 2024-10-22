@@ -10,9 +10,8 @@ import (
 
 	"regexp"
 
+	"github.com/skirrund/gcloud/imaging"
 	"github.com/skirrund/gcloud/logger"
-
-	"github.com/disintegration/imaging"
 )
 
 type circle struct { // 这里需要自己实现一个圆形遮罩，实现接口里的三个方法
