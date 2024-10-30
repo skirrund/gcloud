@@ -11,6 +11,7 @@ import (
 type Server interface {
 	Run(graceful ...func())
 	Shutdown()
+	GetServeServer() any
 }
 
 type Options struct {

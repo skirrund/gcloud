@@ -161,6 +161,10 @@ func (server *Server) Shutdown() {
 	//defer zipkin.Close()
 }
 
+func (server *Server) GetServeServer() any {
+	return server.Srv
+}
+
 func (server *Server) Run(graceful ...func()) {
 	srv := &http.Server{
 		Addr:         server.Options.Address,
