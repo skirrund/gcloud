@@ -49,9 +49,9 @@ func init() {
 	ContentTypes[".tif"] = "image/tiff"
 	ContentTypes[".tiff"] = "image/tiff"
 	ContentTypes[".gif"] = "image/gif"
-	ContentTypes[".jpeg"] = "image/jpg"
-	ContentTypes[".png"] = "image/jpg"
-	ContentTypes[".jpg"] = "image/jpg"
+	ContentTypes[".jpeg"] = "image/jpeg"
+	ContentTypes[".png"] = "image/png"
+	ContentTypes[".jpg"] = "image/jpeg"
 	ContentTypes[".html"] = "text/html"
 	ContentTypes[".htm"] = "text/html"
 	ContentTypes[".txt"] = "text/plain"
@@ -202,7 +202,7 @@ func NewDefaultClient() (c *ossClient, err error) {
 func getcontentType(fileName string) string {
 	index := strings.Index(fileName, ".")
 	if index == -1 {
-		return "image/jpg"
+		return "image/jpeg"
 	}
 	filenameExtension := utils.SubStr(fileName, strings.LastIndex(fileName, "."), -1)
 	if len(filenameExtension) > 0 {
