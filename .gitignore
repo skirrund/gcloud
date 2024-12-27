@@ -20,3 +20,5 @@ golist.json
 .zed
 db_test.go
 sm4_test.go
+zijie_oss_test.go
+oss_test.go
