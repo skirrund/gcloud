@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/skirrund/gcloud/goss"
+	"github.com/skirrund/gcloud/goss/alioss"
 	"github.com/skirrund/gcloud/logger"
-	"github.com/skirrund/gcloud/utils/alioss"
 )
 
 func SaveImageBase64(base64Str string, filePath string, fileName string) (fn string, err error) {
@@ -47,15 +48,16 @@ func GetPublicURL(filePath string, publicPath string, publicDomain string) strin
 		logger.Warn("filePath is null , return filePath")
 		return filePath
 	} else {
+		client, err := goss.GetDefault(alioss.OssClient{})
+		if err != nil {
+			return filepath.Join(publicDomain, filePath)
+		}
 		if strings.HasPrefix(filePath, publicPath) {
 			filePath = strings.Replace(filePath, publicPath, "", 1)
-		} else if strings.HasPrefix(filePath, alioss.GetNativePrefix()) {
-			client, err := alioss.NewDefaultClient()
+		} else if strings.HasPrefix(filePath, client.GetNativePrefix()) {
+			str, err := client.GetFullUrlWithSign(filePath, 600)
 			if err == nil {
-				str, err := client.GetFullUrlWithSign(filePath, 600)
-				if err == nil {
-					return str
-				}
+				return str
 			}
 		}
 	}
