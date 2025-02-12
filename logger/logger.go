@@ -36,7 +36,7 @@ func init() {
 	)
 	zapL = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	zapLS = zapL.Sugar()
-	sLogger = slog.New(zapslog.NewHandler(zapL.Core(), &zapslog.HandlerOptions{AddSource: true}))
+	sLogger = slog.New(zapslog.NewHandler(zapL.Core(), zapslog.WithCaller(true)))
 	slog.SetDefault(sLogger)
 }
 
@@ -190,7 +190,7 @@ func NewLogInstance(fileDir string, serviceName string, port string, console boo
 		maxAgeDay = 7
 	}
 	z := initLog(fileDir, serviceName, port, console, json, time.Duration(maxAgeDay)*time.Hour*24)
-	logger = slog.New(zapslog.NewHandler(z.Core(), &zapslog.HandlerOptions{AddSource: true}))
+	logger = slog.New(zapslog.NewHandler(z.Core(), zapslog.WithCaller(true)))
 	return logger
 }
 
@@ -201,7 +201,7 @@ func InitLog(fileDir string, serviceName string, port string, console bool, json
 		}
 		zapL = initLog(fileDir, serviceName, port, console, json, time.Duration(maxAgeDay)*time.Hour*24)
 		zapLS = zapL.Sugar()
-		sLogger = slog.New(zapslog.NewHandler(zapL.Core(), &zapslog.HandlerOptions{AddSource: true}))
+		sLogger = slog.New(zapslog.NewHandler(zapL.Core(), zapslog.WithCaller(true)))
 		slog.SetDefault(sLogger)
 	})
 }

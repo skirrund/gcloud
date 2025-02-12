@@ -32,6 +32,66 @@ const (
 	REGX_ID_PATTERN_18 = "^[1-9]\\d{5}[1-9]\\d{3}((0\\d)|(1[0-2]))(([0|1|2]\\d)|3[0-1])\\d{3}([0-9]|X)$"
 )
 
+var ContentTypes = make(map[string]string)
+
+func init() {
+	ContentTypes[".bmp"] = "image/bmp"
+	ContentTypes[".tif"] = "image/tiff"
+	ContentTypes[".tiff"] = "image/tiff"
+	ContentTypes[".gif"] = "image/gif"
+	ContentTypes[".jpeg"] = "image/jpeg"
+	ContentTypes[".png"] = "image/png"
+	ContentTypes[".jpg"] = "image/jpeg"
+	ContentTypes[".html"] = "text/html"
+	ContentTypes[".htm"] = "text/html"
+	ContentTypes[".txt"] = "text/plain"
+	ContentTypes[".pdf"] = "application/pdf"
+	ContentTypes[".vsd"] = "application/vnd.visio"
+	ContentTypes[".pptx"] = "application/vnd.ms-powerpoint"
+	ContentTypes[".ppt"] = "application/vnd.ms-powerpoint"
+	ContentTypes[".docx"] = "application/msword"
+	ContentTypes[".doc"] = "application/msword"
+	ContentTypes[".xls"] = "application/vnd.ms-excel"
+	ContentTypes[".xlsx"] = "application/vnd.ms-excel"
+	ContentTypes[".apk"] = "application/vnd.android.package-archive"
+	ContentTypes[".ipa"] = "application/vnd.iphone"
+	ContentTypes[".xml"] = "text/xml"
+	ContentTypes[".mp3"] = "audio/mp3"
+	ContentTypes[".wav"] = "audio/wav"
+	ContentTypes[".au"] = "audio/basic"
+	ContentTypes[".m3u"] = "audio/mpegurl"
+	ContentTypes[".mid"] = "audio/mid"
+	ContentTypes[".midi"] = "audio/mid"
+	ContentTypes[".rmi"] = "audio/mid"
+	ContentTypes[".wma"] = "audio/x-ms-wma"
+	ContentTypes[".mpga"] = "audio/rn-mpeg"
+	ContentTypes[".rmvb"] = "application/vnd.rn-realmedia-vbr"
+	ContentTypes[".mp4"] = "video/mp4"
+	ContentTypes[".avi"] = "video/avi"
+	ContentTypes[".movie"] = "video/x-sgi-movie"
+	ContentTypes[".mpa"] = "video/x-mpg"
+	ContentTypes[".mpeg"] = "video/mpg"
+	ContentTypes[".mpg"] = "video/mpg"
+	ContentTypes[".mpv"] = "video/mpg"
+	ContentTypes[".wm"] = "video/x-ms-wm"
+	ContentTypes[".wmv"] = "video/x-ms-wmv"
+}
+
+func GetcontentType(fileName string) string {
+	index := strings.Index(fileName, ".")
+	if index == -1 {
+		return "image/jpeg"
+	}
+	filenameExtension := SubStr(fileName, strings.LastIndex(fileName, "."), -1)
+	if len(filenameExtension) > 0 {
+		contentType := ContentTypes[strings.ToLower(filenameExtension)]
+		if len(contentType) > 0 {
+			return contentType
+		}
+	}
+	return "application/octet-stream"
+}
+
 func IsIdNoCorrect(idNo string) bool {
 	match, _ := regexp.MatchString(REGX_ID_PATTERN_15, idNo)
 	if match {

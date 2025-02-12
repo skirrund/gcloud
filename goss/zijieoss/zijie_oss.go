@@ -44,50 +44,50 @@ type ZijieOssClient struct {
 	bucketName string
 }
 
-var ContentTypes = make(map[string]string)
+// var ContentTypes = make(map[string]string)
 
-func init() {
-	ContentTypes[".bmp"] = "image/bmp"
-	ContentTypes[".tif"] = "image/tiff"
-	ContentTypes[".tiff"] = "image/tiff"
-	ContentTypes[".gif"] = "image/gif"
-	ContentTypes[".jpeg"] = "image/jpeg"
-	ContentTypes[".png"] = "image/png"
-	ContentTypes[".jpg"] = "image/jpeg"
-	ContentTypes[".html"] = "text/html"
-	ContentTypes[".htm"] = "text/html"
-	ContentTypes[".txt"] = "text/plain"
-	ContentTypes[".pdf"] = "application/pdf"
-	ContentTypes[".vsd"] = "application/vnd.visio"
-	ContentTypes[".pptx"] = "application/vnd.ms-powerpoint"
-	ContentTypes[".ppt"] = "application/vnd.ms-powerpoint"
-	ContentTypes[".docx"] = "application/msword"
-	ContentTypes[".doc"] = "application/msword"
-	ContentTypes[".xls"] = "application/vnd.ms-excel"
-	ContentTypes[".xlsx"] = "application/vnd.ms-excel"
-	ContentTypes[".apk"] = "application/vnd.android.package-archive"
-	ContentTypes[".ipa"] = "application/vnd.iphone"
-	ContentTypes[".xml"] = "text/xml"
-	ContentTypes[".mp3"] = "audio/mp3"
-	ContentTypes[".wav"] = "audio/wav"
-	ContentTypes[".au"] = "audio/basic"
-	ContentTypes[".m3u"] = "audio/mpegurl"
-	ContentTypes[".mid"] = "audio/mid"
-	ContentTypes[".midi"] = "audio/mid"
-	ContentTypes[".rmi"] = "audio/mid"
-	ContentTypes[".wma"] = "audio/x-ms-wma"
-	ContentTypes[".mpga"] = "audio/rn-mpeg"
-	ContentTypes[".rmvb"] = "application/vnd.rn-realmedia-vbr"
-	ContentTypes[".mp4"] = "video/mp4"
-	ContentTypes[".avi"] = "video/avi"
-	ContentTypes[".movie"] = "video/x-sgi-movie"
-	ContentTypes[".mpa"] = "video/x-mpg"
-	ContentTypes[".mpeg"] = "video/mpg"
-	ContentTypes[".mpg"] = "video/mpg"
-	ContentTypes[".mpv"] = "video/mpg"
-	ContentTypes[".wm"] = "video/x-ms-wm"
-	ContentTypes[".wmv"] = "video/x-ms-wmv"
-}
+// func init() {
+// 	ContentTypes[".bmp"] = "image/bmp"
+// 	ContentTypes[".tif"] = "image/tiff"
+// 	ContentTypes[".tiff"] = "image/tiff"
+// 	ContentTypes[".gif"] = "image/gif"
+// 	ContentTypes[".jpeg"] = "image/jpeg"
+// 	ContentTypes[".png"] = "image/png"
+// 	ContentTypes[".jpg"] = "image/jpeg"
+// 	ContentTypes[".html"] = "text/html"
+// 	ContentTypes[".htm"] = "text/html"
+// 	ContentTypes[".txt"] = "text/plain"
+// 	ContentTypes[".pdf"] = "application/pdf"
+// 	ContentTypes[".vsd"] = "application/vnd.visio"
+// 	ContentTypes[".pptx"] = "application/vnd.ms-powerpoint"
+// 	ContentTypes[".ppt"] = "application/vnd.ms-powerpoint"
+// 	ContentTypes[".docx"] = "application/msword"
+// 	ContentTypes[".doc"] = "application/msword"
+// 	ContentTypes[".xls"] = "application/vnd.ms-excel"
+// 	ContentTypes[".xlsx"] = "application/vnd.ms-excel"
+// 	ContentTypes[".apk"] = "application/vnd.android.package-archive"
+// 	ContentTypes[".ipa"] = "application/vnd.iphone"
+// 	ContentTypes[".xml"] = "text/xml"
+// 	ContentTypes[".mp3"] = "audio/mp3"
+// 	ContentTypes[".wav"] = "audio/wav"
+// 	ContentTypes[".au"] = "audio/basic"
+// 	ContentTypes[".m3u"] = "audio/mpegurl"
+// 	ContentTypes[".mid"] = "audio/mid"
+// 	ContentTypes[".midi"] = "audio/mid"
+// 	ContentTypes[".rmi"] = "audio/mid"
+// 	ContentTypes[".wma"] = "audio/x-ms-wma"
+// 	ContentTypes[".mpga"] = "audio/rn-mpeg"
+// 	ContentTypes[".rmvb"] = "application/vnd.rn-realmedia-vbr"
+// 	ContentTypes[".mp4"] = "video/mp4"
+// 	ContentTypes[".avi"] = "video/avi"
+// 	ContentTypes[".movie"] = "video/x-sgi-movie"
+// 	ContentTypes[".mpa"] = "video/x-mpg"
+// 	ContentTypes[".mpeg"] = "video/mpg"
+// 	ContentTypes[".mpg"] = "video/mpg"
+// 	ContentTypes[".mpv"] = "video/mpg"
+// 	ContentTypes[".wm"] = "video/x-ms-wm"
+// 	ContentTypes[".wmv"] = "video/x-ms-wmv"
+// }
 
 func (ZijieOssClient) NewClient(endpoint, ak, sk, bucketName, region, selfDomain string) (c goss.OssClient, err error) {
 	if len(endpoint) == 0 {
@@ -150,6 +150,10 @@ func (oc ZijieOssClient) NewDefaultClient() (c goss.OssClient, err error) {
 func (oc ZijieOssClient) GetNativePrefix() string {
 	cfg := env.GetInstance()
 	return cfg.GetStringWithDefault(nativePrefixKey, "/zijie-core/")
+}
+
+func (co ZijieOssClient) GetNativeWithPrefixUrl(fileName string) string {
+	return co.GetNativePrefix() + fileName
 }
 
 func getEndpoint() string {
@@ -296,7 +300,7 @@ func (oc ZijieOssClient) UploadOverwrite(key string, reader io.Reader, isPrivate
 }
 
 func (oc ZijieOssClient) doUpload(key string, reader io.Reader, isPrivate, overwrite bool) (fileName string, err error) {
-	ct := goss.GetcontentType(key)
+	ct := utils.GetcontentType(key)
 	key = goss.SubStringBlackSlash(key)
 	ex, err := oc.IsObjectExist(key)
 	if err != nil {

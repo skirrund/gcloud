@@ -1,14 +1,18 @@
 package alioss
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"io"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	"github.com/skirrund/gcloud/bootstrap/env"
+	"github.com/skirrund/gcloud/goss"
 	"github.com/skirrund/gcloud/logger"
 
 	"github.com/skirrund/gcloud/utils"
@@ -17,7 +21,7 @@ import (
 
 	"github.com/skirrund/gcloud/server/http"
 
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 )
 
 const (
@@ -36,56 +40,166 @@ const (
 	defaultEndpointInternal = "oss-cn-shanghai.aliyuncs.com"
 )
 
-type ossClient struct {
-	C *oss.Bucket
+type OssClient struct {
+	BucketName string
+	C          *oss.Client
 }
 
-var ContentTypes = make(map[string]string)
-
-func init() {
-	ContentTypes[".bmp"] = "image/bmp"
-	ContentTypes[".tif"] = "image/tiff"
-	ContentTypes[".tiff"] = "image/tiff"
-	ContentTypes[".gif"] = "image/gif"
-	ContentTypes[".jpeg"] = "image/jpeg"
-	ContentTypes[".png"] = "image/png"
-	ContentTypes[".jpg"] = "image/jpeg"
-	ContentTypes[".html"] = "text/html"
-	ContentTypes[".htm"] = "text/html"
-	ContentTypes[".txt"] = "text/plain"
-	ContentTypes[".pdf"] = "application/pdf"
-	ContentTypes[".vsd"] = "application/vnd.visio"
-	ContentTypes[".pptx"] = "application/vnd.ms-powerpoint"
-	ContentTypes[".ppt"] = "application/vnd.ms-powerpoint"
-	ContentTypes[".docx"] = "application/msword"
-	ContentTypes[".doc"] = "application/msword"
-	ContentTypes[".xls"] = "application/vnd.ms-excel"
-	ContentTypes[".xlsx"] = "application/vnd.ms-excel"
-	ContentTypes[".apk"] = "application/vnd.android.package-archive"
-	ContentTypes[".ipa"] = "application/vnd.iphone"
-	ContentTypes[".xml"] = "text/xml"
-	ContentTypes[".mp3"] = "audio/mp3"
-	ContentTypes[".wav"] = "audio/wav"
-	ContentTypes[".au"] = "audio/basic"
-	ContentTypes[".m3u"] = "audio/mpegurl"
-	ContentTypes[".mid"] = "audio/mid"
-	ContentTypes[".midi"] = "audio/mid"
-	ContentTypes[".rmi"] = "audio/mid"
-	ContentTypes[".wma"] = "audio/x-ms-wma"
-	ContentTypes[".mpga"] = "audio/rn-mpeg"
-	ContentTypes[".rmvb"] = "application/vnd.rn-realmedia-vbr"
-	ContentTypes[".mp4"] = "video/mp4"
-	ContentTypes[".avi"] = "video/avi"
-	ContentTypes[".movie"] = "video/x-sgi-movie"
-	ContentTypes[".mpa"] = "video/x-mpg"
-	ContentTypes[".mpeg"] = "video/mpg"
-	ContentTypes[".mpg"] = "video/mpg"
-	ContentTypes[".mpv"] = "video/mpg"
-	ContentTypes[".wm"] = "video/x-ms-wm"
-	ContentTypes[".wmv"] = "video/x-ms-wmv"
+// DelObject implements goss.OssClient.
+func (c OssClient) DelObject(fileName string) (bool, error) {
+	key := c.getFileName(fileName)
+	if ex, _ := c.C.IsObjectExist(context.TODO(), c.BucketName, key); ex {
+		req := &oss.DeleteObjectRequest{
+			Bucket: oss.Ptr(c.BucketName),
+			Key:    oss.Ptr(key),
+		}
+		_, err := c.C.DeleteObject(context.TODO(), req)
+		return err == nil, err
+	} else {
+		return false, errors.New("file not exist")
+	}
 }
 
-func NewClient(endpoint, accessKeyID, accessKeySecret, bucketName, region string) (c *ossClient, err error) {
+// GetNativePrefix implements goss.OssClient.
+func (o OssClient) GetNativePrefix() string {
+	return GetNativePrefix()
+}
+
+func (co OssClient) GetNativeWithPrefixUrl(fileName string) string {
+	return co.GetNativePrefix() + fileName
+}
+
+// IsObjectExist implements goss.OssClient.
+func (c OssClient) IsObjectExist(key string) (bool, error) {
+	key = c.getFileName(key)
+	return c.C.IsObjectExist(context.TODO(), c.BucketName, key)
+}
+
+// Upload implements goss.OssClient.
+func (o OssClient) Upload(key string, reader io.Reader, isPrivate bool) (fileName string, err error) {
+	return o.doUpload(key, reader, isPrivate, false)
+}
+
+func (c OssClient) doUploadWithContentType(key, contentType string, reader io.Reader, isPrivate, overwrite bool) (fileName string, err error) {
+	acl := oss.ObjectACLPrivate
+	if !isPrivate {
+		acl = oss.ObjectACLPublicRead
+	}
+	key = subStringBlackSlash(key)
+	req := &oss.PutObjectRequest{
+		Acl:         acl,
+		Bucket:      oss.Ptr(c.BucketName),
+		Key:         oss.Ptr(key),
+		ContentType: oss.Ptr(contentType),
+	}
+
+	if !overwrite {
+		ex, err := c.C.IsObjectExist(context.TODO(), c.BucketName, key)
+		if err != nil {
+			logger.Error("[alioss] error:" + err.Error())
+			return fileName, err
+		}
+		if ex {
+			return key, errors.New("file already exists")
+		}
+	}
+	req.Payload = reader
+	_, err = c.C.PutObject(context.TODO(), req)
+	if err != nil {
+		logger.Error("[alioss] error:" + err.Error())
+		return
+	}
+	return key, err
+}
+
+func (c OssClient) doUpload(key string, reader io.Reader, isPrivate, overwrite bool) (fileName string, err error) {
+	ct := utils.GetcontentType(key)
+	return c.doUploadWithContentType(key, ct, reader, isPrivate, overwrite)
+}
+
+// UploadFile implements goss.OssClient.
+func (c OssClient) UploadFile(fileName string, file *os.File, isPrivate bool) (string, error) {
+	return c.doUpload(fileName, file, isPrivate, false)
+}
+
+// UploadFileBytes implements goss.OssClient.
+func (c OssClient) UploadFileBytes(fileName string, bs []byte, isPrivate bool) (string, error) {
+	return c.doUpload(fileName, bytes.NewReader(bs), isPrivate, false)
+}
+
+// UploadFileBytesWithFullUrl implements goss.OssClient.
+func (c OssClient) UploadFileBytesWithFullUrl(fileName string, bs []byte, isPrivate bool) (string, error) {
+	str, err := c.doUpload(fileName, bytes.NewReader(bs), isPrivate, false)
+	if err == nil {
+		str = c.GetFullUrl(str)
+	}
+	return str, err
+}
+
+// UploadFileBytesWithNativeFullUrl implements goss.OssClient.
+func (c OssClient) UploadFileBytesWithNativeFullUrl(fileName string, bs []byte, isPrivate bool) (string, error) {
+	str, err := c.doUpload(fileName, bytes.NewReader(bs), isPrivate, false)
+	if err == nil {
+		str = GetNativeWithPrefixUrl(str)
+	}
+	return str, err
+}
+
+// UploadFileWithFullUrl implements goss.OssClient.
+func (c OssClient) UploadFileWithFullUrl(fileName string, file *os.File, isPrivate bool) (string, error) {
+	str, err := c.doUpload(fileName, file, isPrivate, false)
+	if err == nil {
+		str = c.GetFullUrl(str)
+	}
+	return str, err
+}
+
+// UploadFileWithNativeFullUrl implements goss.OssClient.
+func (c OssClient) UploadFileWithNativeFullUrl(fileName string, file *os.File, isPrivate bool) (string, error) {
+	str, err := c.doUpload(fileName, file, isPrivate, false)
+	if err == nil {
+		str = GetNativeWithPrefixUrl(str)
+	}
+	return str, err
+}
+
+// UploadFromUrl implements goss.OssClient.
+func (c OssClient) UploadFromUrl(urlStr string, isPrivate bool) (string, error) {
+	i2 := strings.LastIndex(urlStr, "/")
+	filenameExtension := utils.SubStr(urlStr, i2, -1)
+	qi := strings.Index(filenameExtension, "?")
+	li := strings.LastIndex(filenameExtension, ".")
+	if li > -1 {
+		filenameExtension = utils.Uuid() + utils.SubStr(filenameExtension, li, qi-li)
+	} else {
+		filenameExtension = utils.Uuid()
+	}
+	fileName := "downLoadFromUrl/" + filenameExtension
+	var downLoad []byte
+	resp, err := http.GetUrl(urlStr, nil, nil, &downLoad)
+	if err != nil {
+		logger.Error("[alioss] download error:" + err.Error())
+		return "", err
+	}
+	cts := resp.Headers["Content-Type"]
+	if len(cts) > 0 {
+		ct := cts[0]
+		fileName, err = c.doUploadWithContentType(fileName, ct, bytes.NewReader(downLoad), isPrivate, false)
+	} else {
+		fileName, err = c.doUpload(fileName, bytes.NewReader(downLoad), isPrivate, false)
+	}
+	if err != nil {
+		return fileName, err
+	}
+	return c.GetFullUrl(fileName), err
+}
+
+// UploadOverwrite implements goss.OssClient.
+func (c OssClient) UploadOverwrite(key string, reader io.Reader, isPrivate bool) (fileName string, err error) {
+	return c.doUpload(key, reader, isPrivate, true)
+}
+
+func (OssClient) NewClient(endpoint, accessKeyID, accessKeySecret, bucketName, region string) (c goss.OssClient, err error) {
 	if len(endpoint) == 0 {
 		err = errors.New("endpoint is  empty")
 		logger.Error("[alioss] error:" + err.Error())
@@ -111,27 +225,16 @@ func NewClient(endpoint, accessKeyID, accessKeySecret, bucketName, region string
 		logger.Error("[alioss] error:" + err.Error())
 		return
 	}
-	cl, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.AuthVersion(oss.AuthV4), oss.Region(region))
-	if err != nil {
-		logger.Error("[alioss] error:" + err.Error())
-		return
-	}
-	b, err := cl.Bucket(bucketName)
-	if err != nil {
-		logger.Error("[alioss] error:" + err.Error())
-		return
-	}
-
-	if len(region) > 0 {
-		cl.SetRegion(region)
-	}
-	c = &ossClient{
-		C: b,
+	ossCfg := oss.LoadDefaultConfig().WithInsecureSkipVerify(true).WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, accessKeySecret)).WithEndpoint(endpoint).WithRegion(region).WithSignatureVersion(oss.SignatureVersionV4)
+	cl := oss.NewClient(ossCfg)
+	c = &OssClient{
+		BucketName: bucketName,
+		C:          cl,
 	}
 	return
 }
 
-func NewDefaultClient() (c *ossClient, err error) {
+func (oc OssClient) NewDefaultClient() (c goss.OssClient, err error) {
 	cfg := env.GetInstance()
 	endpointPublic := cfg.GetStringWithDefault(endpointPublicKey, "oss-cn-shanghai.aliyuncs.com")
 	endpointInternal := cfg.GetStringWithDefault(endpointInternalKey, "oss-cn-shanghai.aliyuncs.com")
@@ -165,47 +268,25 @@ func NewDefaultClient() (c *ossClient, err error) {
 		logger.Error("[alioss] error:" + err.Error())
 		return
 	}
-	authv := oss.AuthV1
+	authv := oss.SignatureVersionV1
 	if len(authVersion) > 0 {
-		authv = oss.AuthVersionType(strings.ToLower(authVersion))
-		if authv == oss.AuthV4 && len(region) == 0 {
-			err = errors.New("region must not be blank when authVersion is v4")
-			logger.Error("[alioss] error:" + err.Error())
-			return
+		switch authVersion {
+		case "v4":
+			authv = oss.SignatureVersionV4
+			if len(region) == 0 {
+				err = errors.New("region must not be blank when authVersion is v4")
+				logger.Error("[alioss] error:" + err.Error())
+				return
+			}
 		}
 	}
-	cl, err := oss.New(endpointInternal, accessKeyID, accessKeySecret, oss.AuthVersion(authv))
-	if err != nil {
-		logger.Error("[alioss] error:" + err.Error())
-		return
-	}
-	b, err := cl.Bucket(bucketName)
-	if len(region) > 0 {
-		cl.SetRegion(region)
-	}
-	if err != nil {
-		logger.Error("[alioss] error:" + err.Error())
-		return
-	}
-	c = &ossClient{
-		C: b,
+	ossCfg := oss.LoadDefaultConfig().WithInsecureSkipVerify(true).WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, accessKeySecret)).WithEndpoint(endpointInternal).WithRegion(region).WithSignatureVersion(authv)
+	cl := oss.NewClient(ossCfg)
+	c = &OssClient{
+		BucketName: bucketName,
+		C:          cl,
 	}
 	return
-}
-
-func getcontentType(fileName string) string {
-	index := strings.Index(fileName, ".")
-	if index == -1 {
-		return "image/jpeg"
-	}
-	filenameExtension := utils.SubStr(fileName, strings.LastIndex(fileName, "."), -1)
-	if len(filenameExtension) > 0 {
-		contentType := ContentTypes[strings.ToLower(filenameExtension)]
-		if len(contentType) > 0 {
-			return contentType
-		}
-	}
-	return "application/octet-stream"
 }
 
 func subStringBlackSlash(s string) string {
@@ -242,21 +323,21 @@ func getSelfDomainHost() string {
 	return cfg.GetString(selfDomainHostKey)
 }
 
-func (c *ossClient) GetFullUrl(fileName string) string {
+func (c OssClient) GetFullUrl(fileName string) string {
 	selfDomainHost := getSelfDomainHost()
 	endpoint := getEndpoint()
 	selfDomain := getSelfDomain()
 	if len(selfDomainHost) == 0 {
-		return "https://" + c.C.BucketName + "." + endpoint + "/" + fileName
+		return "https://" + c.BucketName + "." + endpoint + "/" + fileName
 	}
 	if selfDomain {
 		return "https://" + selfDomainHost + "/" + fileName
 	} else {
-		return "https://" + c.C.BucketName + "." + endpoint + "/" + fileName
+		return "https://" + c.BucketName + "." + endpoint + "/" + fileName
 	}
 }
 
-func (c *ossClient) getFileName(fileName string) string {
+func (c OssClient) getFileName(fileName string) string {
 	j := -1
 	nativePrefix := GetNativePrefix()
 	endpoint := getEndpoint()
@@ -267,7 +348,7 @@ func (c *ossClient) getFileName(fileName string) string {
 		if strings.HasPrefix(fileName, "http://") || strings.HasPrefix(fileName, "https://") {
 			fileName = utils.SubStr(fileName, strings.Index(fileName, "://")+3, -1)
 		}
-		if !strings.HasPrefix(fileName, c.C.BucketName+"."+endpoint) && !strings.HasPrefix(fileName, getSelfDomainHost()) {
+		if !strings.HasPrefix(fileName, c.BucketName+"."+endpoint) && !strings.HasPrefix(fileName, getSelfDomainHost()) {
 			return fileName
 		} else {
 			j = strings.Index(fileName, "/")
@@ -286,22 +367,33 @@ func (c *ossClient) getFileName(fileName string) string {
 	return subStringBlackSlash(fileName)
 }
 
-func (c *ossClient) GetSignUrl(fileName string, expiredInSec int64) (string, error) {
+func (c OssClient) GetSignUrl(fileName string, expiredInSec int64) (string, error) {
 	name := c.getFileName(fileName)
-	if ex, _ := c.C.IsObjectExist(name); ex {
+	if ex, _ := c.C.IsObjectExist(context.TODO(), c.BucketName, name); ex {
 		params := utils.GetStringParamsMapFromUrl(fileName)
 		delete(params, "Signature")
 		delete(params, "Expires")
 		delete(params, "OSSAccessKeyId")
-		var options []oss.Option
-		for k, v := range params {
-			options = append(options, oss.AddParam(k, v))
+		delete(params, "x-oss-credential")
+		delete(params, "x-oss-date")
+		delete(params, "x-oss-expires")
+		delete(params, "x-oss-signature")
+		delete(params, "x-oss-signature-version")
+		// var options []oss.Option
+		req := &oss.GetObjectRequest{
+			Bucket: oss.Ptr(c.BucketName),
+			Key:    oss.Ptr(name),
 		}
-		signUrl, err := c.C.SignURL(name, oss.HTTPGet, expiredInSec, options...)
+		req.Parameters = params
+		// for k, v := range params {
+		// 	options = append(options, oss.AddParam(k, v))
+		// }
+		signUrl, err := c.C.Presign(context.TODO(), req, oss.PresignExpires(time.Duration(expiredInSec)*time.Second))
 		if err == nil {
-			index := strings.Index(signUrl, "?")
-			name, _ = url.QueryUnescape(utils.SubStr(signUrl, 0, index))
-			name = name + utils.SubStr(signUrl, index, -1)
+			sUrl := signUrl.URL
+			index := strings.Index(sUrl, "?")
+			name, _ = url.QueryUnescape(utils.SubStr(sUrl, 0, index))
+			name = name + utils.SubStr(sUrl, index, -1)
 		}
 		return name, err
 	} else {
@@ -309,7 +401,7 @@ func (c *ossClient) GetSignUrl(fileName string, expiredInSec int64) (string, err
 	}
 }
 
-func (c *ossClient) GetFullUrlWithSign(fileName string, expiredInSec int64) (string, error) {
+func (c OssClient) GetFullUrlWithSign(fileName string, expiredInSec int64) (string, error) {
 	url, err := c.GetSignUrl(fileName, expiredInSec)
 	if err != nil {
 		return url, err
@@ -318,77 +410,24 @@ func (c *ossClient) GetFullUrlWithSign(fileName string, expiredInSec int64) (str
 
 	fileName = subStringBlackSlash(utils.SubStr(fileName, strings.Index(fileName, "/")+1, -1))
 	if len(getSelfDomainHost()) == 0 {
-		return "https://" + c.C.BucketName + "." + getEndpoint() + "/" + fileName, err
+		return "https://" + c.BucketName + "." + getEndpoint() + "/" + fileName, err
 	}
 	if getSelfDomain() {
 		return "https://" + getSelfDomainHost() + "/" + fileName, err
 	} else {
-		return "https://" + c.C.BucketName + "." + getEndpoint() + "/" + fileName, err
+		return "https://" + c.BucketName + "." + getEndpoint() + "/" + fileName, err
 	}
 }
-
-func (c *ossClient) UploadFromUrl(urlStr string, isPrivate bool, forceUpload bool) (string, error) {
-	var downLoad []byte
-	_, err := http.GetUrl(urlStr, nil, nil, &downLoad)
-	if err != nil {
-		logger.Error("[alioss] download error:" + err.Error())
-		return "", err
-	}
-	fileName := "downLoadFromUrl/" + utils.SubStr(urlStr, strings.LastIndex(urlStr, "/"), -1)
-	fileName, err = c.UploadFileBytes(fileName, downLoad, isPrivate, forceUpload)
-	if err != nil {
-		return fileName, err
-	}
-	return c.GetFullUrl(fileName), err
-}
-
-func (c *ossClient) UploadFileBytes(key string, bs []byte, isPrivate bool, forceUpload bool) (fileName string, err error) {
-	acl := oss.ObjectACL(oss.ACLPrivate)
-	if !isPrivate {
-		acl = oss.ObjectACL(oss.ACLPublicRead)
-	}
-	ct := getcontentType(key)
-	contentType := oss.ContentType(ct)
-	key = subStringBlackSlash(key)
-
-	ex, err := c.C.IsObjectExist(key)
-	if err != nil {
-		logger.Error("[alioss] error:" + err.Error())
-		return fileName, err
-	}
-	if ex {
-		if forceUpload {
-			err = c.C.DeleteObject(key)
-			if err != nil {
-				logger.Error("[alioss] error:" + err.Error())
-			}
-		} else {
-			return key, err
-		}
-	}
-	err = c.C.PutObject(key, bytes.NewReader(bs), contentType, acl)
-	if err != nil {
-		logger.Error("[alioss] error:" + err.Error())
-		return
-	}
-	return key, err
-}
-
-func (c *ossClient) UploadFileFile(fileName string, file *os.File, isPrivate bool, forceUpload bool) (string, error) {
-	b, err := io.ReadAll(file)
-	if err == nil {
-		return c.UploadFileBytes(fileName, b, isPrivate, forceUpload)
-	}
-	return "", err
-
-}
-
-func (c *ossClient) GetBytes(fileName string) ([]byte, error) {
+func (c OssClient) GetBytes(fileName string) ([]byte, error) {
 	fileName = c.getFileName(fileName)
-	if ex, _ := c.C.IsObjectExist(fileName); ex {
-		obj, err := c.C.GetObject(fileName)
+	if ex, _ := c.C.IsObjectExist(context.TODO(), c.BucketName, fileName); ex {
+		req := &oss.GetObjectRequest{
+			Bucket: oss.Ptr(c.BucketName),
+			Key:    oss.Ptr(fileName),
+		}
+		objResult, err := c.C.GetObject(context.TODO(), req)
 		if err == nil {
-			return io.ReadAll(obj)
+			return io.ReadAll(objResult.Body)
 		}
 		return nil, err
 	} else {
@@ -396,155 +435,10 @@ func (c *ossClient) GetBytes(fileName string) ([]byte, error) {
 	}
 }
 
-func (c *ossClient) GetBase64(fileName string) (string, error) {
+func (c OssClient) GetBase64(fileName string) (string, error) {
 	b, err := c.GetBytes(fileName)
 	if err == nil {
 		return base64.StdEncoding.EncodeToString(b), err
 	}
 	return "", err
-}
-
-/*
-*
-@param fileName
-@param file
-@param isPrivate
-@param forceUpload 文件名相同是否使用随机文件名进行上传
-@return http全路径
-@throws Exception
-*/
-func (c *ossClient) UploadFileWithFullUrl(fileName string, file *os.File, isPrivate bool, forceUpload bool) (string, error) {
-	str, err := c.UploadFileFile(fileName, file, isPrivate, forceUpload)
-	if err == nil {
-		str = c.GetFullUrl(str)
-	}
-	return str, err
-}
-
-/*
-*
-@param fileName
-@param bytes
-@param isPrivate
-@param forceUpload 文件名相同是否使用随机文件名进行上传
-@return http全路径
-@throws Exception
-*/
-func (c *ossClient) UploadFileBytesWithFullUrl(fileName string, bs []byte, isPrivate bool, forceUpload bool) (string, error) {
-	str, err := c.UploadFileBytes(fileName, bs, isPrivate, forceUpload)
-	if err == nil {
-		str = c.GetFullUrl(str)
-	}
-	return str, err
-}
-
-/**
- * /alioss/前缀
- *
- * @param fileName
- * @param bytes
- * @param isPrivate
- * @param forceUpload 文件名相同是否使用随机文件名进行上传
- */
-func (c *ossClient) UploadFileBytesWithNativeFullUrl(fileName string, bs []byte, isPrivate bool, forceUpload bool) (string, error) {
-	str, err := c.UploadFileBytes(fileName, bs, isPrivate, forceUpload)
-	if err == nil {
-		str = GetNativeWithPrefixUrl(str)
-	}
-	return str, err
-}
-
-/**
- * /alioss/前缀
- *
- * @param fileName
- * @param file
- * @param isPrivate
- * @param forceUpload 文件名相同是否使用随机文件名进行上传
- */
-func (c *ossClient) UploadFileWithNativeFullUrl(fileName string, file *os.File, isPrivate bool, forceUpload bool) (string, error) {
-	str, err := c.UploadFileFile(fileName, file, isPrivate, forceUpload)
-	if err == nil {
-		str = GetNativeWithPrefixUrl(str)
-	}
-	return str, err
-}
-
-func (c *ossClient) UploadPublicFileBytes(fileName string, bs []byte) (string, error) {
-	return c.UploadFileBytes(fileName, bs, false, true)
-}
-
-func (c *ossClient) UploadPrivateFileBytes(fileName string, bs []byte) (string, error) {
-	return c.UploadFileBytes(fileName, bs, true, true)
-}
-
-func (c *ossClient) UploadPublicFileBytesWithFullUrl(fileName string, bs []byte) (string, error) {
-	str, err := c.UploadFileBytes(fileName, bs, false, true)
-	if err == nil {
-		str = c.GetFullUrl(str)
-	}
-	return str, err
-}
-
-func (c *ossClient) UploadPrivateFileBytesWithFullUrl(fileName string, bs []byte) (string, error) {
-	str, err := c.UploadFileBytes(fileName, bs, true, true)
-	if err == nil {
-		str = c.GetFullUrl(str)
-	}
-	return str, err
-}
-
-/**
- * /alioss/前缀
- *
- * @param fileName
- * @param bytes
-
- */
-
-func (c *ossClient) UploadPrivateFileBytesWithNativeFullUrl(fileName string, bs []byte) (string, error) {
-
-	str, err := c.UploadFileBytes(fileName, bs, true, true)
-	if err == nil {
-		str = GetNativeWithPrefixUrl(str)
-	}
-	return str, err
-}
-
-/**
- * /alioss/前缀
- *
- * @param fileName
- * @param file
- */
-func (c *ossClient) UploadPrivateFileWithNativeFullUrl(fileName string, file *os.File) (string, error) {
-	str, err := c.UploadFileFile(fileName, file, true, true)
-	if err == nil {
-		str = GetNativeWithPrefixUrl(str)
-	}
-	return str, err
-}
-
-func (c *ossClient) UploadPublicFileWithFullUrl(fileName string, file *os.File) (string, error) {
-	str, err := c.UploadFileFile(fileName, file, false, true)
-	if err == nil {
-		str = c.GetFullUrl(str)
-	}
-	return str, err
-}
-
-func (c *ossClient) UploadPrivateFileWithFullUrl(fileName string, file *os.File) (string, error) {
-	str, err := c.UploadFileFile(fileName, file, true, true)
-	if err == nil {
-		str = c.GetFullUrl(str)
-	}
-	return str, err
-}
-
-func (c *ossClient) UploadPrivateFile(fileName string, file *os.File) (string, error) {
-	return c.UploadFileFile(fileName, file, true, true)
-}
-
-func (c *ossClient) UploadPublicFileInputStream(fileName string, file *os.File) (string, error) {
-	return c.UploadFileFile(fileName, file, false, true)
 }
