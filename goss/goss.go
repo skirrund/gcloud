@@ -14,6 +14,7 @@ type OssClient interface {
 	GetNativeWithPrefixUrl(fileName string) string
 	GetNativePrefix() string
 	GetFullUrlWithSign(fileName string, expiredInSec int64) (string, error)
+	GetFullUrl(fileName string) string
 	Upload(key string, reader io.Reader, isPrivate bool) (fileName string, err error)
 	UploadFromUrl(urlStr string, isPrivate bool) (string, error)
 	UploadOverwrite(key string, reader io.Reader, isPrivate bool) (fileName string, err error)
