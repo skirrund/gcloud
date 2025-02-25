@@ -5,12 +5,12 @@ go 1.22
 require (
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.0
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
-	github.com/bytedance/sonic v1.12.8
+	github.com/bytedance/sonic v1.12.9
 	github.com/gin-contrib/pprof v1.5.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
-	github.com/go-playground/validator/v10 v10.24.0
+	github.com/go-playground/validator/v10 v10.25.0
 	github.com/google/uuid v1.6.0
 	github.com/lestrrat-go/strftime v1.1.0
 	github.com/maypok86/otter v1.2.4
@@ -19,7 +19,7 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/panjf2000/ants/v2 v2.11.0
 	github.com/prometheus/client_golang v1.19.1
-	github.com/redis/go-redis/v9 v9.7.0
+	github.com/redis/go-redis/v9 v9.7.1
 	github.com/spf13/viper v1.19.0
 	github.com/volcengine/ve-tos-golang-sdk/v2 v2.7.8
 	go.uber.org/zap v1.27.0

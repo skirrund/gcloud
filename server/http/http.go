@@ -204,28 +204,26 @@ func getUrlWithParams(urlStr string, params map[string]interface{}) string {
 	if env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY) {
 		logger.Info("[http] getUrlWithParams:", params)
 	}
-	var p string
+	url1, err := url.Parse(urlStr)
+	if err != nil {
+		logger.Error("[http] getUrlWithParams error", err.Error())
+		return urlStr
+	}
+	vals := url1.Query()
 	if len(params) > 0 {
 		for k, v := range params {
 			if s, ok := v.(string); ok {
-				p = p + "&" + k + "=" + url.QueryEscape(s)
+				vals.Add(k, s)
 			} else {
 				s, err := utils.MarshalToString(v)
 				if err == nil {
-					p = p + "&" + k + "=" + url.QueryEscape(s)
+					vals.Add(k, s)
 				}
 			}
-
 		}
 	}
-
-	p = strings.TrimPrefix(p, "&")
-	if strings.Contains(urlStr, "?") {
-		urlStr += p
-	} else {
-		urlStr = urlStr + "?" + p
-	}
-	return urlStr
+	url1.RawQuery = vals.Encode()
+	return url1.String()
 }
 
 func GetUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (*response.Response, error) {
