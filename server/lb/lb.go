@@ -94,22 +94,22 @@ func (s *ServerPool) setService(name string, instances []*registry.Instance) *se
 func (s *ServerPool) GetService(name string) *service {
 	v, ok := s.Services.Load(name)
 	if ok && v != nil {
-		logger.Info("[LB] load from cache")
+		logger.Info("[LB] load from cache:", name)
 		return v.(*service)
 	} else {
 		if bootstrap.MthApplication != nil && bootstrap.MthApplication.Registry != nil {
 			ins, err := bootstrap.MthApplication.Registry.SelectInstances(name)
-			logger.Info("[LB] load from registry")
+			logger.Info("[LB] load from registry:", name)
 			if err != nil {
 				return nil
 			}
 			err = bootstrap.MthApplication.Registry.Subscribe(name)
 			if err != nil {
-				logger.Error("[LB] ", err.Error())
+				logger.Error("[LB] registry rubscribe error:", name, "=>", err.Error())
 			}
 			return s.setService(name, ins)
 		} else {
-			logger.Warn("[LB] registry not found")
+			logger.Warn("[LB] registry not found:", name)
 			return nil
 		}
 	}
