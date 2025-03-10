@@ -91,32 +91,28 @@ func (s *ServerPool) setService(name string, instances []*registry.Instance) *se
 	return srv
 }
 
-func (s *ServerPool) GetService(name string, currentIdx int64) *service {
-	// v, ok := s.Services.Load(name)
-	// if ok && v != nil {
-	// 	logger.Info("[LB] load from cache:", name)
-	// 	return v.(*service)
-	// } else {
-	if bootstrap.MthApplication != nil && bootstrap.MthApplication.Registry != nil {
-		ins, err := bootstrap.MthApplication.Registry.SelectInstances(name)
-		logger.Info("[LB] load from registry:", name)
-		if err != nil {
+func (s *ServerPool) GetService(name string) *service {
+	v, ok := s.Services.Load(name)
+	if ok && v != nil {
+		logger.Info("[LB] load from cache:", name)
+		return v.(*service)
+	} else {
+		if bootstrap.MthApplication != nil && bootstrap.MthApplication.Registry != nil {
+			ins, err := bootstrap.MthApplication.Registry.SelectInstances(name)
+			logger.Info("[LB] load from registry:", name)
+			if err != nil {
+				return nil
+			}
+			err = bootstrap.MthApplication.Registry.Subscribe(name)
+			if err != nil {
+				logger.Error("[LB] registry rubscribe error:", name, "=>", err.Error())
+			}
+			return s.setService(name, ins)
+		} else {
+			logger.Warn("[LB] registry not found:", name)
 			return nil
 		}
-		err = bootstrap.MthApplication.Registry.Subscribe(name)
-		if err != nil {
-			logger.Error("[LB] registry rubscribe error:", name, "=>", err.Error())
-		}
-		srv := &service{
-			Instances: ins,
-			Current:   currentIdx,
-		}
-		return srv
-	} else {
-		logger.Warn("[LB] registry not found:", name)
-		return nil
 	}
-	// }
 }
 
 func (s *service) NextIndex() int64 {
@@ -130,20 +126,20 @@ func (s *service) NextIndex() int64 {
 }
 
 // get next instance
-func (s *service) GetNextPeer() (*registry.Instance, int64) {
+func (s *service) GetNextPeer() *registry.Instance {
 	length := int64(len(s.Instances))
 	if length == 0 {
-		return nil, -1
+		return nil
 	}
 	if length == 1 {
-		return s.Instances[0], 0
+		return s.Instances[0]
 	}
 	next := s.NextIndex()
 	idx := next % length
 	if idx > length-1 {
-		return s.Instances[0], 0
+		return s.Instances[0]
 	}
-	return s.Instances[idx], idx
+	return s.Instances[idx]
 
 }
 
@@ -200,16 +196,7 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		unmarshal(resp, respResult)
 		return resp, err
 	}
-	lbo := req.LbOptions
-	if lbo == nil {
-		lbo = request.NewDefaultLbOptions()
-	}
-	retrys := lbo.Retrys
-	currentServiceInstanceIdx := int64(-1)
-	if retrys > 0 {
-		currentServiceInstanceIdx = lbo.CurrentServiceInstanceIdx
-	}
-	srv := s.GetService(req.ServiceName, currentServiceInstanceIdx)
+	srv := s.GetService(req.ServiceName)
 	if srv == nil {
 		req.Url = s.GetUrl(req.ServiceName, req.Path)
 		defer requestEnd(req.Url, start)
@@ -218,7 +205,11 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		unmarshal(resp, respResult)
 		return resp, err
 	}
-
+	lbo := req.LbOptions
+	if lbo == nil {
+		lbo = request.NewDefaultLbOptions()
+	}
+	retrys := lbo.Retrys
 	if retrys >= len(srv.Instances) {
 		resp := &response.Response{}
 		resp.StatusCode = lbo.CurrentStatuCode
@@ -232,7 +223,7 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		return resp, lbo.CurrentError
 	}
 
-	instance, idx := srv.GetNextPeer()
+	instance := srv.GetNextPeer()
 	logger.Info("[LB] get instance", instance)
 	if instance == nil {
 		return &response.Response{}, errors.New("no available service" + req.ServiceName)
@@ -249,7 +240,6 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		lbo.Retrys = retrys
 		lbo.CurrentStatuCode = resp.StatusCode
 		lbo.CurrentError = err
-		lbo.CurrentServiceInstanceIdx = idx
 		req.LbOptions = lbo
 		return s.Run(req, respResult)
 	} else {

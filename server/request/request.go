@@ -36,7 +36,6 @@ type LbOptions struct {
 	Retrys                          int
 	CurrentStatuCode                int
 	CurrentError                    error
-	CurrentServiceInstanceIdx       int64
 }
 
 func NewDefaultLbOptions() *LbOptions {
