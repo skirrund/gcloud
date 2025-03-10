@@ -1,4 +1,3 @@
-// Deprecated: 已废弃,请使用goss
 package alioss
 
 import (
