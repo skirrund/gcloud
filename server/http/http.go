@@ -122,7 +122,7 @@ func getFormData(params map[string]interface{}) io.Reader {
 	return strings.NewReader(valuesStr)
 }
 
-func getMultipartFormData(params map[string]interface{}, files map[string]*request.File) (reader io.Reader, contentType string) {
+func getMultipartFormData(params map[string]any, files map[string]*request.File) (reader io.Reader, contentType string) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	var err error
@@ -226,28 +226,28 @@ func getUrlWithParams(urlStr string, params map[string]interface{}) string {
 	return url1.String()
 }
 
-func GetUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (*response.Response, error) {
+func GetUrl(url string, headers map[string]string, params map[string]any, result any) (*response.Response, error) {
 	return GetUrlWithTimeout(url, headers, params, result, default_timeout)
 }
-func GetUrlWithTimeout(url string, headers map[string]string, params map[string]interface{}, result any, timeout time.Duration) (*response.Response, error) {
+func GetUrlWithTimeout(url string, headers map[string]string, params map[string]any, result any, timeout time.Duration) (*response.Response, error) {
 	req := getRequest(getUrlWithParams(url, params), http.MethodGet, headers, nil, false, timeout)
 	return lb.GetInstance().Run(req, result)
 }
 
-func Get(serviceName string, path string, headers map[string]string, params map[string]interface{}, result any) (*response.Response, error) {
+func Get(serviceName string, path string, headers map[string]string, params map[string]any, result any) (*response.Response, error) {
 	return GetWithTimeout(serviceName, path, headers, params, result, default_timeout)
 }
 
-func GetWithTimeout(serviceName string, path string, headers map[string]string, params map[string]interface{}, result any, timeout time.Duration) (*response.Response, error) {
+func GetWithTimeout(serviceName string, path string, headers map[string]string, params map[string]any, result any, timeout time.Duration) (*response.Response, error) {
 	req := getRequestLb(serviceName, getUrlWithParams(path, params), http.MethodGet, headers, nil, false, timeout)
 	return lb.GetInstance().Run(req, result)
 }
 
-func PostUrl(url string, headers map[string]string, params map[string]interface{}, result interface{}) (*response.Response, error) {
+func PostUrl(url string, headers map[string]string, params map[string]any, result any) (*response.Response, error) {
 	return PostUrlWithTimeout(url, headers, params, result, default_timeout)
 }
 
-func PostUrlWithTimeout(url string, headers map[string]string, params map[string]interface{}, result any, timeout time.Duration) (*response.Response, error) {
+func PostUrlWithTimeout(url string, headers map[string]string, params map[string]any, result any, timeout time.Duration) (*response.Response, error) {
 	req := getRequest(url, http.MethodPost, headers, getFormData(params), false, timeout)
 	return lb.GetInstance().Run(req, result)
 }
@@ -259,11 +259,11 @@ func PostFormDataUrlWithTimeout(url string, headers map[string]string, params ur
 	req := getRequest(url, http.MethodPost, headers, reader, false, timeout)
 	return lb.GetInstance().Run(req, result)
 }
-func PostFile(url string, headers map[string]string, params map[string]interface{}, files map[string]*request.File, result any) (*response.Response, error) {
+func PostFile(url string, headers map[string]string, params map[string]any, files map[string]*request.File, result any) (*response.Response, error) {
 	return PostFileWithTimeout(url, headers, params, files, result, default_timeout)
 }
 
-func PostFileWithTimeout(url string, headers map[string]string, params map[string]interface{}, files map[string]*request.File, result any, timeout time.Duration) (*response.Response, error) {
+func PostFileWithTimeout(url string, headers map[string]string, params map[string]any, files map[string]*request.File, result any, timeout time.Duration) (*response.Response, error) {
 	reader, ct := getMultipartFormData(params, files)
 	if headers == nil {
 		headers = make(map[string]string)
@@ -274,11 +274,11 @@ func PostFileWithTimeout(url string, headers map[string]string, params map[strin
 	return lb.GetInstance().Run(req, result)
 }
 
-func Post(serviceName string, path string, headers map[string]string, params map[string]interface{}, result interface{}) (*response.Response, error) {
+func Post(serviceName string, path string, headers map[string]string, params map[string]any, result any) (*response.Response, error) {
 	return PostWithTimeout(serviceName, path, headers, params, result, default_timeout)
 }
 
-func PostWithTimeout(serviceName string, path string, headers map[string]string, params map[string]interface{}, result any, timeout time.Duration) (*response.Response, error) {
+func PostWithTimeout(serviceName string, path string, headers map[string]string, params map[string]any, result any, timeout time.Duration) (*response.Response, error) {
 	req := getRequestLb(serviceName, path, http.MethodPost, headers, getFormData(params), false, timeout)
 	return lb.GetInstance().Run(req, result)
 }
@@ -293,7 +293,7 @@ func PostFormDataWithTimeout(serviceName string, path string, headers map[string
 	return lb.GetInstance().Run(req, result)
 }
 
-func PostJSONUrl(url string, headers map[string]string, params interface{}, result interface{}) (*response.Response, error) {
+func PostJSONUrl(url string, headers map[string]string, params any, result any) (*response.Response, error) {
 	return PostJSONUrlWithTimeout(url, headers, params, result, default_timeout)
 }
 
@@ -303,7 +303,7 @@ func PostJSONUrlWithTimeout(url string, headers map[string]string, params any, r
 	return lb.GetInstance().Run(req, result)
 }
 
-func PostJSON(serviceName string, path string, headers map[string]string, params interface{}, result interface{}) (*response.Response, error) {
+func PostJSON(serviceName string, path string, headers map[string]string, params any, result any) (*response.Response, error) {
 	return PostJSONWithTimeout(serviceName, path, headers, params, result, default_timeout)
 }
 

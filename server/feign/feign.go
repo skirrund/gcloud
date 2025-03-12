@@ -1,6 +1,8 @@
 package feign
 
 import (
+	"time"
+
 	"github.com/skirrund/gcloud/server/http"
 	"github.com/skirrund/gcloud/server/response"
 )
@@ -10,21 +12,36 @@ type Client struct {
 	Url         string
 }
 
-func (c *Client) Get(path string, headers map[string]string, params map[string]interface{}, result interface{}) (*response.Response, error) {
-	if len(c.Url) > 0 {
-		return http.GetUrl(c.Url+path, headers, params, result)
-	}
-	return http.Get(c.ServiceName, path, headers, params, result)
+const (
+	defaultTimeOut = 10 * time.Second
+)
+
+func (c *Client) Get(path string, headers map[string]string, params map[string]any, result any) (*response.Response, error) {
+	return c.GetWithTimeout(path, headers, params, result, defaultTimeOut)
 }
-func (c *Client) PostJSON(path string, headers map[string]string, params interface{}, result interface{}) (*response.Response, error) {
+func (c *Client) GetWithTimeout(path string, headers map[string]string, params map[string]any, result any, timeOut time.Duration) (*response.Response, error) {
 	if len(c.Url) > 0 {
-		return http.PostJSONUrl(c.Url+path, headers, params, result)
+		return http.GetUrlWithTimeout(c.Url+path, headers, params, result, timeOut)
 	}
-	return http.PostJSON(c.ServiceName, path, headers, params, result)
+	return http.GetWithTimeout(c.ServiceName, path, headers, params, result, timeOut)
 }
-func (c *Client) Post(path string, headers map[string]string, params map[string]interface{}, result interface{}) (*response.Response, error) {
+func (c *Client) PostJSON(path string, headers map[string]string, params any, result any) (*response.Response, error) {
+	return c.PostJSONWithTimeout(path, headers, params, result, defaultTimeOut)
+}
+
+func (c *Client) PostJSONWithTimeout(path string, headers map[string]string, params any, result any, timeOut time.Duration) (*response.Response, error) {
 	if len(c.Url) > 0 {
-		return http.PostUrl(c.Url+path, headers, params, result)
+		return http.PostJSONUrlWithTimeout(c.Url+path, headers, params, result, timeOut)
 	}
-	return http.Post(c.ServiceName, path, headers, params, result)
+	return http.PostJSONWithTimeout(c.ServiceName, path, headers, params, result, timeOut)
+}
+func (c *Client) Post(path string, headers map[string]string, params map[string]any, result any) (*response.Response, error) {
+	return c.PostWithTimeout(path, headers, params, result, defaultTimeOut)
+}
+
+func (c *Client) PostWithTimeout(path string, headers map[string]string, params map[string]any, result any, timeOut time.Duration) (*response.Response, error) {
+	if len(c.Url) > 0 {
+		return http.PostUrlWithTimeout(c.Url+path, headers, params, result, timeOut)
+	}
+	return http.PostWithTimeout(c.ServiceName, path, headers, params, result, timeOut)
 }
