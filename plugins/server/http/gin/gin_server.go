@@ -30,6 +30,8 @@ type Server struct {
 	Options server.Options
 }
 
+const DefaultMaxRequestBodySize = 104857600 // 100MB
+
 func NewServer(options server.Options, routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) server.Server {
 	srv := &Server{}
 	srv.Options = options
@@ -171,6 +173,12 @@ func (server *Server) Run(graceful ...func()) {
 		Handler:      server.Srv,
 		ReadTimeout:  4 * time.Minute,
 		WriteTimeout: 4 * time.Minute,
+	}
+	bodySize := server.Options.MaxRequestBodySize
+	if bodySize > 0 {
+		srv.MaxHeaderBytes = bodySize
+	} else {
+		srv.MaxHeaderBytes = DefaultMaxRequestBodySize
 	}
 	go func() {
 		logger.Info("[GIN] server starting on:", server.Options.Address)

@@ -53,6 +53,7 @@ type BootstrapOptions struct {
 	LoggerJson           bool
 	Config               config.IConfig
 	MaxServerConcurrency int
+	MaxRequestBodySize   int
 }
 
 var MthApplication *Application
@@ -69,9 +70,10 @@ func StartBase(reader io.Reader, fileType string) *Application {
 		log.Println("[Bootstrap]init BootstrapOptions properties:[Profile=" + bo.Profile + "]" + ",[ServerName=" + bo.ServerName + "],[Bind=" + bo.ServerAddress + "]" + ",[LoggerDir=" + bo.LoggerDir + "]")
 	}
 	so := server.Options{
-		ServerName:  bo.ServerName,
-		Address:     bo.ServerAddress,
-		Concurrency: bo.MaxServerConcurrency,
+		ServerName:         bo.ServerName,
+		Address:            bo.ServerAddress,
+		Concurrency:        bo.MaxServerConcurrency,
+		MaxRequestBodySize: bo.MaxRequestBodySize,
 	}
 	MthApplication.ServerOptions = so
 	return MthApplication

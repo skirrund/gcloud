@@ -15,10 +15,11 @@ type Server interface {
 }
 
 type Options struct {
-	ServerName  string
-	Address     string
-	Concurrency int
-	IdleTimeout time.Duration
+	ServerName         string
+	Address            string
+	Concurrency        int
+	IdleTimeout        time.Duration
+	MaxRequestBodySize int
 	//Container  Server
 	//	Registry   registry.IRegistry
 	//	Config     config.IConfig
