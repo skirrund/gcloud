@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/skirrund/gcloud/parser"
 	"github.com/skirrund/gcloud/server"
 
 	"github.com/skirrund/gcloud/logger"
@@ -14,7 +15,7 @@ import (
 
 type env struct {
 	config *viper.Viper
-	base   map[string]interface{}
+	base   map[string]any
 }
 
 const (
@@ -35,8 +36,8 @@ var e *env
 
 func init() {
 	e = &env{
-		config: viper.New(),
-		base:   make(map[string]interface{}),
+		config: parser.NewDefaultParser(),
+		base:   make(map[string]any),
 	}
 	server.RegisterEventHook(server.ConfigChangeEvent, e.MergeConfig)
 }
@@ -61,7 +62,7 @@ func (e *env) LoadProfileBaseConfig(profile string, configType string) {
 			logger.Info("path>>>>" + path)
 			contents, err := os.ReadFile(cfgPath)
 			if err == nil {
-				pcfg := viper.New()
+				pcfg := parser.NewDefaultParser()
 				ct := cfgPath[strings.LastIndex(cfgPath, ".")+1:]
 				pcfg.SetConfigType(ct)
 				err = pcfg.ReadConfig(bytes2.NewReader(contents))
@@ -69,6 +70,9 @@ func (e *env) LoadProfileBaseConfig(profile string, configType string) {
 					settings := pcfg.AllSettings()
 					e.config.MergeConfigMap(settings)
 					e.base = e.config.AllSettings()
+				} else {
+					logger.Error("[ENV] load config file profile error:", err.Error())
+					panic(err)
 				}
 			}
 		} else {

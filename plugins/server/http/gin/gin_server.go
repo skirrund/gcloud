@@ -169,8 +169,8 @@ func (server *Server) Run(graceful ...func()) {
 	srv := &http.Server{
 		Addr:         server.Options.Address,
 		Handler:      server.Srv,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		ReadTimeout:  4 * time.Minute,
+		WriteTimeout: 4 * time.Minute,
 	}
 	go func() {
 		logger.Info("[GIN] server starting on:", server.Options.Address)
