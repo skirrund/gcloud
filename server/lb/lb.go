@@ -241,18 +241,21 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		req.Params = bufio.NewReader(req.Params)
 	}
 	resp, err := s.client.Exec(req)
-	if s.client.CheckRetry(err, resp.StatusCode) {
-		logger.Info("[LB] retry next:", req.ServiceName)
-		retrys += 1
-		lbo.Retrys = retrys
-		lbo.CurrentStatuCode = resp.StatusCode
-		lbo.CurrentError = err
-		req.LbOptions = lbo
-		req.Params = bufio.NewReader(req.Params)
-		return s.Run(req, respResult)
-	} else {
-		unmarshal(resp, respResult)
+	if err != nil {
+		if s.client.CheckRetry(err, resp.StatusCode) {
+			logger.Info("[LB] retry next:", req.ServiceName)
+			retrys += 1
+			lbo.Retrys = retrys
+			lbo.CurrentStatuCode = resp.StatusCode
+			lbo.CurrentError = err
+			req.LbOptions = lbo
+			req.Params = bufio.NewReader(req.Params)
+			return s.Run(req, respResult)
+		} else {
+			unmarshal(resp, respResult)
+		}
 	}
+
 	return resp, err
 
 }
