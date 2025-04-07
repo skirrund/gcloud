@@ -237,7 +237,7 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		return &response.Response{}, errors.New("request url  is empty")
 	}
 	defer requestEnd(req.Url, start)
-	if req.Params == nil {
+	if req.Params != nil {
 		req.Params = bufio.NewReader(req.Params)
 	}
 	resp, err := s.client.Exec(req)
