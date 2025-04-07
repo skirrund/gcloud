@@ -1,6 +1,7 @@
 package lb
 
 import (
+	"bufio"
 	"errors"
 	"strings"
 	"sync"
@@ -228,11 +229,17 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 	if instance == nil {
 		return &response.Response{}, errors.New("no available service" + req.ServiceName)
 	}
+	if !strings.HasPrefix(req.Path, "/") {
+		req.Path = "/" + req.Path
+	}
 	req.Url = instance.GetUrl() + req.Path
 	if len(req.Url) == 0 {
 		return &response.Response{}, errors.New("request url  is empty")
 	}
 	defer requestEnd(req.Url, start)
+	if req.Params == nil {
+		req.Params = bufio.NewReader(req.Params)
+	}
 	resp, err := s.client.Exec(req)
 	if s.client.CheckRetry(err, resp.StatusCode) {
 		logger.Info("[LB] retry next:", req.ServiceName)
@@ -241,6 +248,7 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		lbo.CurrentStatuCode = resp.StatusCode
 		lbo.CurrentError = err
 		req.LbOptions = lbo
+		req.Params = bufio.NewReader(req.Params)
 		return s.Run(req, respResult)
 	} else {
 		unmarshal(resp, respResult)
