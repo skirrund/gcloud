@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/skirrund/gcloud/bootstrap/env"
@@ -36,48 +35,48 @@ const (
 	// RetryTimes                      = "server.http.retry.times"
 )
 
-func getRequest(url string, method string, headers map[string]string, params io.Reader, isJson bool, timeOut time.Duration) *request.Request {
+func getRequest(url string, method string, headers map[string]string, params []byte, isJson bool, timeOut time.Duration) *request.Request {
 	return &request.Request{
 		Url:       url,
 		Method:    method,
 		Headers:   headers,
-		Body:      params,
+		Params:    params,
 		IsJson:    isJson,
 		TimeOut:   timeOut,
 		LbOptions: request.NewDefaultLbOptions(),
 	}
 }
 
-func getRequestLb(serviceName string, path string, method string, headers map[string]string, params io.Reader, isJson bool, timeOut time.Duration) *request.Request {
+func getRequestLb(serviceName string, path string, method string, headers map[string]string, params []byte, isJson bool, timeOut time.Duration) *request.Request {
 	return &request.Request{
 		ServiceName: serviceName,
 		Path:        path,
 		Method:      method,
 		Headers:     headers,
-		Body:        params,
+		Params:      params,
 		IsJson:      isJson,
 		TimeOut:     timeOut,
 		LbOptions:   request.NewDefaultLbOptions(),
 	}
 }
 
-func getJSONData(params any) io.Reader {
-	var reader io.Reader
+func getJSONData(params any) []byte {
+	var reader []byte
 	if p, ok := params.(string); ok {
-		reader = strings.NewReader(p)
+		reader = []byte(p)
 	} else if b, ok := params.([]byte); ok {
-		reader = bytes.NewReader(b)
+		reader = b
 	} else {
 		body, _ := utils.Marshal(params)
 		if env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY) {
 			logger.Info("[http] getJSONData:", logger.GetLogStr(string(body)))
 		}
-		reader = bytes.NewReader(body)
+		reader = body
 	}
 	return reader
 }
 
-func getFormData(params map[string]any) io.Reader {
+func getFormData(params map[string]any) []byte {
 	var values url.Values = make(map[string][]string)
 	log := env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY)
 	for k, v := range params {
@@ -119,10 +118,10 @@ func getFormData(params map[string]any) io.Reader {
 	if log {
 		logger.Info("[http] getFormData string:", valuesStr)
 	}
-	return strings.NewReader(valuesStr)
+	return []byte(valuesStr)
 }
 
-func getMultipartFormData(params map[string]any, files map[string]*request.File) (reader io.Reader, contentType string) {
+func getMultipartFormData(params map[string]any, files map[string]*request.File) (reader []byte, contentType string) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	var err error
@@ -197,7 +196,7 @@ func getMultipartFormData(params map[string]any, files map[string]*request.File)
 			logger.Error("[http] getMultipartFormData error:", err)
 		}
 	}
-	return bodyBuf, bodyWriter.FormDataContentType()
+	return bodyBuf.Bytes(), bodyWriter.FormDataContentType()
 }
 
 func getUrlWithParams(urlStr string, params map[string]interface{}) string {
@@ -255,8 +254,8 @@ func PostFormDataUrl(url string, headers map[string]string, params url.Values, r
 	return PostFormDataUrlWithTimeout(url, headers, params, result, default_timeout)
 }
 func PostFormDataUrlWithTimeout(url string, headers map[string]string, params url.Values, result any, timeout time.Duration) (*response.Response, error) {
-	reader := strings.NewReader(params.Encode())
-	req := getRequest(url, http.MethodPost, headers, reader, false, timeout)
+	//reader := strings.NewReader(params.Encode())
+	req := getRequest(url, http.MethodPost, headers, []byte(params.Encode()), false, timeout)
 	return lb.GetInstance().Run(req, result)
 }
 func PostFile(url string, headers map[string]string, params map[string]any, files map[string]*request.File, result any) (*response.Response, error) {
@@ -288,8 +287,8 @@ func PostFormData(serviceName string, path string, headers map[string]string, pa
 }
 
 func PostFormDataWithTimeout(serviceName string, path string, headers map[string]string, params url.Values, result any, timeout time.Duration) (*response.Response, error) {
-	reader := strings.NewReader(params.Encode())
-	req := getRequestLb(serviceName, path, http.MethodPost, headers, reader, false, timeout)
+	// reader := strings.NewReader(params.Encode())
+	req := getRequestLb(serviceName, path, http.MethodPost, headers, []byte(params.Encode()), false, timeout)
 	return lb.GetInstance().Run(req, result)
 }
 

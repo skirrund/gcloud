@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -87,7 +88,7 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	if len(reqUrl) == 0 {
 		return r, errors.New("[http] request url  is empty")
 	}
-	params := req.Params
+	params := bytes.NewReader(req.Params)
 	headers := req.Headers
 	isJson := req.IsJson
 	defer func() {

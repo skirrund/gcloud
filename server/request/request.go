@@ -2,7 +2,6 @@ package request
 
 import (
 	"context"
-	"io"
 	"os"
 	"time"
 )
@@ -20,8 +19,7 @@ type Request struct {
 	ServiceName string
 	Path        string
 	Headers     map[string]string
-	Params      io.Reader
-	Body        io.Reader
+	Params      []byte
 	IsJson      bool
 	TimeOut     time.Duration
 	Method      string
