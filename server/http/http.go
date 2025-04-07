@@ -41,7 +41,7 @@ func getRequest(url string, method string, headers map[string]string, params io.
 		Url:       url,
 		Method:    method,
 		Headers:   headers,
-		Params:    params,
+		Body:      params,
 		IsJson:    isJson,
 		TimeOut:   timeOut,
 		LbOptions: request.NewDefaultLbOptions(),
@@ -54,7 +54,7 @@ func getRequestLb(serviceName string, path string, method string, headers map[st
 		Path:        path,
 		Method:      method,
 		Headers:     headers,
-		Params:      params,
+		Body:        params,
 		IsJson:      isJson,
 		TimeOut:     timeOut,
 		LbOptions:   request.NewDefaultLbOptions(),
@@ -77,7 +77,7 @@ func getJSONData(params any) io.Reader {
 	return reader
 }
 
-func getFormData(params map[string]interface{}) io.Reader {
+func getFormData(params map[string]any) io.Reader {
 	var values url.Values = make(map[string][]string)
 	log := env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY)
 	for k, v := range params {

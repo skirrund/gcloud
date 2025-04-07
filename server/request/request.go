@@ -21,6 +21,7 @@ type Request struct {
 	Path        string
 	Headers     map[string]string
 	Params      io.Reader
+	Body        io.Reader
 	IsJson      bool
 	TimeOut     time.Duration
 	Method      string

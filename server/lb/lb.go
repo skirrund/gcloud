@@ -237,8 +237,8 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		return &response.Response{}, errors.New("request url  is empty")
 	}
 	defer requestEnd(req.Url, start)
-	if req.Params != nil {
-		req.Params = bufio.NewReader(req.Params)
+	if req.Body != nil {
+		req.Params = bufio.NewReader(req.Body)
 	}
 	resp, err := s.client.Exec(req)
 	if err != nil {
@@ -249,7 +249,6 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 			lbo.CurrentStatuCode = resp.StatusCode
 			lbo.CurrentError = err
 			req.LbOptions = lbo
-			req.Params = bufio.NewReader(req.Params)
 			return s.Run(req, respResult)
 		} else {
 			unmarshal(resp, respResult)
