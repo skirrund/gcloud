@@ -125,7 +125,6 @@ func getMultipartFormData(params map[string]any, files map[string]*request.File)
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	var err error
-	defer bodyWriter.Close()
 	log := env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY)
 	if len(files) > 0 {
 		var reader io.Reader
@@ -196,8 +195,8 @@ func getMultipartFormData(params map[string]any, files map[string]*request.File)
 			logger.Error("[http] getMultipartFormData error:", err)
 		}
 	}
-	bs, _ := io.ReadAll(bodyBuf)
-	return bs, bodyWriter.FormDataContentType()
+	bodyWriter.Close()
+	return bodyBuf.Bytes(), bodyWriter.FormDataContentType()
 }
 
 func getUrlWithParams(urlStr string, params map[string]any) string {
