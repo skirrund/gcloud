@@ -196,10 +196,11 @@ func getMultipartFormData(params map[string]any, files map[string]*request.File)
 			logger.Error("[http] getMultipartFormData error:", err)
 		}
 	}
-	return bodyBuf.Bytes(), bodyWriter.FormDataContentType()
+	bs, _ := io.ReadAll(bodyBuf)
+	return bs, bodyWriter.FormDataContentType()
 }
 
-func getUrlWithParams(urlStr string, params map[string]interface{}) string {
+func getUrlWithParams(urlStr string, params map[string]any) string {
 	if env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY) {
 		logger.Info("[http] getUrlWithParams:", params)
 	}
