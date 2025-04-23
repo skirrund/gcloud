@@ -249,6 +249,8 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 		} else {
 			unmarshal(resp, respResult)
 		}
+	} else {
+		unmarshal(resp, respResult)
 	}
 
 	return resp, err
