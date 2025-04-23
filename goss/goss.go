@@ -81,6 +81,7 @@ func GetDefault(c OssClient) (OssClient, error) {
 		logger.Info("[goss] load ossClient from cache:", k)
 		return v.(OssClient), nil
 	} else {
+		logger.Info("[goss] create ossClient:", k)
 		v, err := NewDefault(c)
 		if err != nil {
 			return nil, err
