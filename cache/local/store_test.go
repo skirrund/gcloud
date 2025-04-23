@@ -13,9 +13,9 @@ type TestSetStruct struct {
 
 func TestSet(t *testing.T) {
 	testInt := 123
-	Set("test", TestSetStruct{Name: "test"}, 1)
-	Set("test", testInt, 1)
-	time.Sleep(3 * time.Second)
+	SetWithTtl("test", TestSetStruct{Name: "test"}, 2*time.Second)
+	SetWithTtl("test", testInt, 2*time.Second)
+	time.Sleep(1 * time.Second)
 	obj := Get("test")
 	fmt.Println(obj)
 

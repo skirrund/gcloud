@@ -6,25 +6,23 @@ import (
 	"time"
 
 	"github.com/skirrund/gcloud/logger"
-
-	"github.com/maypok86/otter"
 )
 
 // var cache *freecache.Cache
-var cache otter.CacheWithVariableTTL[string, any]
+var cache CacheWithVariableTTL[string, any]
 
 func init() {
 	// cacheSize := 200 * 1024 * 1024
 	// cache = freecache.NewCache(cacheSize)
 	var err error
-	cache, err = otter.MustBuilder[string, any](math.MaxUint16).WithVariableTTL().Build()
+	cache, err = MustBuilder[string, any](math.MaxUint16).WithVariableTTL().Build()
 	if err != nil {
 		panic(err)
 	}
 }
 
-func NewCache(capacity int) (otter.CacheWithVariableTTL[string, any], error) {
-	return otter.MustBuilder[string, any](capacity).WithVariableTTL().Build()
+func NewCache(capacity int) (CacheWithVariableTTL[string, any], error) {
+	return MustBuilder[string, any](capacity).WithVariableTTL().Build()
 }
 
 func Get(key string) any {
@@ -40,7 +38,7 @@ func Del(key string) {
 	cache.Delete(key)
 }
 
-func Set(key string, value any, expireSeconds int64) error {
+func SetWithTtl(key string, value any, ttl time.Duration) error {
 	if value == nil {
 		return nil
 	}
@@ -50,7 +48,7 @@ func Set(key string, value any, expireSeconds int64) error {
 	// 	logger.Error("[localCache] error:" + err.Error())
 	// 	return err
 	// }
-	r := cache.Set(key, value, time.Duration(expireSeconds)*time.Second)
+	r := cache.Set(key, value, ttl)
 	if !r {
 		err := errors.New("the key-value pair had too much cost and the Set was dropped")
 		logger.Error("[localCache] error:", err.Error())
