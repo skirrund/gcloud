@@ -5,7 +5,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 
+	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/utils"
 )
 
@@ -34,7 +36,7 @@ type OssClient interface {
 	IsObjectExist(key string) (bool, error)
 }
 
-var defaultOss OssClient
+var ossClients sync.Map
 
 func SubStringBlackSlash(s string) string {
 	if !strings.HasPrefix(s, "/") && !strings.HasPrefix(s, "\\") {
@@ -74,10 +76,18 @@ func GetFileName(fileName, nativePrefix, endpoint, bucketName, selfDomain string
 }
 
 func GetDefault(c OssClient) (OssClient, error) {
-	if defaultOss != nil {
-		return defaultOss, nil
+	k := c.GetNativePrefix()
+	if v, ok := ossClients.Load(k); ok && v != nil {
+		logger.Info("[goss] load ossClient from cache:", k)
+		return v.(OssClient), nil
+	} else {
+		v, err := NewDefault(c)
+		if err != nil {
+			return nil, err
+		}
+		ossClients.Store(k, v)
+		return v, nil
 	}
-	return NewDefault(c)
 }
 
 func NewDefault(c OssClient) (OssClient, error) {
