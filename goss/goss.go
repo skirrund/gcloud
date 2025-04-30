@@ -1,14 +1,33 @@
 package goss
 
 import (
+	"errors"
 	"io"
 	"net/url"
 	"os"
 	"strings"
 	"sync"
 
+	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/utils"
+)
+
+type OssType string
+
+const (
+	AliOss                  OssType = "alioss"
+	ZijieOss                OssType = "zijieoss"
+	AliossSelfDomainHostKey         = "alioss.selfDomainHost"
+	ZijieSelfDomainHostKey          = "zijie.oss.selfDomainHost"
+	AliEndpointPublicKey            = "alioss.endpoint.public"
+	ZijieEndpointPublicKey          = "zijie.oss.endpoint.public"
+	AlinativePrefixKey              = "alioss.nativePrefix"
+	ZijienativePrefixKey            = "zijie.oss.nativePrefix"
+	DefaultAliPrefix                = "/alioss-core/"
+	DefaultZijiePrefix              = "/zijie-core/"
+	AlibucketNameKey                = "alioss.bucketName"
+	ZijieBucketNameKey              = "zijie.oss.bucketName"
 )
 
 type OssClient interface {
@@ -89,6 +108,41 @@ func GetDefault(c OssClient) (OssClient, error) {
 		ossClients.Store(k, v)
 		return v, nil
 	}
+}
+
+func GetOssTypeByFilePath(filePath string) (OssType, error) {
+	cfg := env.GetInstance()
+	prefxa := cfg.GetStringWithDefault(AlinativePrefixKey, DefaultAliPrefix)
+	if strings.HasPrefix(filePath, prefxa) {
+		return AliOss, nil
+	}
+	prefxz := cfg.GetStringWithDefault(ZijienativePrefixKey, DefaultZijiePrefix)
+	if strings.HasPrefix(filePath, prefxz) {
+		return ZijieOss, nil
+	}
+	if strings.HasPrefix(filePath, "http://") || strings.HasPrefix(filePath, "https://") {
+		idx := strings.Index(filePath, "://")
+		filePath = filePath[idx : idx+3]
+	}
+	selfDomainHosta := cfg.GetString(AliossSelfDomainHostKey)
+	if len(selfDomainHosta) > 0 && strings.HasPrefix(filePath, selfDomainHosta) {
+		return AliOss, nil
+	}
+	selfDomainHostz := cfg.GetString(ZijieSelfDomainHostKey)
+	if len(selfDomainHostz) > 0 && strings.HasPrefix(filePath, selfDomainHostz) {
+		return ZijieOss, nil
+	}
+	bucketNamea := cfg.GetString(AlibucketNameKey)
+	endpointa := cfg.GetString(AliEndpointPublicKey)
+	if strings.HasPrefix(filePath, bucketNamea+"."+endpointa) {
+		return AliOss, nil
+	}
+	bucketNamez := cfg.GetString(ZijieBucketNameKey)
+	endpointz := cfg.GetString(ZijieEndpointPublicKey)
+	if strings.HasPrefix(filePath, bucketNamez+"."+endpointz) {
+		return ZijieOss, nil
+	}
+	return "", errors.New("oss type not found")
 }
 
 func NewDefault(c OssClient) (OssClient, error) {

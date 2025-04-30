@@ -25,15 +25,11 @@ import (
 )
 
 const (
-	selfDomainHostKey       = "alioss.selfDomainHost"
-	endpointPublicKey       = "alioss.endpoint.public"
 	endpointInternalKey     = "alioss.endpoint.internal"
 	accessKeyIdKey          = "alioss.accessKeyId"
 	accessKeySecretKey      = "alioss.accessKeySecret"
-	bucketNameKey           = "alioss.bucketName" //"mth-core";
 	selfDomainKey           = "alioss.selfDomain"
-	nativePrefixKey         = "alioss.nativePrefix" //"=/alioss-core/";
-	authVersionKey          = "alioss.authVersion"  //"v1,v4等";
+	authVersionKey          = "alioss.authVersion" //"v1,v4等";
 	regionKey               = "alioss.region"
 	defaultEndpoint         = "oss-cn-shanghai.aliyuncs.com"
 	defaultSelfDomainHost   = "static-core.demo.com"
@@ -236,11 +232,11 @@ func (OssClient) NewClient(endpoint, accessKeyID, accessKeySecret, bucketName, r
 
 func (oc OssClient) NewDefaultClient() (c goss.OssClient, err error) {
 	cfg := env.GetInstance()
-	endpointPublic := cfg.GetStringWithDefault(endpointPublicKey, "oss-cn-shanghai.aliyuncs.com")
+	endpointPublic := cfg.GetStringWithDefault(goss.AliEndpointPublicKey, "oss-cn-shanghai.aliyuncs.com")
 	endpointInternal := cfg.GetStringWithDefault(endpointInternalKey, "oss-cn-shanghai.aliyuncs.com")
 	accessKeyID := cfg.GetString(accessKeyIdKey)
 	accessKeySecret := cfg.GetString(accessKeySecretKey)
-	bucketName := cfg.GetStringWithDefault(bucketNameKey, "mth-core")
+	bucketName := cfg.GetStringWithDefault(goss.AlibucketNameKey, "mth-core")
 	authVersion := cfg.GetString(authVersionKey)
 	authVersion = strings.ToLower(authVersion)
 	region := cfg.GetStringWithDefault(regionKey, "cn-shanghai")
@@ -304,12 +300,12 @@ func GetNativeWithPrefixUrl(fileName string) string {
 
 func GetNativePrefix() string {
 	cfg := env.GetInstance()
-	return cfg.GetStringWithDefault(nativePrefixKey, "/alioss-core/")
+	return cfg.GetStringWithDefault(goss.AlinativePrefixKey, goss.DefaultAliPrefix)
 }
 
 func getEndpoint() string {
 	cfg := env.GetInstance()
-	return cfg.GetStringWithDefault(endpointPublicKey, "oss-cn-shanghai.aliyuncs.com")
+	return cfg.GetStringWithDefault(goss.AliEndpointPublicKey, "oss-cn-shanghai.aliyuncs.com")
 }
 
 func getSelfDomain() bool {
@@ -319,8 +315,7 @@ func getSelfDomain() bool {
 
 func getSelfDomainHost() string {
 	cfg := env.GetInstance()
-
-	return cfg.GetString(selfDomainHostKey)
+	return cfg.GetString(goss.AliossSelfDomainHostKey)
 }
 
 func (c OssClient) GetFullUrl(fileName string) string {

@@ -22,14 +22,10 @@ import (
 )
 
 const (
-	selfDomainHostKey       = "zijie.oss.selfDomainHost"
-	endpointPublicKey       = "zijie.oss.endpoint.public"
 	endpointInternalKey     = "zijie.oss.endpoint.internal"
 	accessKeyKey            = "zijie.oss.accessKeyId"
 	accessKeySecretKey      = "zijie.oss.accessKeySecret"
-	bucketNameKey           = "zijie.oss.bucketName" //"mth-core";
 	selfDomainKey           = "zijie.oss.selfDomain"
-	nativePrefixKey         = "zijie.oss.nativePrefix" //"=/zijie-core/";
 	authVersionKey          = "zijie.oss.authVersion"
 	regionKey               = "zijie.oss.region"
 	defaultEndpoint         = "tos-cn-shanghai.volces.com"
@@ -125,11 +121,11 @@ func (ZijieOssClient) NewClient(endpoint, ak, sk, bucketName, region, selfDomain
 
 func (oc ZijieOssClient) NewDefaultClient() (c goss.OssClient, err error) {
 	cfg := env.GetInstance()
-	endpointPublic := cfg.GetStringWithDefault(endpointPublicKey, defaultEndpoint)
+	endpointPublic := cfg.GetStringWithDefault(goss.ZijieEndpointPublicKey, defaultEndpoint)
 	endpointInternal := cfg.GetStringWithDefault(endpointInternalKey, defaultEndpoint)
 	ak := cfg.GetString(accessKeyKey)
 	sk := cfg.GetString(accessKeySecretKey)
-	bucketName := cfg.GetStringWithDefault(bucketNameKey, defaultBucketName)
+	bucketName := cfg.GetStringWithDefault(goss.ZijieBucketNameKey, defaultBucketName)
 	region := cfg.GetStringWithDefault(regionKey, defaultRegion)
 	if len(endpointInternal) == 0 {
 		if len(endpointPublic) == 0 {
@@ -149,7 +145,7 @@ func (oc ZijieOssClient) NewDefaultClient() (c goss.OssClient, err error) {
 
 func (oc ZijieOssClient) GetNativePrefix() string {
 	cfg := env.GetInstance()
-	return cfg.GetStringWithDefault(nativePrefixKey, "/zijie-core/")
+	return cfg.GetStringWithDefault(goss.ZijienativePrefixKey, goss.DefaultZijiePrefix)
 }
 
 func (co ZijieOssClient) GetNativeWithPrefixUrl(fileName string) string {
@@ -158,7 +154,7 @@ func (co ZijieOssClient) GetNativeWithPrefixUrl(fileName string) string {
 
 func getEndpoint() string {
 	cfg := env.GetInstance()
-	return cfg.GetStringWithDefault(endpointPublicKey, defaultEndpoint)
+	return cfg.GetStringWithDefault(goss.ZijieEndpointPublicKey, defaultEndpoint)
 }
 
 func getSelfDomain() bool {
@@ -168,7 +164,7 @@ func getSelfDomain() bool {
 
 func getSelfDomainHost() string {
 	cfg := env.GetInstance()
-	return cfg.GetString(selfDomainHostKey)
+	return cfg.GetString(goss.ZijieSelfDomainHostKey)
 }
 
 func (oc ZijieOssClient) GetFullUrl(fileName string) string {

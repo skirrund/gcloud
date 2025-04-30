@@ -1,10 +1,9 @@
 package s3fifo
 
 import (
-	"github.com/dolthub/maphash"
-	"github.com/gammazero/deque"
-
+	"github.com/skirrund/gcloud/cache/local/internal/deque"
 	"github.com/skirrund/gcloud/cache/local/internal/generated/node"
+	"github.com/skirrund/gcloud/cache/local/internal/hashtable"
 )
 
 type ghost[K comparable, V any] struct {
@@ -12,7 +11,7 @@ type ghost[K comparable, V any] struct {
 	m         map[uint64]struct{}
 	main      *main[K, V]
 	small     *small[K, V]
-	hasher    maphash.Hasher[K]
+	hasher    hashtable.Hasher[K]
 	evictNode func(node.Node[K, V])
 }
 
@@ -21,7 +20,7 @@ func newGhost[K comparable, V any](main *main[K, V], evictNode func(node.Node[K,
 		q:         &deque.Deque[uint64]{},
 		m:         make(map[uint64]struct{}),
 		main:      main,
-		hasher:    maphash.NewHasher[K](),
+		hasher:    hashtable.NewHasher[K](),
 		evictNode: evictNode,
 	}
 }

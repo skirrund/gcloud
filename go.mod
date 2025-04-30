@@ -8,8 +8,6 @@ require (
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.1
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/bytedance/sonic v1.13.2
-	github.com/dolthub/maphash v0.1.0
-	github.com/gammazero/deque v0.2.1
 	github.com/gin-contrib/pprof v1.5.3
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/locales v0.14.1
