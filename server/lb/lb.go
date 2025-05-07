@@ -70,7 +70,7 @@ func (s *ServerPool) GetHttpClient() client.HttpClient {
 	return s.client
 }
 
-func (s *ServerPool) regChange(eventType server.EventName, eventInfo interface{}) error {
+func (s *ServerPool) regChange(eventType server.EventName, eventInfo any) error {
 	if eventType == server.RegistryChangeEvent {
 		logger.Info("[LB] registry change:", eventInfo)
 		if info, ok := eventInfo.(map[string][]*registry.Instance); ok {

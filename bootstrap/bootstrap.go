@@ -270,7 +270,7 @@ func delayFunction(f func()) {
 // 		LogDir:      entity.LogBaseDir() + "/nacos",
 // 	}
 // 	//生成nacos config client(配置中心客户端)
-// 	client, err := clients.CreateConfigClient(map[string]interface{}{
+// 	client, err := clients.CreateConfigClient(map[string]any{
 // 		"serverConfigs": scs,
 // 		"clientConfig":  cc,
 // 	})

@@ -1,7 +1,7 @@
 package config
 
 type IConfig interface {
-	Get(key string) interface{}
+	Get(key string) any
 	GetString(key string) string
 	GetStringWithDefault(key string, defaultString string) string
 	GetStringSlice(key string) []string
@@ -14,7 +14,7 @@ type IConfig interface {
 	GetUint64(key string) uint64
 	GetUint64WithDefault(key string, defaultUint64 uint64) uint64
 	GetBool(key string) bool
-	Set(key string, value interface{})
+	Set(key string, value any)
 	GetFloat64(key string) float64
 	Shutdown() error
 	Read() error

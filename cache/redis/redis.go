@@ -200,8 +200,8 @@ func (r *RedisClient) HGetAll(key string) map[string]string {
 	bc := r.client.HGetAll(ctx, key)
 	return bc.Val()
 }
-func (r *RedisClient) HMGet(key string, hashKey ...string) map[string]interface{} {
-	vals := make(map[string]interface{})
+func (r *RedisClient) HMGet(key string, hashKey ...string) map[string]any {
+	vals := make(map[string]any)
 	if len(hashKey) == 0 {
 		return vals
 	}
@@ -275,7 +275,7 @@ func (r *RedisClient) SMembers(key string) []string {
 	return bc.Val()
 }
 
-func (r *RedisClient) SAdd(key string, member ...interface{}) int64 {
+func (r *RedisClient) SAdd(key string, member ...any) int64 {
 	bc := r.client.SAdd(ctx, key, member...)
 	return bc.Val()
 }
@@ -300,7 +300,7 @@ func (r *RedisClient) LPop(key string, member ...string) string {
 	return bc.Val()
 }
 
-func (r *RedisClient) LPush(key string, valus ...interface{}) int64 {
+func (r *RedisClient) LPush(key string, valus ...any) int64 {
 	bc := r.client.LPush(ctx, key, valus...)
 	return bc.Val()
 }

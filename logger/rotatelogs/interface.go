@@ -69,5 +69,5 @@ var Local = clockFn(time.Now)
 // the RotateLogs constructor
 type IOption interface {
 	Name() string
-	Value() interface{}
+	Value() any
 }

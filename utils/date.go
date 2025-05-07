@@ -50,7 +50,7 @@ func (t DateTime) Format() string {
 	return fmt.Sprintf("\"%s\"", t.Time.Format(TimeFormat))
 }
 
-func (t *DateTime) Scan(value interface{}) error {
+func (t *DateTime) Scan(value any) error {
 	if v, ok := value.(time.Time); ok {
 		dt := DateTime{
 			Time: v,

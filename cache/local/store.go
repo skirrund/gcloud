@@ -57,7 +57,7 @@ func SetWithTtl(key string, value any, ttl time.Duration) error {
 	return nil
 }
 
-// func serialize(value interface{}) ([]byte, error) {
+// func serialize(value any) ([]byte, error) {
 // 	buf := bytes.Buffer{}
 // 	enc := gob.NewEncoder(&buf)
 // 	gob.Register(value)
@@ -71,7 +71,7 @@ func SetWithTtl(key string, value any, ttl time.Duration) error {
 // }
 
 // func deserialize(valueBytes []byte) (any, error) {
-// 	var value interface{}
+// 	var value any
 // 	buf := bytes.NewBuffer(valueBytes)
 // 	dec := gob.NewDecoder(buf)
 

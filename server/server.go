@@ -41,7 +41,7 @@ const (
 	ConfigChangeEvent EventName = "configChange"
 )
 
-type EventHook func(eventType EventName, eventInfo interface{}) error
+type EventHook func(eventType EventName, eventInfo any) error
 
 var eventHooks = struct {
 	sync.Mutex
@@ -69,7 +69,7 @@ func RegisterEventHook(name EventName, hook ...EventHook) error {
 // EmitEvent executes the different hooks passing the EventType as an
 // argument. This is a blocking function. Hook developers should
 // use 'go' keyword if they don't want to block Caddy.
-func EmitEvent(event EventName, info interface{}) {
+func EmitEvent(event EventName, info any) {
 	funcs, ok := eventHooks.EventHook[event]
 	if ok {
 		logger.Info("[server] EmitEvent exec ", event)

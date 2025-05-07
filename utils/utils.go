@@ -133,7 +133,7 @@ func GetAgeFromIdNumEndTime(idNum string, endTime time.Time) int {
 	return yearInterval
 }
 
-func NewOptions(config cc.IConfig, opts interface{}) {
+func NewOptions(config cc.IConfig, opts any) {
 	t := reflect.TypeOf(opts)
 	kind := t.Kind()
 	if kind == reflect.Ptr {
@@ -238,7 +238,7 @@ func SubStr(str string, start int, length int) (result string) {
 }
 
 // 判断obj是否在target中，target支持的类型arrary,slice,map
-func Contains(obj interface{}, target interface{}) bool {
+func Contains(obj any, target any) bool {
 	targetValue := reflect.ValueOf(target)
 	switch reflect.TypeOf(target).Kind() {
 	case reflect.Slice, reflect.Array:
@@ -255,7 +255,7 @@ func Contains(obj interface{}, target interface{}) bool {
 
 	return false
 }
-func Contains2(obj interface{}, target interface{}) bool {
+func Contains2(obj any, target any) bool {
 	if obj == nil || target == nil {
 		return false
 	}
@@ -287,19 +287,19 @@ func Contains2(obj interface{}, target interface{}) bool {
 	return false
 }
 
-func UnmarshalFromString(str string, obj interface{}) error {
+func UnmarshalFromString(str string, obj any) error {
 	return sonic.UnmarshalString(str, obj)
 }
 
-func Unmarshal(bytes []byte, obj interface{}) error {
+func Unmarshal(bytes []byte, obj any) error {
 	return sonic.Unmarshal(bytes, obj)
 }
 
-func Marshal(obj interface{}) ([]byte, error) {
+func Marshal(obj any) ([]byte, error) {
 	return sonic.Marshal(obj)
 }
 
-func MarshalToString(obj interface{}) (string, error) {
+func MarshalToString(obj any) (string, error) {
 	return sonic.MarshalString(obj)
 }
 

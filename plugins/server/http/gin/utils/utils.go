@@ -53,11 +53,11 @@ func CheckHeaderParams(name string, v *string, ctx *gin.Context) bool {
 	return CheckHeaderParamsWithErrorMsg(name, v, "", ctx)
 }
 
-func SendJSON(ctx *gin.Context, data interface{}) {
+func SendJSON(ctx *gin.Context, data any) {
 	ctx.JSON(200, data)
 }
 
-func ShouldBind(ctx *gin.Context, data interface{}) bool {
+func ShouldBind(ctx *gin.Context, data any) bool {
 	err := ctx.ShouldBind(data)
 	if err != nil {
 		ctx.JSON(200, response.Fail[any](err.Error()))
@@ -67,7 +67,7 @@ func ShouldBind(ctx *gin.Context, data interface{}) bool {
 
 }
 
-func ShouldBindAndValidate(ctx *gin.Context, data interface{}) bool {
+func ShouldBindAndValidate(ctx *gin.Context, data any) bool {
 	err := ctx.ShouldBind(data)
 	if err != nil {
 		ctx.JSON(200, response.Fail[any](err.Error()))

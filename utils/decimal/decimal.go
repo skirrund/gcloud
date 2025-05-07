@@ -1833,7 +1833,7 @@ func (d Decimal) MarshalBinary() (data []byte, err error) {
 }
 
 // Scan implements the sql.Scanner interface for database deserialization.
-func (d *Decimal) Scan(value interface{}) error {
+func (d *Decimal) Scan(value any) error {
 	// first try to see if the data is stored in database as a Numeric datatype
 	switch v := value.(type) {
 
@@ -2026,7 +2026,7 @@ func RescalePair(d1 Decimal, d2 Decimal) (Decimal, Decimal) {
 	return d1, d2
 }
 
-func unquoteIfQuoted(value interface{}) (string, error) {
+func unquoteIfQuoted(value any) (string, error) {
 	var bytes []byte
 
 	switch v := value.(type) {
@@ -2060,7 +2060,7 @@ func NewNullDecimal(d Decimal) NullDecimal {
 }
 
 // Scan implements the sql.Scanner interface for database deserialization.
-func (d *NullDecimal) Scan(value interface{}) error {
+func (d *NullDecimal) Scan(value any) error {
 	if value == nil {
 		d.Valid = false
 		return nil

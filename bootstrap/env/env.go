@@ -94,13 +94,13 @@ func (e *env) SetBaseConfig(reader io.Reader, configType string) error {
 	return nil
 }
 
-func (e *env) MergeConfig(eventType server.EventName, eventInfo interface{}) (err error) {
+func (e *env) MergeConfig(eventType server.EventName, eventInfo any) (err error) {
 	logger.Info("[ENV] config changed")
 	if cfg, ok := eventInfo.(*viper.Viper); ok {
 		logger.Info("[ENV] config changed type viper.Viper")
 		err = e.config.MergeConfigMap(cfg.AllSettings())
 	}
-	if cfg, ok := eventInfo.(map[string]interface{}); ok {
+	if cfg, ok := eventInfo.(map[string]any); ok {
 		err = e.config.MergeConfigMap(cfg)
 	}
 	if err != nil {
@@ -119,11 +119,11 @@ func (e *env) Watch() error {
 	return nil
 }
 
-func (nc *env) Get(key string) interface{} {
+func (nc *env) Get(key string) any {
 	return nc.config.Get(key)
 }
 
-func (nc *env) Set(key string, value interface{}) {
+func (nc *env) Set(key string, value any) {
 	nc.config.Set(key, value)
 }
 
@@ -194,6 +194,6 @@ func (nc *env) GetBool(key string) bool {
 func (nc *env) GetFloat64(key string) float64 {
 	return nc.config.GetFloat64(key)
 }
-func (nc *env) UnmarshalKey(key string, objPtr interface{}) error {
+func (nc *env) UnmarshalKey(key string, objPtr any) error {
 	return nc.config.UnmarshalKey(key, objPtr)
 }

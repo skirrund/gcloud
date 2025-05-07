@@ -264,8 +264,8 @@ func InitValidator(locale string, v *validator.Validate) (err error) {
 	return
 }
 
-func addValueToMap(fields map[string]string) map[string]interface{} {
-	res := make(map[string]interface{})
+func addValueToMap(fields map[string]string) map[string]any {
+	res := make(map[string]any)
 	for field, err := range fields {
 		fieldArr := strings.SplitN(field, ".", 2)
 		if len(fieldArr) > 1 {
@@ -273,7 +273,7 @@ func addValueToMap(fields map[string]string) map[string]interface{} {
 			returnMap := addValueToMap(NewFields)
 			if res[fieldArr[0]] != nil {
 				for k, v := range returnMap {
-					res[fieldArr[0]].(map[string]interface{})[k] = v
+					res[fieldArr[0]].(map[string]any)[k] = v
 				}
 			} else {
 				res[fieldArr[0]] = returnMap
@@ -288,7 +288,7 @@ func addValueToMap(fields map[string]string) map[string]interface{} {
 }
 
 // 去掉结构体名称前缀
-func removeTopStruct(fields map[string]string) map[string]interface{} {
+func removeTopStruct(fields map[string]string) map[string]any {
 	lowerMap := map[string]string{}
 	for field, err := range fields {
 		fieldArr := strings.SplitN(field, ".", 2)
@@ -312,10 +312,10 @@ func ErrResp(err error) string {
 	return ""
 }
 
-func handleErrMap(keyPrefix string, errRes interface{}) string {
-	if v, ok := errRes.(map[string]interface{}); ok {
+func handleErrMap(keyPrefix string, errRes any) string {
+	if v, ok := errRes.(map[string]any); ok {
 		for key, value := range v {
-			if v, ok := value.(map[string]interface{}); ok {
+			if v, ok := value.(map[string]any); ok {
 				return handleErrMap(unionPrefix(keyPrefix, key), v)
 			} else {
 				return unionPrefix(keyPrefix, fmt.Sprintf("%v", value))

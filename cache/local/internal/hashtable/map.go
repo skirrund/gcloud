@@ -261,7 +261,7 @@ func (m *Map[K, V]) set(n node.Node[K, V], onlyIfAbsent bool) node.Node[K, V] {
 					return n
 				}
 				// in-place update.
-				// We get a copy of the value via an interface{} on each call,
+				// We get a copy of the value via an any on each call,
 				// thus the live value pointers are unique. Otherwise atomic
 				// snapshot won't be correct in case of multiple Store calls
 				// using the same value.

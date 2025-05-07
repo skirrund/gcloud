@@ -41,7 +41,7 @@ func init() {
 }
 
 // getMessage format with Sprint, Sprintf, or neither.
-func GetMessage(template string, fmtArgs []interface{}) string {
+func GetMessage(template string, fmtArgs []any) string {
 	if len(fmtArgs) == 0 {
 		return template
 	}
@@ -58,19 +58,19 @@ func GetMessage(template string, fmtArgs []interface{}) string {
 	return fmt.Sprint(fmtArgs...)
 }
 
-func Error(args ...interface{}) {
+func Error(args ...any) {
 	zapLS.Error(args...)
 }
 
-func Fatal(args ...interface{}) {
+func Fatal(args ...any) {
 	zapLS.Fatal(args...)
 }
 
-func Infof(template string, args ...interface{}) {
+func Infof(template string, args ...any) {
 	zapLS.Infof(template, args...)
 }
 
-func Errorf(template string, args ...interface{}) {
+func Errorf(template string, args ...any) {
 	zapLS.Errorf(template, args...)
 }
 
@@ -78,19 +78,19 @@ func Sync() {
 	zapL.Sync()
 }
 
-func Warn(args ...interface{}) {
+func Warn(args ...any) {
 	zapLS.Warn(args...)
 }
 
-func Warnf(template string, args ...interface{}) {
+func Warnf(template string, args ...any) {
 	zapLS.Warnf(template, args...)
 }
 
-func Panic(args ...interface{}) {
+func Panic(args ...any) {
 	zapLS.Panic(args...)
 }
 
-func Info(args ...interface{}) {
+func Info(args ...any) {
 	zapLS.Info(args...)
 }
 

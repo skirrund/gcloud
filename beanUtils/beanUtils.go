@@ -7,7 +7,7 @@ import (
 	"github.com/skirrund/gcloud/logger"
 )
 
-func SimpleCopyProperties(dst, src interface{}) (err error) {
+func SimpleCopyProperties(dst, src any) (err error) {
 	// 防止意外panic
 	defer func() {
 		if e := recover(); e != nil {

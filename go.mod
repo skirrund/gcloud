@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.1
 
 require (
-	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.1
+	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.2
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/bytedance/sonic v1.13.2
 	github.com/gin-contrib/pprof v1.5.3
@@ -20,17 +20,17 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/panjf2000/ants/v2 v2.11.0
 	github.com/prometheus/client_golang v1.19.1
-	github.com/redis/go-redis/v9 v9.7.3
-	github.com/spf13/cast v1.7.1
+	github.com/redis/go-redis/v9 v9.8.0
+	github.com/spf13/cast v1.8.0
 	github.com/spf13/viper v1.20.1
 	github.com/volcengine/ve-tos-golang-sdk/v2 v2.7.8
 	go.uber.org/zap v1.27.0
 	go.uber.org/zap/exp v0.3.0
-	golang.org/x/image v0.25.0
-	golang.org/x/text v0.24.0
+	golang.org/x/image v0.27.0
+	golang.org/x/text v0.25.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
-	gorm.io/gorm v1.25.12
+	gorm.io/gorm v1.26.0
 
 )
 
@@ -75,7 +75,7 @@ require (
 	golang.org/x/arch v0.16.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	google.golang.org/grpc v1.67.3 // indirect

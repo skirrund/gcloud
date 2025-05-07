@@ -16,7 +16,7 @@ const (
 )
 
 type Decoder interface {
-	DecoderObj(resp []byte, obj interface{}) (Decoder, error)
+	DecoderObj(resp []byte, obj any) (Decoder, error)
 }
 type StringDecoder struct{}
 type StreamDecoder struct{}
@@ -30,7 +30,7 @@ var streamDecoder = StreamDecoder{}
 
 var xmlDecoder = XmlDecoder{}
 
-func (d StreamDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
+func (d StreamDecoder) DecoderObj(resp []byte, obj any) (Decoder, error) {
 	if obj == nil {
 		return d, nil
 	}
@@ -43,7 +43,7 @@ func (d StreamDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error)
 	return d, nil
 }
 
-func (d StringDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
+func (d StringDecoder) DecoderObj(resp []byte, obj any) (Decoder, error) {
 	if obj == nil {
 		return d, nil
 	}
@@ -64,7 +64,7 @@ func (d StringDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error)
 
 }
 
-func (d JSONDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
+func (d JSONDecoder) DecoderObj(resp []byte, obj any) (Decoder, error) {
 	if obj == nil {
 		return d, nil
 	}
@@ -84,7 +84,7 @@ func (d JSONDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
 	return d, err
 }
 
-func (d XmlDecoder) DecoderObj(resp []byte, obj interface{}) (Decoder, error) {
+func (d XmlDecoder) DecoderObj(resp []byte, obj any) (Decoder, error) {
 	if obj == nil {
 		return d, nil
 	}

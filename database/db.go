@@ -109,8 +109,8 @@ func InitDataSource(option option.Option, dialector Dialector) *gorm.DB {
 	return doInit(option, gormDia)
 }
 
-func CreateInsertSql(tableName string, kv map[string]interface{}) (sql string, values []interface{}) {
-	values = make([]interface{}, len(kv))
+func CreateInsertSql(tableName string, kv map[string]any) (sql string, values []any) {
+	values = make([]any, len(kv))
 	sql = "insert into " + tableName + "("
 	vsql := " values("
 	i := 0
@@ -154,7 +154,7 @@ func Transaction(ctx context.Context, fc func(txctx context.Context) error) erro
 	})
 }
 
-func Expr(expr string, args ...interface{}) clause.Expr {
+func Expr(expr string, args ...any) clause.Expr {
 	return gorm.Expr(expr, args)
 }
 

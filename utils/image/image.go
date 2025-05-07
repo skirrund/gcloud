@@ -81,7 +81,7 @@ func (c *radius) At(x, y int) color.Color {
 }
 
 var bufferPool = &sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &bytes.Buffer{}
 	},
 }

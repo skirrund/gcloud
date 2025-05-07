@@ -37,7 +37,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	srv.Options = options
 	gin.SetMode(gin.ReleaseMode)
 	s := gin.New()
-	s.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+	s.Use(gin.CustomRecovery(func(c *gin.Context, recovered any) {
 		logger.Error("[GIN] recover:", recovered, "\n", string(debug.Stack()))
 
 		c.JSON(200, response.Fail[any](fmt.Sprintf("%v", recovered)))
@@ -91,7 +91,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 // }
 
 // func sentinelMiddleware(c *gin.Context) {
-// 	var args []interface{}
+// 	var args []any
 // 	rawQuery := c.Request.URL.RawQuery
 // 	if len(rawQuery) > 0 {
 // 		params := strings.Split(rawQuery, "&")
