@@ -9,7 +9,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/bytedance/sonic v1.13.2
 	github.com/gin-contrib/pprof v1.5.3
-	github.com/gin-gonic/gin v1.10.0
+	github.com/gin-gonic/gin v1.10.1
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.26.0
@@ -30,7 +30,7 @@ require (
 	golang.org/x/text v0.25.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
-	gorm.io/gorm v1.26.0
+	gorm.io/gorm v1.30.0
 
 )
 
