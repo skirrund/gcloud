@@ -165,7 +165,9 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	maps.Copy(r.Headers, respHeaders)
 	if sc != http.StatusOK {
 		logger.Error("[lb-http] StatusCode error:", sc, ",", reqUrl, ",", string(b))
-		return r, errors.New("lb-http code error:" + strconv.FormatInt(int64(sc), 10))
+		if !req.IsProxy {
+			return r, errors.New("lb-http code error:" + strconv.FormatInt(int64(sc), 10))
+		}
 	}
 	return r, nil
 }
