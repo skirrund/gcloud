@@ -46,7 +46,7 @@ func (w bodyLogWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
-func requestEnd(uri string, contentType string, method string, start time.Time, strBody string, reqBody string) {
+func requestEnd(uri string, contentType string, method string, start time.Time, strBody string, reqBody, status, respCt string) {
 	if strings.HasPrefix(uri, "/metrics") {
 		strBody = "ignore..."
 	}
@@ -60,6 +60,8 @@ func requestEnd(uri string, contentType string, method string, start time.Time, 
 		"\n [GIN] content-type:", contentType,
 		"\n [GIN] method:", method,
 		"\n [GIN] body:"+reqBody,
+		"\n [GIN] status:"+status,
+		"\n [GIN] response-content-type:"+respCt,
 		"\n [GIN] response:"+strBody,
 		"\n [GIN] cost:"+strconv.FormatInt(time.Since(start).Milliseconds(), 10)+"ms")
 }
@@ -85,7 +87,9 @@ func LoggingMiddleware(ctx *gin.Context) {
 	uri1, _ := url.QueryUnescape(uri)
 	ct := req.Header.Get("content-type")
 	method := req.Method
+	status := ctx.Writer.Status()
+	respCt := ctx.Writer.Header().Get("Content-Type")
 	worker.AsyncExecute(func() {
-		requestEnd(uri1, ct, method, start, strBody, string(bb))
+		requestEnd(uri1, ct, method, start, strBody, string(bb), strconv.FormatInt(int64(status), 10), respCt)
 	})
 }

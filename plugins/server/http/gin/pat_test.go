@@ -21,9 +21,9 @@ func TestGinServer(t *testing.T) {
 	}
 	srv := NewServer(options, func(engine *gin.Engine) {
 		engine.POST("/test", func(context *gin.Context) {
-			v := context.QueryArray("a")
-			fmt.Println(v)
-			//		context.JSON(200, "test")
+			//v := context.QueryArray("a")
+			// fmt.Println(v)
+			context.JSON(200, "test")
 		})
 	})
 	srv.Run(func() {
