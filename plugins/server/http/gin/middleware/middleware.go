@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/skirrund/gcloud/logger"
+	"github.com/skirrund/gcloud/tracer"
 	"github.com/skirrund/gcloud/utils/worker"
 )
 
@@ -46,7 +47,7 @@ func (w bodyLogWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
-func requestEnd(uri string, contentType string, method string, start time.Time, strBody string, reqBody, status, respCt string) {
+func requestEnd(uri, contentType, method string, start time.Time, strBody, reqBody, status, respCt, traceId string) {
 	if strings.HasPrefix(uri, "/metrics") {
 		strBody = "ignore..."
 	}
@@ -57,6 +58,7 @@ func requestEnd(uri string, contentType string, method string, start time.Time, 
 		return
 	}
 	logger.Info("\n [GIN] uri:", uri,
+		"\n [GIN] trace-id:", traceId,
 		"\n [GIN] content-type:", contentType,
 		"\n [GIN] method:", method,
 		"\n [GIN] body:"+reqBody,
@@ -64,6 +66,15 @@ func requestEnd(uri string, contentType string, method string, start time.Time, 
 		"\n [GIN] response-content-type:"+respCt,
 		"\n [GIN] response:"+strBody,
 		"\n [GIN] cost:"+strconv.FormatInt(time.Since(start).Milliseconds(), 10)+"ms")
+}
+
+func TraceMiddleware(ctx *gin.Context) {
+	traceId := ctx.GetHeader(tracer.TraceIDKey)
+	if len(traceId) == 0 {
+		traceId = tracer.GenerateId()
+		ctx.Request.Header.Set(tracer.TraceIDKey, traceId)
+	}
+	ctx.Set(tracer.TraceIDKey, traceId)
 }
 
 func LoggingMiddleware(ctx *gin.Context) {
@@ -90,6 +101,6 @@ func LoggingMiddleware(ctx *gin.Context) {
 	status := ctx.Writer.Status()
 	respCt := ctx.Writer.Header().Get("Content-Type")
 	worker.AsyncExecute(func() {
-		requestEnd(uri1, ct, method, start, strBody, string(bb), strconv.FormatInt(int64(status), 10), respCt)
+		requestEnd(uri1, ct, method, start, strBody, string(bb), strconv.FormatInt(int64(status), 10), respCt, ctx.GetString(tracer.TraceIDKey))
 	})
 }

@@ -1,11 +1,13 @@
 package gin
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/server"
 )
 
@@ -23,10 +25,15 @@ func TestGinServer(t *testing.T) {
 		engine.POST("/test", func(context *gin.Context) {
 			//v := context.QueryArray("a")
 			// fmt.Println(v)
+			DemoTrace(GetTraceContext(context))
 			context.JSON(200, "test")
 		})
 	})
 	srv.Run(func() {
 		fmt.Println("shut down")
 	})
+}
+
+func DemoTrace(ctx context.Context) {
+	logger.InfoContext(ctx, "demo-----")
 }

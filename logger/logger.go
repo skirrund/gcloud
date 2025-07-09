@@ -1,28 +1,46 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
+	"slices"
+	"strconv"
 	"sync"
 	"time"
 
 	rotatelogs "github.com/skirrund/gcloud/logger/rotatelogs"
+	"github.com/skirrund/gcloud/tracer"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
 	"go.uber.org/zap/zapcore"
 )
 
+type logger struct {
+	zapL  *zap.Logger
+	zapLS *zap.SugaredLogger
+}
+
+var defaultLogger *logger
+
 var sLogger *slog.Logger
-var zapL *zap.Logger
-var zapLS *zap.SugaredLogger
+
+var defaultCtx = context.Background()
+
+// var zapL *zap.Logger
+// var zapLS *zap.SugaredLogger
 
 var once sync.Once
 
 const (
 	DEFAULT_FILE = "log.log"
 )
+
+func Default() *logger {
+	return defaultLogger
+}
 
 func init() {
 	slog.Info("[Logger] init default....")
@@ -34,8 +52,12 @@ func init() {
 	core := zapcore.NewTee(
 		zapcore.NewCore(encoder, c, infoLevel),
 	)
-	zapL = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	zapLS = zapL.Sugar()
+	zapL := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	zapLS := zapL.Sugar()
+	defaultLogger = &logger{
+		zapL:  zapL,
+		zapLS: zapLS,
+	}
 	sLogger = slog.New(zapslog.NewHandler(zapL.Core(), zapslog.WithCaller(true)))
 	slog.SetDefault(sLogger)
 }
@@ -58,40 +80,90 @@ func GetMessage(template string, fmtArgs []any) string {
 	return fmt.Sprint(fmtArgs...)
 }
 
+func ErrorContext(ctx context.Context, args ...any) {
+	args = getArgs(ctx, args...)
+	Default().zapLS.Error(args...)
+}
+
 func Error(args ...any) {
-	zapLS.Error(args...)
+	ErrorContext(defaultCtx, args...)
+}
+
+func FatalContext(ctx context.Context, args ...any) {
+	args = getArgs(ctx, args...)
+	Default().zapLS.Fatal(args...)
 }
 
 func Fatal(args ...any) {
-	zapLS.Fatal(args...)
+	FatalContext(defaultCtx, args...)
+}
+
+func InfofContext(ctx context.Context, template string, args ...any) {
+	args = getArgs(ctx, args...)
+	Default().zapLS.Infof("%s%s"+template, args...)
 }
 
 func Infof(template string, args ...any) {
-	zapLS.Infof(template, args...)
+	InfofContext(defaultCtx, template, args...)
+}
+
+func ErrorfContext(ctx context.Context, template string, args ...any) {
+	args = getArgs(ctx, args...)
+	Default().zapLS.Errorf("%s%s"+template, args...)
 }
 
 func Errorf(template string, args ...any) {
-	zapLS.Errorf(template, args...)
+	ErrorfContext(defaultCtx, template, args...)
 }
 
 func Sync() {
-	zapL.Sync()
+	Default().zapLS.Sync()
+	Default().zapL.Sync()
+}
+
+func WarnContext(ctx context.Context, args ...any) {
+	args = getArgs(ctx, args...)
+	Default().zapLS.Warn(args...)
 }
 
 func Warn(args ...any) {
-	zapLS.Warn(args...)
+	WarnContext(defaultCtx, args...)
+}
+
+func WarnfContext(ctx context.Context, template string, args ...any) {
+	args = getArgs(ctx, args...)
+	Default().zapLS.Warnf("%s%s"+template, args...)
 }
 
 func Warnf(template string, args ...any) {
-	zapLS.Warnf(template, args...)
+	WarnfContext(defaultCtx, template, args...)
+}
+
+func PanicContext(ctx context.Context, args ...any) {
+	args = getArgs(ctx, args...)
+	Default().zapLS.Panic(args...)
 }
 
 func Panic(args ...any) {
-	zapLS.Panic(args...)
+	PanicContext(defaultCtx, args...)
+}
+
+func getArgs(ctx context.Context, args ...any) []any {
+	idObj := tracer.GetTraceID(ctx)
+	if idObj != nil {
+		return slices.Insert(args, 0, idObj, " ")
+	} else {
+		return slices.Insert(args, 0, "", "")
+	}
+}
+
+func InfoContext(ctx context.Context, args ...any) {
+	args = getArgs(ctx, args...)
+	Default().zapLS.Info(args...)
 }
 
 func Info(args ...any) {
-	zapLS.Info(args...)
+	InfoContext(defaultCtx, args...)
 }
 
 func GetLogStr(needLog string) string {
@@ -109,7 +181,7 @@ func getEncoder() zapcore.Encoder {
 		EncodeLevel: zapcore.CapitalColorLevelEncoder,
 		TimeKey:     "ts",
 		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-			enc.AppendString(t.Format("2006-01-02 15:04:05"))
+			enc.AppendString(t.Format(time.DateTime) + "\t" + strconv.Itoa(os.Getpid()))
 		},
 		CallerKey:    "file",
 		EncodeCaller: zapcore.ShortCallerEncoder,
@@ -128,7 +200,7 @@ func getJSONEncoder(service string) zapcore.Encoder {
 		EncodeLevel: zapcore.CapitalLevelEncoder,
 		TimeKey:     "@timestamp",
 		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-			enc.AppendString(t.Format("2006-01-02 15:04:05"))
+			enc.AppendString(t.Format(time.DateTime))
 		},
 		CallerKey:    "file",
 		EncodeCaller: zapcore.ShortCallerEncoder,
@@ -137,6 +209,7 @@ func getJSONEncoder(service string) zapcore.Encoder {
 		},
 	})
 	encoder.AddString("service", service)
+	encoder.AddString("pid", strconv.Itoa(os.Getpid()))
 	return encoder
 }
 
@@ -199,8 +272,12 @@ func InitLog(fileDir string, serviceName string, port string, console bool, json
 		if maxAgeDay == 0 {
 			maxAgeDay = 7
 		}
-		zapL = initLog(fileDir, serviceName, port, console, json, time.Duration(maxAgeDay)*time.Hour*24)
-		zapLS = zapL.Sugar()
+		zapL := initLog(fileDir, serviceName, port, console, json, time.Duration(maxAgeDay)*time.Hour*24)
+		zapLS := zapL.Sugar()
+		defaultLogger = &logger{
+			zapL:  zapL,
+			zapLS: zapLS,
+		}
 		sLogger = slog.New(zapslog.NewHandler(zapL.Core(), zapslog.WithCaller(true)))
 		slog.SetDefault(sLogger)
 	})

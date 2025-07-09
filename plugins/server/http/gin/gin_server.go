@@ -16,6 +16,7 @@ import (
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
 	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/server"
+	"github.com/skirrund/gcloud/tracer"
 	uValidator "github.com/skirrund/gcloud/utils/validator"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -45,7 +46,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	}))
 	//s.Use(cors)
 	//s.Use(zipkinMiddleware)
-	s.Use(gm.LoggingMiddleware)
+	s.Use(gm.TraceMiddleware, gm.LoggingMiddleware)
 	//zipkin.InitZipkinTracer(s)
 	gp := prometheus.New(s)
 	s.Use(gp.Middleware())
@@ -215,4 +216,9 @@ func InitTrans(locale string, validate binding.StructValidator) (err error) {
 		return uValidator.InitValidator(locale, v)
 	}
 	return
+}
+
+func GetTraceContext(ctx *gin.Context) context.Context {
+	id := ctx.GetString(tracer.TraceIDKey)
+	return tracer.NewContextFromTraceId(id)
 }
