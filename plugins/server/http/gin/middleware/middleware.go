@@ -75,6 +75,8 @@ func TraceMiddleware(ctx *gin.Context) {
 		ctx.Request.Header.Set(tracer.TraceIDKey, traceId)
 	}
 	ctx.Set(tracer.TraceIDKey, traceId)
+	ctx.Header(tracer.TraceIDKey, traceId)
+	ctx.Next()
 }
 
 func LoggingMiddleware(ctx *gin.Context) {
