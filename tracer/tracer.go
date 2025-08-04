@@ -35,9 +35,10 @@ func WithContext(ctx context.Context, traceId string) context.Context {
 	} else {
 		if tid := GetTraceID(ctx); tid == nil {
 			return context.WithValue(ctx, GetCtxKey(), traceId)
+		} else {
+			return context.WithValue(ctx, GetCtxKey(), tid)
 		}
 	}
-	return context.WithValue(ctx, GetCtxKey(), traceId)
 }
 
 func WithTraceID(ctx context.Context) context.Context {
