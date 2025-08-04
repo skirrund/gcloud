@@ -33,6 +33,10 @@ const (
 	// maxRetriesOnNextServiceInstance = "server.http.retry.maxRetriesOnNextServiceInstance"
 	// RetryableStatusCodes            = "server.http.retry.retryableStatusCodes"
 	// RetryTimes                      = "server.http.retry.times"
+	ContentTypeJson               = "application/json;charset=utf-8"
+	ContentTypeXWWWFormUrlencoded = "application/x-www-form-urlencoded;charset=utf-8"
+	ContentTypeText               = "text/plain;charset=utf-8"
+	ContentTypehtml               = "text/html;charset=utf-8"
 )
 
 func getRequest(url string, method string, headers map[string]string, params []byte, isJson bool, timeOut time.Duration) *request.Request {
@@ -225,6 +229,27 @@ func getUrlWithParams(urlStr string, params map[string]any) string {
 	return url1.String()
 }
 
+func getUrlWithParams2(urlStr string, params url.Values) string {
+	if env.GetInstance().GetBool(HTTP_LOG_ENABLE_KEY) {
+		logger.Info("[http] getUrlWithParams:", params)
+	}
+	url1, err := url.Parse(urlStr)
+	if err != nil {
+		logger.Error("[http] getUrlWithParams error", err.Error())
+		return urlStr
+	}
+	vals := url1.Query()
+	if len(params) > 0 {
+		for k, v := range params {
+			if len(v) > 0 {
+				vals.Add(k, v[0])
+			}
+		}
+	}
+	url1.RawQuery = vals.Encode()
+	return url1.String()
+}
+
 func GetUrl(url string, headers map[string]string, params map[string]any, result any) (*response.Response, error) {
 	return GetUrlWithTimeout(url, headers, params, result, default_timeout)
 }
@@ -242,8 +267,22 @@ func GetWithTimeout(serviceName string, path string, headers map[string]string, 
 	return lb.GetInstance().Run(req, result)
 }
 
+// 同PostUrlWithTimeout
 func PostUrl(url string, headers map[string]string, params map[string]any, result any) (*response.Response, error) {
 	return PostUrlWithTimeout(url, headers, params, result, default_timeout)
+}
+
+// 通用请求方法
+func DoUrl(urlStr, method, contentType string, headers map[string]string, queryParams url.Values, body []byte, result any, timeout time.Duration) (*response.Response, error) {
+	urlStr = getUrlWithParams2(urlStr, queryParams)
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+	if len(contentType) > 0 {
+		headers["Content-Type"] = contentType
+	}
+	req := getRequest(urlStr, method, headers, body, false, timeout)
+	return lb.GetInstance().Run(req, result)
 }
 
 func PostUrlWithTimeout(url string, headers map[string]string, params map[string]any, result any, timeout time.Duration) (*response.Response, error) {
