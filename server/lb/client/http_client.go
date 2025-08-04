@@ -19,6 +19,7 @@ import (
 	gCookie "github.com/skirrund/gcloud/server/http/cookie"
 	"github.com/skirrund/gcloud/server/request"
 	gResp "github.com/skirrund/gcloud/server/response"
+	"github.com/skirrund/gcloud/tracer"
 )
 
 const (
@@ -80,6 +81,12 @@ func GetClient(timeout time.Duration) *http.Client {
 }
 
 func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
+	loggerCtx := req.Context
+	if loggerCtx == nil {
+		loggerCtx = tracer.NewTraceIDContext()
+	} else {
+		loggerCtx = tracer.WithTraceID(loggerCtx)
+	}
 	var doRequest *http.Request
 	var response *http.Response
 	reqUrl := req.Url
@@ -95,16 +102,16 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	isJson := req.IsJson
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Error("[lb-http] recover :", err)
+			logger.ErrorContext(loggerCtx, "[lb-http] recover :", err)
 		}
 	}()
 	if req.Method == "POST" {
 		if params == nil {
-			logger.Warn("[lb-http] NewRequest with body nil")
+			logger.WarnContext(loggerCtx, "[lb-http] NewRequest with body nil")
 		}
 		doRequest, err = http.NewRequest(http.MethodPost, reqUrl, params)
 		if err != nil {
-			logger.Error("[lb-http] NewRequest error:", err, ",", reqUrl)
+			logger.ErrorContext(loggerCtx, "[lb-http] NewRequest error:", err, ",", reqUrl)
 			return r, err
 		}
 		if isJson {
@@ -119,7 +126,7 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 		doRequest, err = http.NewRequest(http.MethodGet, reqUrl, nil)
 	}
 	if err != nil {
-		logger.Error("[http] NewRequest error:", err, ",", reqUrl)
+		logger.ErrorContext(loggerCtx, "[http] NewRequest error:", err, ",", reqUrl)
 		return r, err
 	}
 	setHeader(doRequest.Header, headers)
@@ -131,7 +138,7 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 
 	response, err = httpC.Do(doRequest)
 	if err != nil {
-		logger.Error("[lb-http] client.Do error:", err.Error(), ",", reqUrl, ",")
+		logger.ErrorContext(loggerCtx, "[lb-http] client.Do error:", err.Error(), ",", reqUrl, ",")
 		return r, err
 	}
 	defer response.Body.Close()
@@ -140,10 +147,10 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	ct := response.Header.Get("Content-Type")
 	r.ContentType = ct
 	b, err := io.ReadAll(response.Body)
-	logger.Info("[lb-http] response statusCode:", sc, " content-type:", ct)
+	logger.InfoContext(loggerCtx, "[lb-http] response statusCode:", sc, " content-type:", ct)
 	r.Body = b
 	if err != nil {
-		logger.Error("[lb-http] response body read error:", reqUrl)
+		logger.ErrorContext(loggerCtx, "[lb-http] response body read error:", reqUrl)
 		return r, err
 	}
 	cks := response.Cookies()
@@ -164,7 +171,7 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	respHeaders := response.Header
 	maps.Copy(r.Headers, respHeaders)
 	if sc != http.StatusOK {
-		logger.Error("[lb-http] StatusCode error:", sc, ",", reqUrl, ",", string(b))
+		logger.ErrorContext(loggerCtx, "[lb-http] StatusCode error:", sc, ",", reqUrl, ",", string(b))
 		if req.IsProxy && sc >= http.StatusMultipleChoices && sc <= http.StatusPermanentRedirect {
 			return r, nil
 		}

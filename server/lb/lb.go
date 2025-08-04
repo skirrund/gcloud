@@ -1,6 +1,7 @@
 package lb
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"sync"
@@ -16,6 +17,7 @@ import (
 	lbClient "github.com/skirrund/gcloud/server/lb/client"
 	"github.com/skirrund/gcloud/server/request"
 	"github.com/skirrund/gcloud/server/response"
+	"github.com/skirrund/gcloud/tracer"
 	"github.com/skirrund/gcloud/utils"
 	"github.com/skirrund/gcloud/utils/worker"
 )
@@ -157,7 +159,7 @@ func (s *ServerPool) GetUrl(serviceName string, path string) string {
 	}
 }
 
-func unmarshal(resp *response.Response, respResult any) error {
+func unmarshal(ctx context.Context, resp *response.Response, respResult any) error {
 	if resp == nil {
 		resp = &response.Response{}
 		return nil
@@ -167,7 +169,7 @@ func unmarshal(resp *response.Response, respResult any) error {
 	if len(body) > 0 {
 		d, err := decoder.GetDecoder(ct).DecoderObj(body, respResult)
 		if err != nil {
-			logger.Error("[LB] response error:", err.Error())
+			logger.ErrorContext(ctx, "[LB] response error:", err.Error())
 			return err
 		}
 		_, ok := d.(decoder.StreamDecoder)
@@ -177,10 +179,10 @@ func unmarshal(resp *response.Response, respResult any) error {
 				if len(str) > 1000 {
 					str = utils.SubStr(str, 0, 1000)
 				}
-				logger.Info("[LB] response:", str)
+				logger.InfoContext(ctx, "[LB] response:", str)
 			})
 		} else {
-			logger.Info("[http] response:stream not log")
+			logger.InfoContext(ctx, "[http] response:stream not log")
 		}
 	}
 	return nil
@@ -188,21 +190,27 @@ func unmarshal(resp *response.Response, respResult any) error {
 
 // lb对接收到的请求 进行负载均衡
 func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Response, error) {
-	logger.Info("[LB] >>>>>>LbOptions", req.LbOptions)
+	loggerCtx := req.Context
+	if loggerCtx == nil {
+		loggerCtx = tracer.NewTraceIDContext()
+	} else {
+		loggerCtx = tracer.WithTraceID(loggerCtx)
+	}
+	logger.InfoContext(loggerCtx, "[LB] >>>>>>LbOptions", req.LbOptions)
 	start := time.Now()
 	if len(req.ServiceName) == 0 {
-		defer requestEnd(req.Url, start)
+		defer requestEnd(loggerCtx, req.Url, start)
 		resp, err := s.client.Exec(req)
-		unmarshal(resp, respResult)
+		unmarshal(loggerCtx, resp, respResult)
 		return resp, err
 	}
 	srv := s.GetService(req.ServiceName)
 	if srv == nil {
 		req.Url = s.GetUrl(req.ServiceName, req.Path)
-		defer requestEnd(req.Url, start)
-		logger.Warn("no available service for " + req.ServiceName)
+		defer requestEnd(loggerCtx, req.Url, start)
+		logger.WarnContext(loggerCtx, "no available service for "+req.ServiceName)
 		resp, err := s.client.Exec(req)
-		unmarshal(resp, respResult)
+		unmarshal(loggerCtx, resp, respResult)
 		return resp, err
 	}
 	lbo := req.LbOptions
@@ -213,18 +221,18 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 	if retrys >= len(srv.Instances) {
 		resp := &response.Response{}
 		resp.StatusCode = lbo.CurrentStatuCode
-		logger.Info("[LB] retry all instances:", req.Url, ",instances num:", len(srv.Instances), ",retrys:", retrys)
+		logger.InfoContext(loggerCtx, "[LB] retry all instances:", req.Url, ",instances num:", len(srv.Instances), ",retrys:", retrys)
 		return resp, lbo.CurrentError
 	}
 	if retrys > lbo.MaxRetriesOnNextServiceInstance {
 		resp := &response.Response{}
 		resp.StatusCode = lbo.CurrentStatuCode
-		logger.Info("[LB] Max retry reached:", req.Url, ",", len(srv.Instances), ",", retrys)
+		logger.InfoContext(loggerCtx, "[LB] Max retry reached:", req.Url, ",", len(srv.Instances), ",", retrys)
 		return resp, lbo.CurrentError
 	}
 
 	instance := srv.GetNextPeer()
-	logger.Info("[LB] get instance", instance)
+	logger.InfoContext(loggerCtx, "[LB] get instance", instance)
 	if instance == nil {
 		return &response.Response{}, errors.New("no available service" + req.ServiceName)
 	}
@@ -235,11 +243,11 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 	if len(req.Url) == 0 {
 		return &response.Response{}, errors.New("request url  is empty")
 	}
-	defer requestEnd(req.Url, start)
+	defer requestEnd(loggerCtx, req.Url, start)
 	resp, err := s.client.Exec(req)
 	if err != nil {
 		if s.client.CheckRetry(err, resp.StatusCode) {
-			logger.Info("[LB] retry next:", req.ServiceName)
+			logger.InfoContext(loggerCtx, "[LB] retry next:", req.ServiceName)
 			retrys += 1
 			lbo.Retrys = retrys
 			lbo.CurrentStatuCode = resp.StatusCode
@@ -247,18 +255,18 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 			req.LbOptions = lbo
 			return s.Run(req, respResult)
 		} else {
-			unmarshal(resp, respResult)
+			unmarshal(loggerCtx, resp, respResult)
 		}
 	} else {
-		unmarshal(resp, respResult)
+		unmarshal(loggerCtx, resp, respResult)
 	}
 
 	return resp, err
 
 }
 
-func requestEnd(url string, start time.Time) {
+func requestEnd(ctx context.Context, url string, start time.Time) {
 	worker.AsyncExecute(func() {
-		logger.Infof("[http] request url method return :%s,elapsed:%dms", url, time.Since(start).Milliseconds())
+		logger.InfofContext(ctx, "[http] request url method return :%s,elapsed:%dms", url, time.Since(start).Milliseconds())
 	})
 }
