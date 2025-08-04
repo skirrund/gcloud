@@ -196,6 +196,7 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 	} else {
 		loggerCtx = tracer.WithTraceID(loggerCtx)
 	}
+	req.Context = loggerCtx
 	logger.InfoContext(loggerCtx, "[LB] >>>>>>LbOptions", req.LbOptions)
 	start := time.Now()
 	if len(req.ServiceName) == 0 {
