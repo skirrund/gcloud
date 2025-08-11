@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/utils/decimal"
 )
 
@@ -19,5 +21,6 @@ func TestXxx(t *testing.T) {
 	testStruct := &TestJson{}
 	err := UnmarshalFromString(str, &testStruct)
 	testStruct.Id.IntPart()
+	logger.InfoContext(context.TODO(), err)
 	fmt.Println(err, testStruct)
 }

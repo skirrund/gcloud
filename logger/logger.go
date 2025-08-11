@@ -86,7 +86,8 @@ func ErrorContext(ctx context.Context, args ...any) {
 }
 
 func Error(args ...any) {
-	ErrorContext(defaultCtx, args...)
+	args = getArgs(defaultCtx, args...)
+	Default().zapLS.Error(args...)
 }
 
 func FatalContext(ctx context.Context, args ...any) {
@@ -95,7 +96,8 @@ func FatalContext(ctx context.Context, args ...any) {
 }
 
 func Fatal(args ...any) {
-	FatalContext(defaultCtx, args...)
+	args = getArgs(defaultCtx, args...)
+	Default().zapLS.Fatal(args...)
 }
 
 func InfofContext(ctx context.Context, template string, args ...any) {
@@ -104,7 +106,8 @@ func InfofContext(ctx context.Context, template string, args ...any) {
 }
 
 func Infof(template string, args ...any) {
-	InfofContext(defaultCtx, template, args...)
+	args = getArgs(defaultCtx, args...)
+	Default().zapLS.Infof("%s%s"+template, args...)
 }
 
 func ErrorfContext(ctx context.Context, template string, args ...any) {
@@ -113,7 +116,8 @@ func ErrorfContext(ctx context.Context, template string, args ...any) {
 }
 
 func Errorf(template string, args ...any) {
-	ErrorfContext(defaultCtx, template, args...)
+	args = getArgs(defaultCtx, args...)
+	Default().zapLS.Errorf("%s%s"+template, args...)
 }
 
 func Sync() {
@@ -127,7 +131,8 @@ func WarnContext(ctx context.Context, args ...any) {
 }
 
 func Warn(args ...any) {
-	WarnContext(defaultCtx, args...)
+	args = getArgs(defaultCtx, args...)
+	Default().zapLS.Warn(args...)
 }
 
 func WarnfContext(ctx context.Context, template string, args ...any) {
@@ -136,7 +141,8 @@ func WarnfContext(ctx context.Context, template string, args ...any) {
 }
 
 func Warnf(template string, args ...any) {
-	WarnfContext(defaultCtx, template, args...)
+	args = getArgs(defaultCtx, args...)
+	Default().zapLS.Warnf("%s%s"+template, args...)
 }
 
 func PanicContext(ctx context.Context, args ...any) {
@@ -145,7 +151,8 @@ func PanicContext(ctx context.Context, args ...any) {
 }
 
 func Panic(args ...any) {
-	PanicContext(defaultCtx, args...)
+	args = getArgs(defaultCtx, args...)
+	Default().zapLS.Panic(args...)
 }
 
 func getArgs(ctx context.Context, args ...any) []any {
@@ -163,7 +170,8 @@ func InfoContext(ctx context.Context, args ...any) {
 }
 
 func Info(args ...any) {
-	InfoContext(defaultCtx, args...)
+	args = getArgs(defaultCtx, args...)
+	Default().zapLS.Info(args...)
 }
 
 func GetLogStr(needLog string) string {
