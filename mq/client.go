@@ -64,4 +64,6 @@ type Message struct {
 	Header          map[string]string
 	Payload         []byte
 	RedeliveryCount uint32
+	DeliverAfter    time.Duration
+	DeliverAt       time.Time
 }
