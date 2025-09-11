@@ -2,8 +2,6 @@ package mq
 
 import (
 	"time"
-
-	"github.com/skirrund/gcloud/mq/consumer"
 )
 
 type IClient interface {
@@ -46,12 +44,23 @@ const (
 	KeyShared
 )
 
+type NatsOpts struct {
+	Stream string
+}
+
 type ConsumerOptions struct {
 	Topic                 string
 	SubscriptionName      string
 	SubscriptionType      SubscriptionType
-	MessageListener       consumer.Consumer
+	MessageListener       Consumer
 	ACKMode               ACKMode
 	RetryTimes            uint32
 	MaxMessageChannelSize uint32
+	NatsOpts              NatsOpts
+}
+
+type Message struct {
+	Header          map[string]string
+	Payload         []byte
+	RedeliveryCount uint32
 }
