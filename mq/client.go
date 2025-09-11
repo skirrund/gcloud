@@ -66,4 +66,5 @@ type Message struct {
 	RedeliveryCount uint32
 	DeliverAfter    time.Duration
 	DeliverAt       time.Time
+	NatsOpts        NatsOpts
 }
