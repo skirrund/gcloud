@@ -60,6 +60,7 @@ type ConsumerOptions struct {
 }
 
 type Message struct {
+	Topic           string
 	Header          map[string]string
 	Payload         []byte
 	RedeliveryCount uint32
