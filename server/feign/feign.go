@@ -21,9 +21,9 @@ func (c *Client) Get(path string, headers map[string]string, params map[string]a
 }
 func (c *Client) GetWithTimeout(path string, headers map[string]string, params map[string]any, result any, timeOut time.Duration) (*response.Response, error) {
 	if len(c.Url) > 0 {
-		return http.GetUrlWithTimeout(c.Url+path, headers, params, result, timeOut)
+		return http.DefaultClient.GetUrlWithTimeout(c.Url+path, headers, params, result, timeOut)
 	}
-	return http.GetWithTimeout(c.ServiceName, path, headers, params, result, timeOut)
+	return http.DefaultClient.GetWithTimeout(c.ServiceName, path, headers, params, result, timeOut)
 }
 func (c *Client) PostJSON(path string, headers map[string]string, params any, result any) (*response.Response, error) {
 	return c.PostJSONWithTimeout(path, headers, params, result, defaultTimeOut)
@@ -31,9 +31,9 @@ func (c *Client) PostJSON(path string, headers map[string]string, params any, re
 
 func (c *Client) PostJSONWithTimeout(path string, headers map[string]string, params any, result any, timeOut time.Duration) (*response.Response, error) {
 	if len(c.Url) > 0 {
-		return http.PostJSONUrlWithTimeout(c.Url+path, headers, params, result, timeOut)
+		return http.DefaultClient.PostJSONUrlWithTimeout(c.Url+path, headers, params, result, timeOut)
 	}
-	return http.PostJSONWithTimeout(c.ServiceName, path, headers, params, result, timeOut)
+	return http.DefaultClient.PostJSONWithTimeout(c.ServiceName, path, headers, params, result, timeOut)
 }
 func (c *Client) Post(path string, headers map[string]string, params map[string]any, result any) (*response.Response, error) {
 	return c.PostWithTimeout(path, headers, params, result, defaultTimeOut)
@@ -41,7 +41,7 @@ func (c *Client) Post(path string, headers map[string]string, params map[string]
 
 func (c *Client) PostWithTimeout(path string, headers map[string]string, params map[string]any, result any, timeOut time.Duration) (*response.Response, error) {
 	if len(c.Url) > 0 {
-		return http.PostUrlWithTimeout(c.Url+path, headers, params, result, timeOut)
+		return http.DefaultClient.PostUrlWithTimeout(c.Url+path, headers, params, result, timeOut)
 	}
-	return http.PostWithTimeout(c.ServiceName, path, headers, params, result, timeOut)
+	return http.DefaultClient.PostWithTimeout(c.ServiceName, path, headers, params, result, timeOut)
 }

@@ -172,7 +172,7 @@ func (c OssClient) UploadFromUrl(urlStr string, isPrivate bool) (string, error) 
 	}
 	fileName := "downLoadFromUrl/" + filenameExtension
 	var downLoad []byte
-	resp, err := http.GetUrl(urlStr, nil, nil, &downLoad)
+	resp, err := http.DefaultClient.GetUrl(urlStr, nil, nil, &downLoad)
 	if err != nil {
 		logger.Error("[alioss] download error:" + err.Error())
 		return "", err

@@ -335,7 +335,7 @@ func (c *ossClient) GetFullUrlWithSign(fileName string, expiredInSec int64) (str
 
 func (c *ossClient) UploadFromUrl(urlStr string, isPrivate bool, forceUpload bool) (string, error) {
 	var downLoad []byte
-	_, err := http.GetUrl(urlStr, nil, nil, &downLoad)
+	_, err := http.DefaultClient.GetUrl(urlStr, nil, nil, &downLoad)
 	if err != nil {
 		logger.Error("[alioss] download error:" + err.Error())
 		return "", err
