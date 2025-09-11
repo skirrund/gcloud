@@ -1,5 +1,7 @@
 package mq
 
+import "context"
+
 type Consumer interface {
-	OnMessage(message Message) error
+	OnMessage(ctx context.Context, message Message) error
 }
