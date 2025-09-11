@@ -5,11 +5,11 @@ import (
 )
 
 type IClient interface {
-	Send(topic string, msg string) error
-	SendDelay(topic string, msg string, delay time.Duration) error
-	SendDelayAt(topic string, msg string, delayAt time.Time) error
-	SendAsync(topic string, msg string) error
-	SendDelayAsync(topic string, msg string, delay time.Duration) error
+	Send(msg *Message) error
+	SendDelay(msg *Message, delay time.Duration) error
+	SendDelayAt(msg *Message, delayAt time.Time) error
+	SendAsync(msg *Message) error
+	SendDelayAsync(msg *Message, delay time.Duration) error
 	Subscribes(options ...ConsumerOptions)
 	Subscribe(options ConsumerOptions)
 	Close()
