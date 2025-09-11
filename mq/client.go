@@ -5,13 +5,13 @@ import (
 )
 
 type IClient interface {
+	//sync
 	Send(msg *Message) error
-	SendDelay(msg *Message, delay time.Duration) error
-	SendDelayAt(msg *Message, delayAt time.Time) error
 	SendAsync(msg *Message) error
-	SendDelayAsync(msg *Message, delay time.Duration) error
 	Subscribes(options ...ConsumerOptions)
+	//async
 	Subscribe(options ConsumerOptions)
+	SubscribeSync(options ConsumerOptions)
 	Close()
 }
 
