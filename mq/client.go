@@ -54,8 +54,8 @@ type ConsumerOptions struct {
 	SubscriptionType      SubscriptionType
 	MessageListener       Consumer
 	ACKMode               ACKMode
-	RetryTimes            uint32
-	MaxMessageChannelSize uint32
+	RetryTimes            uint64
+	MaxMessageChannelSize uint64
 	NatsOpts              NatsOpts
 }
 
@@ -63,7 +63,7 @@ type Message struct {
 	Topic           string
 	Header          map[string]string
 	Payload         []byte
-	RedeliveryCount uint32
+	RedeliveryCount uint64
 	DeliverAfter    time.Duration
 	DeliverAt       time.Time
 	NatsOpts        NatsOpts
