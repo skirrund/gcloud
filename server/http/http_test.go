@@ -4,13 +4,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/server/decoder"
+	"github.com/skirrund/gcloud/tracer"
 )
 
 func TestXxx(t *testing.T) {
 	var r []byte
-	resp, err := PostJSON("test", "http://127.0.0.1:8080/test", nil, nil, &r)
-	fmt.Println(resp, err)
+	logCtx := tracer.NewTraceIDContext()
+	logger.InfoContext(logCtx, "123123123123")
+	client := DefaultClient.WithTracerContext(logCtx)
+	_, err := client.PostJSONUrl("https://www.baidu.com", nil, nil, &r)
+	fmt.Println(string(r), err)
 }
 
 func TestDecoder(t *testing.T) {

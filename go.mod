@@ -1,8 +1,8 @@
 module github.com/skirrund/gcloud
 
-go 1.24.0
+go 1.25.0
 
-toolchain go1.24.4
+toolchain go1.25.1
 
 require (
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.3
