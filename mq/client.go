@@ -9,10 +9,9 @@ type IClient interface {
 	//sync
 	Send(msg *Message) error
 	SendAsync(msg *Message) error
-	Subscribes(options ...ConsumerOptions)
 	//async
-	Subscribe(options ConsumerOptions)
-	SubscribeSync(options ConsumerOptions)
+	Subscribe(options ConsumerOptions) error
+	SubscribeSync(options ConsumerOptions) error
 	Close()
 }
 
