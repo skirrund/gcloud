@@ -62,6 +62,7 @@ type ConsumerOptions struct {
 	RetryTimes            uint64
 	MaxMessageChannelSize uint64
 	NatsOpts              NatsOpts
+	IsErrorPanic          bool
 }
 
 type Message struct {
