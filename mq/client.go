@@ -1,6 +1,7 @@
 package mq
 
 import (
+	"context"
 	"time"
 )
 
@@ -45,14 +46,19 @@ const (
 )
 
 type NatsOpts struct {
-	Stream string
+	Stream        string
+	PullBatchSize int
+}
+
+type SubOpts struct {
+	Name string
 }
 
 type ConsumerOptions struct {
 	Topic                 string
 	SubscriptionName      string
 	SubscriptionType      SubscriptionType
-	MessageListener       Consumer
+	MessageListener       func(ctx context.Context, message *Message) error
 	ACKMode               ACKMode
 	RetryTimes            uint64
 	MaxMessageChannelSize uint64
@@ -67,4 +73,5 @@ type Message struct {
 	DeliverAfter    time.Duration
 	DeliverAt       time.Time
 	NatsOpts        NatsOpts
+	SubOpts         SubOpts
 }
