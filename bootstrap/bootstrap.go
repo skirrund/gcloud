@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/skirrund/gcloud/server"
@@ -179,6 +180,20 @@ func (app *Application) BootstrapAll(options Options) {
 	//MthApplication.SentinelInit()
 	//MthApplication.StartRedis()
 	//MthApplication.StartDb()
+}
+
+// 异步初始化,全部完成后同步返回
+func BootstrapSyncSeparateAsync(funcs ...func()) {
+	l := len(funcs)
+	if l > 1 {
+		var wg sync.WaitGroup
+		for _, f := range funcs {
+			wg.Go(f)
+		}
+		wg.Wait()
+	} else if l == 1 {
+		funcs[0]()
+	}
 }
 
 func (app *Application) StartLogger() {
