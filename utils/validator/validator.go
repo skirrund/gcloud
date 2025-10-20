@@ -31,7 +31,7 @@ func ValidateStruct(obj any) error {
 	err := ValidateEntry.Struct(obj)
 	if err != nil {
 		if e, ok := err.(*validator.InvalidValidationError); ok {
-			logger.Error("InvalidValidationError[Type Not Supported]:", e.Error())
+			logger.Warn("InvalidValidationError[Type Not Supported]:", e.Error())
 			return nil
 		}
 	}
