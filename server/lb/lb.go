@@ -98,6 +98,8 @@ func (s *ServerPool) setService(name string, instances []*registry.Instance) *se
 		h2c := instances[0].Metadata[HTTP2C]
 		if h2c == "true" {
 			srv.H2C = true
+		} else {
+			srv.H2C = false
 		}
 	}
 	s.Services.Store(name, srv)
