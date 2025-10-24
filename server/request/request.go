@@ -27,6 +27,7 @@ type Request struct {
 	HasFile     bool
 	Context     context.Context
 	IsProxy     bool
+	H2C         bool
 }
 
 type LbOptions struct {

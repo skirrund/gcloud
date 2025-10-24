@@ -13,8 +13,8 @@ func TestXxx(t *testing.T) {
 	var r []byte
 	logCtx := tracer.NewTraceIDContext()
 	logger.InfoContext(logCtx, "123123123123")
-	client := DefaultClient.WithTracerContext(logCtx)
-	_, err := client.PostJSONUrl("https://www.baidu.com", nil, nil, &r)
+	client := DefaultH2CClient.WithTracerContext(logCtx)
+	_, err := client.GetUrl("http://127.0.0.1:8080/test", nil, nil, &r)
 	fmt.Println(string(r), err)
 }
 

@@ -18,6 +18,8 @@ import (
 	"github.com/skirrund/gcloud/server"
 	"github.com/skirrund/gcloud/tracer"
 	uValidator "github.com/skirrund/gcloud/utils/validator"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -38,6 +40,9 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	srv.Options = options
 	gin.SetMode(gin.ReleaseMode)
 	s := gin.New()
+	// if options.H2C {
+	// 	s.UseH2C = true
+	// }
 	s.Use(gin.CustomRecovery(func(c *gin.Context, recovered any) {
 		logger.Error("[GIN] recover:", recovered, "\n", string(debug.Stack()))
 
@@ -64,104 +69,7 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	return srv
 }
 
-// func initSwagger(e *gin.Engine) {
-// 	e.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-// }
-
-// func cors(c *gin.Context) {
-// 	method := c.Request.Method
-//origin := c.Request.Header.Get("Origin")
-// //接收客户端发送的origin （重要！）
-// header := c.Writer.Header()
-// header.Set("Access-Control-Allow-Origin", "*")
-// //服务器支持的所有跨域请求的方法
-// header.Set("Access-Control-Allow-Methods", "*")
-// //允许跨域设置可以返回其他子段，可以自定义字段
-// c.Header("Access-Control-Allow-Headers", "*")
-// // 允许浏览器（客户端）可以解析的头部 （重要）
-// //c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers")
-// //设置缓存时间
-// //	c.Header("Access-Control-Max-Age", "172800")
-// //允许客户端传递校验信息比如 cookie (重要)
-// c.Header("Access-Control-Allow-Credentials", "true")
-// 	if method == "OPTIONS" {
-// 		c.AbortWithStatus(http.StatusNoContent)
-// 	} else {
-// 		c.Next()
-// 	}
-// }
-
-// func sentinelMiddleware(c *gin.Context) {
-// 	var args []any
-// 	rawQuery := c.Request.URL.RawQuery
-// 	if len(rawQuery) > 0 {
-// 		params := strings.Split(rawQuery, "&")
-// 		for _, param := range params {
-// 			kv := strings.Split(param, "=")
-// 			if len(kv) > 1 && len(kv[1]) > 0 {
-// 				args = append(args, kv[1])
-// 			}
-// 		}
-// 	}
-// 	if c.Request.Method == "POST" {
-// 		c.Request.ParseForm()
-// 		for _, v := range c.Request.PostForm {
-// 			args = append(args, v)
-// 		}
-// 	}
-// 	requestUri := c.Request.RequestURI
-// 	if strings.Contains(requestUri, "?") {
-// 		requestUri = requestUri[0:strings.Index(requestUri, "?")]
-// 	}
-// 	entry, b := sentinel.Entry(requestUri, sentinel.WithTrafficType(base.Inbound), sentinel.WithArgs(args...))
-// 	if b != nil {
-// 		c.Abort()
-// 		switch b.BlockType() {
-// 		case base.BlockTypeCircuitBreaking:
-// 			c.JSON(200, response.DEGRADE_EXCEPTION)
-// 			return
-// 		case base.BlockTypeFlow:
-// 			c.JSON(200, response.FLOW_EXCEPTION)
-// 			return
-// 		case base.BlockTypeHotSpotParamFlow:
-// 			c.JSON(200, response.PARAM_FLOW_EXCEPTION)
-// 			return
-// 		case base.BlockTypeSystemFlow:
-// 			c.JSON(200, response.SYSTEM_BLOCK_EXCEPTION)
-// 			return
-// 		case base.BlockTypeIsolation:
-// 			c.JSON(200, response.AUTHORITY_EXCEPTION)
-// 			return
-// 		}
-// 	}
-// 	c.Next()
-// 	entry.Exit()
-// }
-
-// func zipkinMiddleware(c *gin.Context) {
-// 	t := zipkin.GetTracer()
-// 	if t != nil {
-// 		// 将tracer注入到gin的中间件中
-// 		worker.AsyncExecute(func() {
-// 			carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
-// 			clientContext, err := t.Extract(opentracing.HTTPHeaders, carrier)
-// 			var serverSpan opentracing.Span
-// 			method := c.Request.Method
-// 			fp := c.FullPath()
-// 			if err == nil {
-// 				serverSpan = t.StartSpan(
-// 					method+" "+fp, opentracing.FollowsFrom(clientContext))
-// 			} else {
-// 				serverSpan = t.StartSpan(method + " " + fp)
-// 			}
-// 			defer serverSpan.Finish()
-// 		})
-// 	}
-// 	c.Next()
-// }
-
 func (server *Server) Shutdown() {
-	//defer zipkin.Close()
 }
 
 func (server *Server) GetServeServer() any {
@@ -171,10 +79,17 @@ func (server *Server) GetServeServer() any {
 func (server *Server) Run(graceful ...func()) {
 	srv := &http.Server{
 		Addr:         server.Options.Address,
-		Handler:      server.Srv,
+		Handler:      server.Srv.Handler(),
 		ReadTimeout:  4 * time.Minute,
 		WriteTimeout: 4 * time.Minute,
 	}
+	if server.Options.H2C {
+		h2s := &http2.Server{
+			MaxConcurrentStreams: 200,
+		}
+		srv.Handler = h2c.NewHandler(server.Srv, h2s)
+	}
+
 	bodySize := server.Options.MaxRequestBodySize
 	if bodySize > 0 {
 		srv.MaxHeaderBytes = bodySize

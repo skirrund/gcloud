@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -14,12 +15,12 @@ import (
 
 	"maps"
 
-	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/logger"
 	gCookie "github.com/skirrund/gcloud/server/http/cookie"
 	"github.com/skirrund/gcloud/server/request"
 	gResp "github.com/skirrund/gcloud/server/response"
 	"github.com/skirrund/gcloud/tracer"
+	"golang.org/x/net/http2"
 )
 
 const (
@@ -28,6 +29,7 @@ const (
 )
 
 var defaultTransport *http.Transport
+var h2cTransport *http2.Transport
 
 type NetHttpClient struct {
 }
@@ -37,10 +39,10 @@ type clientMap struct {
 	Mu      sync.Mutex
 }
 
-var clients clientMap
+// var clients clientMap
 
 func init() {
-	clients = clientMap{Clients: make(map[time.Duration]*http.Client)}
+	// clients = clientMap{Clients: make(map[time.Duration]*http.Client)}
 	defaultTransport = &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //不校验服务端证书
 		DialContext: (&net.Dialer{
@@ -55,30 +57,40 @@ func init() {
 		MaxConnsPerHost:       0,
 		MaxIdleConnsPerHost:   20,
 	}
-	GetClient(default_timeout)
+	h2cTransport = &http2.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		ReadIdleTimeout: 3 * time.Second,
+		IdleConnTimeout: 10 * time.Second,
+		AllowHTTP:       true,
+		DialTLSContext: func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+			return net.Dial(network, addr)
+		},
+	}
+	// GetClient(default_timeout)
 }
-func GetClient(timeout time.Duration) *http.Client {
-	if c, ok := clients.Clients[timeout]; ok {
-		return c
-	}
-	if timeout <= 0 {
-		cfgTimeout := env.GetInstance().GetInt64(ConnectionTimeout)
-		if cfgTimeout > 0 {
-			timeout = time.Duration(cfgTimeout) * time.Second
-		}
-	}
-	clients.Mu.Lock()
-	defer clients.Mu.Unlock()
-	if c, ok := clients.Clients[timeout]; ok {
-		return c
-	}
-	hc := &http.Client{
-		Timeout:   timeout,
-		Transport: defaultTransport,
-	}
-	clients.Clients[timeout] = hc
-	return hc
-}
+
+// func GetClient(timeout time.Duration) *http.Client {
+// 	if c, ok := clients.Clients[timeout]; ok {
+// 		return c
+// 	}
+// 	if timeout <= 0 {
+// 		cfgTimeout := env.GetInstance().GetInt64(ConnectionTimeout)
+// 		if cfgTimeout > 0 {
+// 			timeout = time.Duration(cfgTimeout) * time.Second
+// 		}
+// 	}
+// 	clients.Mu.Lock()
+// 	defer clients.Mu.Unlock()
+// 	if c, ok := clients.Clients[timeout]; ok {
+// 		return c
+// 	}
+// 	hc := &http.Client{
+// 		Timeout:   timeout,
+// 		Transport: defaultTransport,
+// 	}
+// 	clients.Clients[timeout] = hc
+// 	return hc
+// }
 
 func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	loggerCtx := req.Context
@@ -134,8 +146,12 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	if timeOut == 0 {
 		timeOut = default_timeout
 	}
-	httpC := GetClient(timeOut)
-
+	httpC := &http.Client{Timeout: timeOut}
+	if req.H2C {
+		httpC.Transport = h2cTransport
+	} else {
+		httpC.Transport = defaultTransport
+	}
 	response, err = httpC.Do(doRequest)
 	if err != nil {
 		logger.ErrorContext(loggerCtx, "[lb-http] client.Do error:", err.Error(), ",", reqUrl, ",")
@@ -146,8 +162,9 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	r.StatusCode = sc
 	ct := response.Header.Get("Content-Type")
 	r.ContentType = ct
+	proto := response.Proto
 	b, err := io.ReadAll(response.Body)
-	logger.InfoContext(loggerCtx, "[lb-http] response statusCode:", sc, " content-type:", ct)
+	logger.InfoContext(loggerCtx, "[lb-http] response statusCode:", sc, " content-type:", ct, " proto:", proto)
 	r.Body = b
 	if err != nil {
 		logger.ErrorContext(loggerCtx, "[lb-http] response body read error:", reqUrl)

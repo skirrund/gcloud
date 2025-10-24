@@ -24,6 +24,8 @@ const (
 	SERVER_PROFILE_KEY       = "server.profile"
 	SERVER_CONFIGFILE_KEY    = "server.config.file"
 	SERVER_SERVERNAME_KEY    = "server.name"
+	SERVER_H2C_KEY           = "server.h2c"
+	SERVER_H2_KEY            = "server.h2"
 	LOGGER_DIR_KEY           = "logger.dir"
 	LOGGER_MAXAGE_KEY        = "logger.maxAge"
 	LOGGER_CONSOLE           = "logger.console"

@@ -43,9 +43,12 @@ const (
 
 type GHttp struct {
 	ctx context.Context
+	H2C bool
 }
 
 var DefaultClient GHttp
+
+var DefaultH2CClient = GHttp{H2C: true}
 
 func (h GHttp) WithTracerContext(ctx context.Context) GHttp {
 	if ctx != nil {
@@ -53,7 +56,7 @@ func (h GHttp) WithTracerContext(ctx context.Context) GHttp {
 	} else {
 		ctx = tracer.NewTraceIDContext()
 	}
-	return GHttp{ctx: ctx}
+	return GHttp{ctx: ctx, H2C: h.H2C}
 }
 
 func getRequest(url string, method string, headers map[string]string, params []byte, isJson bool, timeOut time.Duration) *request.Request {
@@ -273,6 +276,7 @@ func (h GHttp) GetUrl(url string, headers map[string]string, params map[string]a
 func (h GHttp) GetUrlWithTimeout(url string, headers map[string]string, params map[string]any, result any, timeout time.Duration) (*response.Response, error) {
 	req := getRequest(getUrlWithParams(url, params), http.MethodGet, headers, nil, false, timeout)
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }
 
@@ -283,6 +287,7 @@ func (h GHttp) Get(serviceName string, path string, headers map[string]string, p
 func (h GHttp) GetWithTimeout(serviceName string, path string, headers map[string]string, params map[string]any, result any, timeout time.Duration) (*response.Response, error) {
 	req := getRequestLb(serviceName, getUrlWithParams(path, params), http.MethodGet, headers, nil, false, timeout)
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }
 
@@ -302,12 +307,14 @@ func (h GHttp) DoUrl(urlStr, method, contentType string, headers map[string]stri
 	}
 	req := getRequest(urlStr, method, headers, body, false, timeout)
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }
 
 func (h GHttp) PostUrlWithTimeout(url string, headers map[string]string, params map[string]any, result any, timeout time.Duration) (*response.Response, error) {
 	req := getRequest(url, http.MethodPost, headers, getFormData(params), false, timeout)
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }
 func (h GHttp) PostFormDataUrl(url string, headers map[string]string, params url.Values, result any) (*response.Response, error) {
@@ -317,6 +324,7 @@ func (h GHttp) PostFormDataUrlWithTimeout(url string, headers map[string]string,
 	//reader := strings.NewReader(params.Encode())
 	req := getRequest(url, http.MethodPost, headers, []byte(params.Encode()), false, timeout)
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }
 func (h GHttp) PostFile(url string, headers map[string]string, params map[string]any, files map[string]*request.File, result any) (*response.Response, error) {
@@ -332,6 +340,7 @@ func (h GHttp) PostFileWithTimeout(url string, headers map[string]string, params
 	req := getRequest(url, http.MethodPost, headers, reader, false, timeout)
 	req.HasFile = true
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }
 
@@ -342,6 +351,7 @@ func (h GHttp) Post(serviceName string, path string, headers map[string]string, 
 func (h GHttp) PostWithTimeout(serviceName string, path string, headers map[string]string, params map[string]any, result any, timeout time.Duration) (*response.Response, error) {
 	req := getRequestLb(serviceName, path, http.MethodPost, headers, getFormData(params), false, timeout)
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }
 
@@ -353,6 +363,7 @@ func (h GHttp) PostFormDataWithTimeout(serviceName string, path string, headers 
 	// reader := strings.NewReader(params.Encode())
 	req := getRequestLb(serviceName, path, http.MethodPost, headers, []byte(params.Encode()), false, timeout)
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }
 
@@ -364,6 +375,7 @@ func (h GHttp) PostJSONUrlWithTimeout(url string, headers map[string]string, par
 	reader := getJSONData(params)
 	req := getRequest(url, http.MethodPost, headers, reader, true, timeout)
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }
 
@@ -375,5 +387,6 @@ func (h GHttp) PostJSONWithTimeout(serviceName string, path string, headers map[
 	reader := getJSONData(params)
 	req := getRequestLb(serviceName, path, http.MethodPost, headers, reader, true, timeout)
 	req.WithContext(h.ctx)
+	req.H2C = h.H2C
 	return lb.GetInstance().Run(req, result)
 }

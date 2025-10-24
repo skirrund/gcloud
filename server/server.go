@@ -20,6 +20,8 @@ type Options struct {
 	Concurrency        int
 	IdleTimeout        time.Duration
 	MaxRequestBodySize int
+	H2C                bool
+	H2                 bool
 	//Container  Server
 	//	Registry   registry.IRegistry
 	//	Config     config.IConfig

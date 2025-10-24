@@ -20,12 +20,12 @@ func TestGinServer(t *testing.T) {
 	options := server.Options{
 		ServerName: "gin_test",
 		Address:    ":8080",
+		H2C:        true,
 	}
 	srv := NewServer(options, func(engine *gin.Engine) {
-		engine.POST("/test", func(context *gin.Context) {
+		engine.GET("/test", func(context *gin.Context) {
 			//v := context.QueryArray("a")
 			// fmt.Println(v)
-			DemoTrace(GetTraceContext(context))
 			context.JSON(200, "test")
 		})
 	})

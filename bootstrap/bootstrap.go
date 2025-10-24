@@ -50,6 +50,8 @@ type BootstrapOptions struct {
 	ServerName           string
 	Host                 string
 	LoggerDir            string
+	H2C                  bool
+	H2                   bool
 	LoggerConsole        bool
 	LoggerJson           bool
 	Config               config.IConfig
@@ -75,6 +77,7 @@ func StartBase(reader io.Reader, fileType string) *Application {
 		Address:            bo.ServerAddress,
 		Concurrency:        bo.MaxServerConcurrency,
 		MaxRequestBodySize: bo.MaxRequestBodySize,
+		H2C:                bo.H2C,
 	}
 	MthApplication.ServerOptions = so
 	return MthApplication
@@ -100,6 +103,8 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	var flagConsoleLog bool
 	var flagJsonLog bool
 	var flagFasthttpConcurrency int
+	var flagH2c bool
+	var flagH2 bool
 	flag.StringVar(&flagProfile, env.SERVER_PROFILE_KEY, "", "server profile:[dev,test,prod...]")
 	flag.StringVar(&flagCfgFile, env.SERVER_CONFIGFILE_KEY, "", "server config file")
 	flag.StringVar(&flagSn, env.SERVER_SERVERNAME_KEY, "", "server name")
@@ -109,6 +114,8 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	flag.BoolVar(&flagConsoleLog, env.LOGGER_CONSOLE, true, "logger.console enabled:{default:true}")
 	flag.BoolVar(&flagJsonLog, env.LOGGER_JSON, false, "logger.json enabled:{default:false}")
 	flag.IntVar(&flagFasthttpConcurrency, env.FASTHTTP_concurrency_key, 256*1024, "fasthttp.concurrency :{default:256*1024}")
+	flag.BoolVar(&flagH2c, env.SERVER_H2C_KEY, true, "server.h2c default:true")
+	flag.BoolVar(&flagH2, env.SERVER_H2_KEY, false, "server.h2 default:false")
 	flag.Parse()
 	if len(flagProfile) == 0 {
 		flagProfile = profile
@@ -148,12 +155,16 @@ func initBaseOptions(reader io.Reader, fileType string) BootstrapOptions {
 	cfg.Set(env.SERVER_CONFIGFILE_KEY, flagCfgFile)
 	cfg.Set(env.LOGGER_JSON, flagJsonLog)
 	cfg.Set(env.FASTHTTP_concurrency_key, flagFasthttpConcurrency)
+	cfg.Set(env.SERVER_H2C_KEY, flagH2c)
+	cfg.Set(env.SERVER_H2_KEY, flagH2)
 	cfg.LoadProfileBaseConfig(flagProfile, fileType)
 	return BootstrapOptions{
 		ServerAddress:        flagAddress,
 		ServerPort:           port,
 		Profile:              flagProfile,
 		ServerName:           flagSn,
+		H2C:                  flagH2c,
+		H2:                   flagH2,
 		LoggerDir:            flagLogdir,
 		LoggerConsole:        flagConsoleLog,
 		LoggerJson:           flagJsonLog,

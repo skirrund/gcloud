@@ -43,10 +43,15 @@ type ServerPool struct {
 
 type service struct {
 	Instances []*registry.Instance
+	H2C       bool
 	Current   int64
 }
 
 var sp *ServerPool
+
+const (
+	HTTP2C = "h2c"
+)
 
 func GetInstance() *ServerPool {
 	if sp != nil {
@@ -88,6 +93,12 @@ func (s *ServerPool) setService(name string, instances []*registry.Instance) *se
 	srv := &service{
 		Instances: instances,
 		Current:   -1,
+	}
+	if len(instances) > 0 {
+		h2c := instances[0].Metadata[HTTP2C]
+		if h2c == "true" {
+			srv.H2C = true
+		}
 	}
 	s.Services.Store(name, srv)
 	return srv
@@ -243,6 +254,9 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 	req.Url = instance.GetUrl() + req.Path
 	if len(req.Url) == 0 {
 		return &response.Response{}, errors.New("request url  is empty")
+	}
+	if srv.H2C {
+		req.H2C = true
 	}
 	defer requestEnd(loggerCtx, req.Url, start)
 	resp, err := s.client.Exec(req)
