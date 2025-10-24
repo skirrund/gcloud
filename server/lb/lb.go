@@ -255,9 +255,7 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 	if len(req.Url) == 0 {
 		return &response.Response{}, errors.New("request url  is empty")
 	}
-	if srv.H2C {
-		req.H2C = true
-	}
+	req.H2C = srv.H2C
 	defer requestEnd(loggerCtx, req.Url, start)
 	resp, err := s.client.Exec(req)
 	if err != nil {
