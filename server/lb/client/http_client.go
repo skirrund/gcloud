@@ -59,8 +59,8 @@ func init() {
 	}
 	h2cTransport = &http2.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		ReadIdleTimeout: 3 * time.Second,
-		IdleConnTimeout: 10 * time.Second,
+		ReadIdleTimeout: 5 * time.Second,
+		IdleConnTimeout: 15 * time.Second,
 		AllowHTTP:       true,
 		DialTLSContext: func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
 			return net.Dial(network, addr)

@@ -15,13 +15,14 @@ type Server interface {
 }
 
 type Options struct {
-	ServerName         string
-	Address            string
-	Concurrency        int
-	IdleTimeout        time.Duration
-	MaxRequestBodySize int
-	H2C                bool
-	H2                 bool
+	ServerName           string
+	Address              string
+	Concurrency          int
+	IdleTimeout          time.Duration
+	MaxRequestBodySize   int
+	H2C                  bool
+	H2                   bool
+	MaxConcurrentStreams uint32
 	//Container  Server
 	//	Registry   registry.IRegistry
 	//	Config     config.IConfig
