@@ -84,9 +84,13 @@ func (server *Server) Run(graceful ...func()) {
 		WriteTimeout: 4 * time.Minute,
 	}
 	if server.Options.H2C {
-		h2s := &http2.Server{
-			MaxConcurrentStreams: 200,
+		h2s := &http2.Server{}
+		if server.Options.MaxConcurrentStreams > 0 {
+			h2s.MaxConcurrentStreams = server.Options.MaxConcurrentStreams
+		} else {
+			h2s.MaxConcurrentStreams = 256
 		}
+		h2s.IdleTimeout = 15 * time.Second
 		srv.Handler = h2c.NewHandler(server.Srv, h2s)
 	}
 
