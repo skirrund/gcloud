@@ -96,8 +96,8 @@ func LoggingMiddleware(ctx *gin.Context) {
 		bb = bb[:(MAX_PRINT_BODY_LEN - 1)]
 	}
 	req := ctx.Request
-	uri := req.URL.String()
-	uri1, _ := url.QueryUnescape(uri)
+	rUri, _ := url.QueryUnescape(req.RequestURI)
+	uri1 := req.Host + rUri
 	ct := req.Header.Get("content-type")
 	method := req.Method
 	status := ctx.Writer.Status()
