@@ -241,12 +241,12 @@ func (s *ServerPool) Run(req *request.Request, respResult any) (*response.Respon
 	if retrys > lbo.MaxRetriesOnNextServiceInstance {
 		resp := &response.Response{}
 		resp.StatusCode = lbo.CurrentStatuCode
-		logger.InfoContext(loggerCtx, "[LB] Max retry reached:", req.Url, ",", len(srv.Instances), ",", retrys)
+		logger.InfoContext(loggerCtx, "[LB] Max retry reached:", req.ServiceName, "=>", req.Url, ",", len(srv.Instances), ",", retrys)
 		return resp, lbo.CurrentError
 	}
 
 	instance := srv.GetNextPeer()
-	logger.InfoContext(loggerCtx, "[LB] get instance", instance)
+	logger.InfoContext(loggerCtx, "[LB] get instance:", req.ServiceName, "=>", instance)
 	if instance == nil {
 		return &response.Response{}, errors.New("no available service" + req.ServiceName)
 	}
