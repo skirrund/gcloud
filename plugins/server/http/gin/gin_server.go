@@ -101,7 +101,7 @@ func (server *Server) Run(graceful ...func()) {
 		srv.MaxHeaderBytes = DefaultMaxRequestBodySize
 	}
 	go func() {
-		logger.Info("[GIN] server starting on:", server.Options.Address)
+		logger.Info("[GIN] server starting on:", server.Options.Address, " h2c:", server.Options.H2C)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Panic("[GIN] listen:", err.Error())
 		}
