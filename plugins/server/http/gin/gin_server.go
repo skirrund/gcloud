@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"sync"
 	"syscall"
 	"time"
 
@@ -123,9 +124,14 @@ func (server *Server) Run(graceful ...func()) {
 
 func grace(server *Server, g ...func()) {
 	server.Shutdown()
-	for _, f := range g {
-		f()
+	if len(g) > 0 {
+		var wg sync.WaitGroup
+		for _, f := range g {
+			wg.Go(f)
+		}
+		wg.Wait()
 	}
+
 }
 
 // InitTrans 初始化翻译器
