@@ -151,8 +151,10 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	}}
 	if req.H2C {
 		httpC.Transport = h2cTransport
+		r.Protocol = "h2c"
 	} else {
 		httpC.Transport = defaultTransport
+		r.Protocol = "h11"
 	}
 	response, err = httpC.Do(doRequest)
 	if err != nil {

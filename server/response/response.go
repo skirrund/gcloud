@@ -8,4 +8,5 @@ type Response struct {
 	Cookies     map[string]*cookie.Cookie
 	Headers     map[string][]string
 	StatusCode  int
+	Protocol    string
 }
