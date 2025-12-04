@@ -39,21 +39,21 @@ func ProxyService(serviceName, path string, ctx *gin.Context, timeout time.Durat
 	if err != nil {
 		return err
 	}
-	proxyResp := req.Response
+	w := ctx.Writer
+	respHeader := w.Header()
 	if len(gresp.Headers) > 0 {
 		for k, v := range gresp.Headers {
 			if len(v) == 0 {
-				proxyResp.Header.Set(k, v[0])
+				respHeader.Set(k, v[0])
 			} else {
 				for _, vv := range v {
-					proxyResp.Header.Add(k, vv)
+					respHeader.Add(k, vv)
 				}
 			}
 		}
 	}
 	sc := gresp.StatusCode
 	ctx.Status(sc)
-	w := ctx.Writer
 	w.Write(gresp.Body)
 	w.Flush()
 	return nil
