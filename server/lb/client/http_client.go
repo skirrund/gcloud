@@ -146,7 +146,9 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	if timeOut == 0 {
 		timeOut = default_timeout
 	}
-	httpC := &http.Client{Timeout: timeOut}
+	httpC := &http.Client{Timeout: timeOut, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
 	if req.H2C {
 		httpC.Transport = h2cTransport
 	} else {
@@ -164,7 +166,7 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	r.ContentType = ct
 	proto := response.Proto
 	b, err := io.ReadAll(response.Body)
-	logger.InfoContext(loggerCtx, "[lb-http] response statusCode:", sc, " content-type:", ct, " proto:", proto)
+	logger.InfoContext(loggerCtx, "[lb-http] reqUrl:", reqUrl, "=> response statusCode:", sc, " content-type:", ct, " proto:", proto)
 	r.Body = b
 	if err != nil {
 		logger.ErrorContext(loggerCtx, "[lb-http] response body read error:", reqUrl)
