@@ -1,6 +1,8 @@
 package gin
 
 import (
+	"errors"
+
 	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/utils/validator"
 
@@ -57,28 +59,20 @@ func SendJSON(ctx *gin.Context, data any) {
 	ctx.JSON(200, data)
 }
 
-func ShouldBind(ctx *gin.Context, data any) bool {
-	err := ctx.ShouldBind(data)
-	if err != nil {
-		ctx.JSON(200, response.Fail[any](err.Error()))
-		return false
-	}
-	return true
-
+func ShouldBind(ctx *gin.Context, data any) error {
+	return ctx.ShouldBind(data)
 }
 
-func ShouldBindAndValidate(ctx *gin.Context, data any) bool {
+func ShouldBindAndValidate(ctx *gin.Context, data any) error {
 	err := ctx.ShouldBind(data)
 	if err != nil {
-		ctx.JSON(200, response.Fail[any](err.Error()))
-		return false
+		return err
 	}
 	err = validator.ValidateStruct(data)
 	if err != nil {
-		SendJSON(ctx, response.ValidateError[any](err.Error()))
-		return false
+		return errors.New(validator.ErrResp(err))
 	}
-	return true
+	return nil
 
 }
 
