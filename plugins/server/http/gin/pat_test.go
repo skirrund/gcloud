@@ -26,7 +26,7 @@ func TestGinServer(t *testing.T) {
 		engine.GET("/test", func(context *gin.Context) {
 			//v := context.QueryArray("a")
 			// fmt.Println(v)
-			context.JSON(200, "test")
+			context.Redirect(302, "https://h5.mediext.com")
 		})
 	})
 	srv.Run(func() {

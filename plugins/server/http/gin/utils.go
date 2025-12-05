@@ -1,4 +1,4 @@
-package utils
+package gin
 
 import (
 	"github.com/skirrund/gcloud/response"
@@ -90,7 +90,7 @@ func QueryArray(ctx *gin.Context, name string) []string {
 			if len(a) == 0 {
 				continue
 			}
-			if strings.Index(a, ",") != -1 {
+			if strings.Contains(a, ",") {
 				tmp := strings.Split(a, ",")
 				params = append(params, tmp...)
 			} else {
@@ -108,7 +108,7 @@ func PostFormArray(ctx *gin.Context, name string) []string {
 			if len(a) == 0 {
 				continue
 			}
-			if strings.Index(a, ",") != -1 {
+			if strings.Contains(a, ",") {
 				tmp := strings.Split(a, ",")
 				params = append(params, tmp...)
 			} else {

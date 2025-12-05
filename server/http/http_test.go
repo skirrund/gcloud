@@ -14,7 +14,7 @@ func TestXxx(t *testing.T) {
 	logCtx := tracer.NewTraceIDContext()
 	logger.InfoContext(logCtx, "123123123123")
 	client := DefaultH2CClient.WithTracerContext(logCtx)
-	_, err := client.GetUrl("http://127.0.0.1:32761/gateway/api-wechat-dev/nonlogin/v1/web/getAuthWechatUrl", nil, nil, &r)
+	_, err := client.GetUrl("http://127.0.0.1:8080/test", nil, nil, &r)
 	fmt.Println(string(r), err)
 }
 
