@@ -13,6 +13,33 @@ import (
 	"github.com/skirrund/gcloud/utils"
 )
 
+type StorageType string
+
+const (
+	// StorageClassStandard Standard provides highly reliable, highly available,
+	// and high-performance object storage for data that is frequently accessed.
+	StorageTypeStandard StorageType = "Standard"
+
+	// StorageClassIA IA provides highly durable storage at lower prices compared with Standard.
+	// IA has a minimum billable size of 64 KB and a minimum billable storage duration of 30 days.
+	StorageTypeIA StorageType = "IA"
+
+	// StorageClassArchive Archive provides high-durability storage at lower prices compared with Standard and IA.
+	// Archive has a minimum billable size of 64 KB and a minimum billable storage duration of 60 days.
+	StorageTypeArchive StorageType = "Archive"
+
+	// StorageClassColdArchive Cold Archive provides highly durable storage at lower prices compared with Archive.
+	// Cold Archive has a minimum billable size of 64 KB and a minimum billable storage duration of 180 days.
+	StorageTypeColdArchive StorageType = "ColdArchive"
+
+	// StorageClassDeepColdArchive Deep Cold Archive provides highly durable storage at lower prices compared with Cold Archive.
+	// Deep Cold Archive has a minimum billable size of 64 KB and a minimum billable storage duration of 180 days.
+	StorageTypeDeepColdArchive StorageType = "DeepColdArchive"
+	//bytedance
+	StorageClassArchiveFr          StorageType = "ARCHIVE_FR"
+	StorageClassIntelligentTiering StorageType = "INTELLIGENT_TIERING"
+)
+
 type OssType string
 
 const (
@@ -53,6 +80,8 @@ type OssClient interface {
 
 	DelObject(fileName string) (bool, error)
 	IsObjectExist(key string) (bool, error)
+
+	UploadByReq(req *UploadReq) (string, error)
 }
 
 var ossClients sync.Map

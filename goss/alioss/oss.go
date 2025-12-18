@@ -76,7 +76,56 @@ func (o OssClient) Upload(key string, reader io.Reader, isPrivate bool) (fileNam
 	return o.doUpload(key, reader, isPrivate, false)
 }
 
-func (c OssClient) doUploadWithContentType(key, contentType string, reader io.Reader, isPrivate, overwrite bool) (fileName string, err error) {
+// func (c OssClient) doUploadWithContentType(key, contentType string, reader io.Reader, isPrivate, overwrite bool) (fileName string, err error) {
+
+// 	acl := oss.ObjectACLPrivate
+// 	if !isPrivate {
+// 		acl = oss.ObjectACLPublicRead
+// 	}
+// 	key = subStringBlackSlash(key)
+// 	req := &oss.PutObjectRequest{
+// 		Acl:         acl,
+// 		Bucket:      oss.Ptr(c.BucketName),
+// 		Key:         oss.Ptr(key),
+// 		ContentType: oss.Ptr(contentType),
+// 	}
+
+// 	if !overwrite {
+// 		ex, err := c.C.IsObjectExist(context.TODO(), c.BucketName, key)
+// 		if err != nil {
+// 			logger.Error("[alioss] error:" + err.Error())
+// 			return fileName, err
+// 		}
+// 		if ex {
+// 			return key, errors.New("file already exists")
+// 		}
+// 	}
+// 	req.Payload = reader
+// 	_, err = c.C.PutObject(context.TODO(), req)
+// 	if err != nil {
+// 		logger.Error("[alioss] error:" + err.Error())
+// 		return
+// 	}
+// 	return key, err
+// }
+
+func (c OssClient) doUpload(key string, reader io.Reader, isPrivate, overwrite bool) (fileName string, err error) {
+	uploadReq := &goss.UploadReq{
+		FileName:  key,
+		Reader:    reader,
+		IsPrivate: isPrivate,
+		Overwrite: overwrite,
+	}
+	return c.doUploadByReq(uploadReq)
+}
+
+func (c OssClient) doUploadByReq(uploadReq *goss.UploadReq) (fileName string, err error) {
+	key := uploadReq.FileName
+	isPrivate := uploadReq.IsPrivate
+	ct := uploadReq.ContentType
+	if len(ct) == 0 {
+		ct = utils.GetcontentType(key)
+	}
 	acl := oss.ObjectACLPrivate
 	if !isPrivate {
 		acl = oss.ObjectACLPublicRead
@@ -86,9 +135,9 @@ func (c OssClient) doUploadWithContentType(key, contentType string, reader io.Re
 		Acl:         acl,
 		Bucket:      oss.Ptr(c.BucketName),
 		Key:         oss.Ptr(key),
-		ContentType: oss.Ptr(contentType),
+		ContentType: oss.Ptr(ct),
 	}
-
+	overwrite := uploadReq.Overwrite
 	if !overwrite {
 		ex, err := c.C.IsObjectExist(context.TODO(), c.BucketName, key)
 		if err != nil {
@@ -99,18 +148,34 @@ func (c OssClient) doUploadWithContentType(key, contentType string, reader io.Re
 			return key, errors.New("file already exists")
 		}
 	}
-	req.Payload = reader
+	req.Payload = uploadReq.Reader
+	if len(uploadReq.StorageType) > 0 {
+		req.StorageClass = getStorageType(uploadReq.StorageType)
+	}
 	_, err = c.C.PutObject(context.TODO(), req)
 	if err != nil {
 		logger.Error("[alioss] error:" + err.Error())
 		return
 	}
 	return key, err
+
 }
 
-func (c OssClient) doUpload(key string, reader io.Reader, isPrivate, overwrite bool) (fileName string, err error) {
-	ct := utils.GetcontentType(key)
-	return c.doUploadWithContentType(key, ct, reader, isPrivate, overwrite)
+func getStorageType(st goss.StorageType) oss.StorageClassType {
+	switch st {
+	case goss.StorageTypeStandard:
+		return oss.StorageClassStandard
+	case goss.StorageTypeIA:
+		return oss.StorageClassIA
+	case goss.StorageTypeArchive:
+		return oss.StorageClassArchive
+	case goss.StorageTypeColdArchive:
+		return oss.StorageClassColdArchive
+	case goss.StorageTypeDeepColdArchive:
+		return oss.StorageClassDeepColdArchive
+	default:
+		return oss.StorageClassStandard
+	}
 }
 
 // UploadFile implements goss.OssClient.
@@ -178,12 +243,17 @@ func (c OssClient) UploadFromUrl(urlStr string, isPrivate bool) (string, error) 
 		return "", err
 	}
 	cts := resp.Headers["Content-Type"]
+	uploadReq := &goss.UploadReq{
+		FileName:  fileName,
+		Reader:    bytes.NewReader(downLoad),
+		IsPrivate: isPrivate,
+		Overwrite: false,
+	}
 	if len(cts) > 0 {
 		ct := cts[0]
-		fileName, err = c.doUploadWithContentType(fileName, ct, bytes.NewReader(downLoad), isPrivate, false)
-	} else {
-		fileName, err = c.doUpload(fileName, bytes.NewReader(downLoad), isPrivate, false)
+		uploadReq.ContentType = ct
 	}
+	fileName, err = c.doUploadByReq(uploadReq)
 	if err != nil {
 		return fileName, err
 	}
@@ -436,4 +506,12 @@ func (c OssClient) GetBase64(fileName string) (string, error) {
 		return base64.StdEncoding.EncodeToString(b), err
 	}
 	return "", err
+}
+
+func (c OssClient) UploadByReq(req *goss.UploadReq) (string, error) {
+	str, err := c.doUploadByReq(req)
+	if err == nil {
+		str = GetNativeWithPrefixUrl(str)
+	}
+	return str, err
 }

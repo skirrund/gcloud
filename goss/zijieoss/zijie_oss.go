@@ -324,6 +324,61 @@ func (oc ZijieOssClient) doUpload(key string, reader io.Reader, isPrivate, overw
 	return key, err
 }
 
+func (oc ZijieOssClient) doUploadByReq(uploadReq *goss.UploadReq) (fileName string, err error) {
+	key := uploadReq.FileName
+	ct := uploadReq.ContentType
+	if len(ct) == 0 {
+		ct = utils.GetcontentType(key)
+	}
+	key = goss.SubStringBlackSlash(key)
+	ex, err := oc.IsObjectExist(key)
+	if err != nil {
+		return
+	}
+	if ex {
+		return fileName, errors.New("object alreay exist")
+	}
+	v2Input := &tos.PutObjectV2Input{}
+	v2Input.Bucket = oc.bucketName
+	v2Input.ContentType = ct
+	v2Input.Key = key
+	v2Input.Content = uploadReq.Reader
+	acl := enum.ACLPrivate
+	isPrivate := uploadReq.IsPrivate
+	if !isPrivate {
+		acl = enum.ACLPublicRead
+	}
+	overwrite := uploadReq.Overwrite
+	v2Input.ACL = acl
+	v2Input.ForbidOverwrite = !overwrite
+	v2Input.StorageClass = getStorageType(uploadReq.StorageType)
+	_, err = oc.ossClient.PutObjectV2(context.Background(), v2Input)
+	if err != nil {
+		logger.Error("[zijieoss] error:" + err.Error())
+		return
+	}
+	return key, err
+}
+
+func getStorageType(st goss.StorageType) enum.StorageClassType {
+	switch st {
+	case goss.StorageTypeStandard:
+		return enum.StorageClassStandard
+	case goss.StorageTypeIA:
+		return enum.StorageClassIa
+	case goss.StorageTypeArchive:
+		return enum.StorageClassArchive
+	case goss.StorageTypeColdArchive:
+		return enum.StorageClassColdArchive
+	case goss.StorageClassArchiveFr:
+		return enum.StorageClassArchiveFr
+	case goss.StorageClassIntelligentTiering:
+		return enum.StorageClassIntelligentTiering
+	default:
+		return enum.StorageClassStandard
+	}
+}
+
 func (oc ZijieOssClient) Upload(key string, reader io.Reader, isPrivate bool) (fileName string, err error) {
 	return oc.doUpload(key, reader, isPrivate, true)
 }
@@ -422,6 +477,14 @@ func (c ZijieOssClient) UploadFileBytesWithFullUrl(fileName string, bs []byte, i
 	str, err := c.doUpload(fileName, bytes.NewReader(bs), isPrivate, false)
 	if err == nil {
 		str = c.GetFullUrl(str)
+	}
+	return str, err
+}
+
+func (c ZijieOssClient) UploadByReq(req *goss.UploadReq) (string, error) {
+	str, err := c.doUploadByReq(req)
+	if err == nil {
+		str = c.GetNativeWithPrefixUrl(str)
 	}
 	return str, err
 }
