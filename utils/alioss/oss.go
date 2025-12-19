@@ -204,7 +204,7 @@ func getcontentType(fileName string) string {
 	if index == -1 {
 		return "image/jpeg"
 	}
-	filenameExtension := utils.SubStr(fileName, strings.LastIndex(fileName, "."), -1)
+	filenameExtension := utils.SubStr(fileName, utils.UnicodeLastIndex(fileName, "."), -1)
 	if len(filenameExtension) > 0 {
 		contentType := ContentTypes[strings.ToLower(filenameExtension)]
 		if len(contentType) > 0 {
@@ -268,21 +268,21 @@ func (c *ossClient) getFileName(fileName string) string {
 	endpoint := getEndpoint()
 
 	if strings.HasPrefix(fileName, nativePrefix) {
-		fileName = utils.SubStr(fileName, strings.Index(fileName, nativePrefix)+len(nativePrefix), -1)
+		fileName = utils.SubStr(fileName, utils.UnicodeIndex(fileName, nativePrefix)+len(nativePrefix), -1)
 	} else {
 		if strings.HasPrefix(fileName, "http://") || strings.HasPrefix(fileName, "https://") {
-			fileName = utils.SubStr(fileName, strings.Index(fileName, "://")+3, -1)
+			fileName = utils.SubStr(fileName, utils.UnicodeIndex(fileName, "://")+3, -1)
 		}
 		if !strings.HasPrefix(fileName, c.C.BucketName+"."+endpoint) && !strings.HasPrefix(fileName, getSelfDomainHost()) {
 			return fileName
 		} else {
-			j = strings.Index(fileName, "/")
+			j = utils.UnicodeIndex(fileName, "/")
 			if j > -1 {
 				fileName = utils.SubStr(fileName, j+1, -1)
 			}
 		}
 	}
-	i := strings.Index(fileName, "?")
+	i := utils.UnicodeIndex(fileName, "?")
 	if i > -1 {
 		fileName = utils.SubStr(fileName, 0, i)
 	}
@@ -305,7 +305,7 @@ func (c *ossClient) GetSignUrl(fileName string, expiredInSec int64) (string, err
 		}
 		signUrl, err := c.C.SignURL(name, oss.HTTPGet, expiredInSec, options...)
 		if err == nil {
-			index := strings.Index(signUrl, "?")
+			index := utils.UnicodeIndex(signUrl, "?")
 			name, _ = url.QueryUnescape(utils.SubStr(signUrl, 0, index))
 			name = name + utils.SubStr(signUrl, index, -1)
 		}
@@ -320,9 +320,9 @@ func (c *ossClient) GetFullUrlWithSign(fileName string, expiredInSec int64) (str
 	if err != nil {
 		return url, err
 	}
-	fileName = utils.SubStr(url, strings.Index(url, "://")+3, -1)
+	fileName = utils.SubStr(url, utils.UnicodeIndex(url, "://")+3, -1)
 
-	fileName = subStringBlackSlash(utils.SubStr(fileName, strings.Index(fileName, "/")+1, -1))
+	fileName = subStringBlackSlash(utils.SubStr(fileName, utils.UnicodeIndex(fileName, "/")+1, -1))
 	if len(getSelfDomainHost()) == 0 {
 		return "https://" + c.C.BucketName + "." + getEndpoint() + "/" + fileName, err
 	}
@@ -340,7 +340,7 @@ func (c *ossClient) UploadFromUrl(urlStr string, isPrivate bool, forceUpload boo
 		logger.Error("[alioss] download error:" + err.Error())
 		return "", err
 	}
-	fileName := "downLoadFromUrl/" + utils.SubStr(urlStr, strings.LastIndex(urlStr, "/"), -1)
+	fileName := "downLoadFromUrl/" + utils.SubStr(urlStr, utils.UnicodeLastIndex(urlStr, "/"), -1)
 	fileName, err = c.UploadFileBytes(fileName, downLoad, isPrivate, forceUpload)
 	if err != nil {
 		return fileName, err

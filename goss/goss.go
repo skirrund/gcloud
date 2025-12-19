@@ -99,21 +99,21 @@ func GetFileName(fileName, nativePrefix, endpoint, bucketName, selfDomain string
 	j := -1
 
 	if strings.HasPrefix(fileName, nativePrefix) {
-		fileName = utils.SubStr(fileName, strings.Index(fileName, nativePrefix)+len(nativePrefix), -1)
+		fileName = utils.SubStr(fileName, utils.UnicodeIndex(fileName, nativePrefix)+len(nativePrefix), -1)
 	} else {
 		if strings.HasPrefix(fileName, "http://") || strings.HasPrefix(fileName, "https://") {
-			fileName = utils.SubStr(fileName, strings.Index(fileName, "://")+3, -1)
+			fileName = utils.SubStr(fileName, utils.UnicodeIndex(fileName, "://")+3, -1)
 		}
 		if !strings.HasPrefix(fileName, bucketName+"."+endpoint) && !strings.HasPrefix(fileName, selfDomain) {
 			return fileName
 		} else {
-			j = strings.Index(fileName, "/")
+			j = utils.UnicodeIndex(fileName, "/")
 			if j > -1 {
 				fileName = utils.SubStr(fileName, j+1, -1)
 			}
 		}
 	}
-	i := strings.Index(fileName, "?")
+	i := utils.UnicodeIndex(fileName, "?")
 	if i > -1 {
 		fileName = utils.SubStr(fileName, 0, i)
 	}

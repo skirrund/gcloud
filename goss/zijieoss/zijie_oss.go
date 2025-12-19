@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/goss"
@@ -214,7 +213,7 @@ func (oc ZijieOssClient) GetSignUrl(fileName string, expiredInSec int64) (string
 	output, err := oc.ossClient.PreSignedURL(preSignObj)
 	if err == nil {
 		signUrl := output.SignedUrl
-		index := strings.Index(signUrl, "?")
+		index := utils.UnicodeIndex(signUrl, "?")
 		name, _ = url.QueryUnescape(utils.SubStr(signUrl, 0, index))
 		name = name + utils.SubStr(signUrl, index, -1)
 	}
@@ -226,9 +225,9 @@ func (oc ZijieOssClient) GetFullUrlWithSign(fileName string, expiredInSec int64)
 	if err != nil {
 		return url, err
 	}
-	fileName = utils.SubStr(url, strings.Index(url, "://")+3, -1)
+	fileName = utils.SubStr(url, utils.UnicodeIndex(url, "://")+3, -1)
 
-	fileName = goss.SubStringBlackSlash(utils.SubStr(fileName, strings.Index(fileName, "/")+1, -1))
+	fileName = goss.SubStringBlackSlash(utils.SubStr(fileName, utils.UnicodeIndex(fileName, "/")+1, -1))
 	if len(getSelfDomainHost()) == 0 {
 		return "https://" + oc.bucketName + "." + getEndpoint() + "/" + fileName, err
 	}
@@ -246,7 +245,7 @@ func (c ZijieOssClient) UploadFromUrl(urlStr string, isPrivate bool) (string, er
 		return "", err
 	}
 	defer res.Body.Close()
-	fileName := "zjDownLoadFromUrl/" + utils.SubStr(urlStr, strings.LastIndex(urlStr, "/"), -1)
+	fileName := "zjDownLoadFromUrl/" + utils.SubStr(urlStr, utils.UnicodeLastIndex(urlStr, "/"), -1)
 	fileName, err = c.doUpload(fileName, res.Body, isPrivate, false)
 	if err != nil {
 		return fileName, err

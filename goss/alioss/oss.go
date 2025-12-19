@@ -226,10 +226,10 @@ func (c OssClient) UploadFileWithNativeFullUrl(fileName string, file *os.File, i
 
 // UploadFromUrl implements goss.OssClient.
 func (c OssClient) UploadFromUrl(urlStr string, isPrivate bool) (string, error) {
-	i2 := strings.LastIndex(urlStr, "/")
+	i2 := utils.UnicodeLastIndex(urlStr, "/")
 	filenameExtension := utils.SubStr(urlStr, i2, -1)
-	qi := strings.Index(filenameExtension, "?")
-	li := strings.LastIndex(filenameExtension, ".")
+	qi := utils.UnicodeIndex(filenameExtension, "?")
+	li := utils.UnicodeLastIndex(filenameExtension, ".")
 	if li > -1 {
 		filenameExtension = utils.Uuid() + utils.SubStr(filenameExtension, li, qi-li)
 	} else {
@@ -408,21 +408,21 @@ func (c OssClient) getFileName(fileName string) string {
 	endpoint := getEndpoint()
 
 	if strings.HasPrefix(fileName, nativePrefix) {
-		fileName = utils.SubStr(fileName, strings.Index(fileName, nativePrefix)+len(nativePrefix), -1)
+		fileName = utils.SubStr(fileName, utils.UnicodeIndex(fileName, nativePrefix)+len(nativePrefix), -1)
 	} else {
 		if strings.HasPrefix(fileName, "http://") || strings.HasPrefix(fileName, "https://") {
-			fileName = utils.SubStr(fileName, strings.Index(fileName, "://")+3, -1)
+			fileName = utils.SubStr(fileName, utils.UnicodeIndex(fileName, "://")+3, -1)
 		}
 		if !strings.HasPrefix(fileName, c.BucketName+"."+endpoint) && !strings.HasPrefix(fileName, getSelfDomainHost()) {
 			return fileName
 		} else {
-			j = strings.Index(fileName, "/")
+			j = utils.UnicodeIndex(fileName, "/")
 			if j > -1 {
 				fileName = utils.SubStr(fileName, j+1, -1)
 			}
 		}
 	}
-	i := strings.Index(fileName, "?")
+	i := utils.UnicodeIndex(fileName, "?")
 	if i > -1 {
 		fileName = utils.SubStr(fileName, 0, i)
 	}
@@ -456,7 +456,7 @@ func (c OssClient) GetSignUrl(fileName string, expiredInSec int64) (string, erro
 		signUrl, err := c.C.Presign(context.TODO(), req, oss.PresignExpires(time.Duration(expiredInSec)*time.Second))
 		if err == nil {
 			sUrl := signUrl.URL
-			index := strings.Index(sUrl, "?")
+			index := utils.UnicodeIndex(sUrl, "?")
 			name, _ = url.QueryUnescape(utils.SubStr(sUrl, 0, index))
 			name = name + utils.SubStr(sUrl, index, -1)
 		}
@@ -471,9 +471,9 @@ func (c OssClient) GetFullUrlWithSign(fileName string, expiredInSec int64) (stri
 	if err != nil {
 		return url, err
 	}
-	fileName = utils.SubStr(url, strings.Index(url, "://")+3, -1)
+	fileName = utils.SubStr(url, utils.UnicodeIndex(url, "://")+3, -1)
 
-	fileName = subStringBlackSlash(utils.SubStr(fileName, strings.Index(fileName, "/")+1, -1))
+	fileName = subStringBlackSlash(utils.SubStr(fileName, utils.UnicodeIndex(fileName, "/")+1, -1))
 	if len(getSelfDomainHost()) == 0 {
 		return "https://" + c.BucketName + "." + getEndpoint() + "/" + fileName, err
 	}

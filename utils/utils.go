@@ -82,7 +82,7 @@ func GetcontentType(fileName string) string {
 	if index == -1 {
 		return "image/jpeg"
 	}
-	filenameExtension := SubStr(fileName, strings.LastIndex(fileName, "."), -1)
+	filenameExtension := SubStr(fileName, UnicodeLastIndex(fileName, "."), -1)
 	if len(filenameExtension) > 0 {
 		contentType := ContentTypes[strings.ToLower(filenameExtension)]
 		if len(contentType) > 0 {
@@ -366,7 +366,7 @@ func GetStringParamsMapFromUrl(paramsStr string) map[string]string {
 	if len(paramsStr) == 0 {
 		return resultMap
 	}
-	index := strings.Index(paramsStr, "?")
+	index := UnicodeIndex(paramsStr, "?")
 	if index != -1 {
 		paramsStr = SubStr(paramsStr, index+1, -1)
 	} else {
