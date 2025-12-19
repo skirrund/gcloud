@@ -203,6 +203,26 @@ func Uuid() string {
 	return strings.ReplaceAll(uuid.New().String(), "-", "")
 }
 
+func UnicodeIndex(str, substr string) int {
+	idx := strings.Index(str, substr)
+	if idx > 0 {
+		prefix := []byte(str)[0:idx]
+		rs := []rune(string(prefix))
+		idx = len(rs)
+	}
+	return idx
+}
+
+func UnicodeLastIndex(str, substr string) int {
+	idx := strings.LastIndex(str, substr)
+	if idx > 0 {
+		prefix := []byte(str)[0:idx]
+		rs := []rune(string(prefix))
+		idx = len(rs)
+	}
+	return idx
+}
+
 // 截取字符串，支持多字节字符
 // start：起始下标，负数从从尾部开始，最后一个为-1
 // length：截取长度，负数表示截取到末尾
