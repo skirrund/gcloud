@@ -1,55 +1,48 @@
-package alioss
+package baiduoss
 
 import (
-	"context"
+	"bytes"
 	"encoding/base64"
 	"errors"
 	"io"
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/goss"
 	"github.com/skirrund/gcloud/logger"
 
-	"github.com/skirrund/gcloud/utils"
-
-	"bytes"
-
+	"github.com/baidubce/bce-sdk-go/bce"
+	"github.com/baidubce/bce-sdk-go/services/bos"
+	"github.com/baidubce/bce-sdk-go/services/bos/api"
 	"github.com/skirrund/gcloud/server/http"
-
-	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
+	"github.com/skirrund/gcloud/utils"
 )
 
 const (
-	endpointInternalKey     = "alioss.endpoint.internal"
-	accessKeyIdKey          = "alioss.accessKeyId"
-	accessKeySecretKey      = "alioss.accessKeySecret"
-	selfDomainKey           = "alioss.selfDomain"
-	authVersionKey          = "alioss.authVersion" //"v1,v4等";
-	regionKey               = "alioss.region"
-	defaultEndpoint         = "oss-cn-shanghai.aliyuncs.com"
+	endpointInternalKey     = "bdoss.endpoint.internal"
+	accessKeyIdKey          = "bdoss.accessKeyId"
+	accessKeySecretKey      = "bdoss.accessKeySecret"
+	selfDomainKey           = "bdoss.selfDomain"
+	authVersionKey          = "bdoss.authVersion" //"v1,v4等";
+	defaultEndpoint         = "bj.bcebos.com"
 	defaultSelfDomainHost   = "static-core.demo.com"
-	defaultEndpointInternal = "oss-cn-shanghai.aliyuncs.com"
+	defaultEndpointInternal = "bj.bcebos.com"
+	cannedAclPrivate        = "private"
+	cannedAclPR             = "public-read"
 )
 
 type OssClient struct {
 	BucketName string
-	C          *oss.Client
+	C          *bos.Client
 }
 
 // DelObject implements goss.OssClient.
 func (c OssClient) DelObject(fileName string) (bool, error) {
 	key := c.getFileName(fileName)
-	if ex, _ := c.C.IsObjectExist(context.TODO(), c.BucketName, key); ex {
-		req := &oss.DeleteObjectRequest{
-			Bucket: oss.Ptr(c.BucketName),
-			Key:    oss.Ptr(key),
-		}
-		_, err := c.C.DeleteObject(context.TODO(), req)
+	if ex, _ := c.IsObjectExist(fileName); ex {
+		err := c.C.DeleteObject(c.BucketName, key)
 		return err == nil, err
 	} else {
 		return false, errors.New("file not exist")
@@ -68,46 +61,26 @@ func (co OssClient) GetNativeWithPrefixUrl(fileName string) string {
 // IsObjectExist implements goss.OssClient.
 func (c OssClient) IsObjectExist(key string) (bool, error) {
 	key = c.getFileName(key)
-	return c.C.IsObjectExist(context.TODO(), c.BucketName, key)
+	_, err := c.C.GetObjectMeta(c.BucketName, key)
+	if err != nil {
+		if realErr, ok := err.(*bce.BceServiceError); ok {
+			if realErr.StatusCode == 404 {
+				return false, nil
+			} else {
+				return false, realErr
+			}
+		} else {
+			return false, realErr
+		}
+	} else {
+		return true, nil
+	}
 }
 
 // Upload implements goss.OssClient.
 func (o OssClient) Upload(key string, reader io.Reader, isPrivate bool) (fileName string, err error) {
 	return o.doUpload(key, reader, isPrivate, false)
 }
-
-// func (c OssClient) doUploadWithContentType(key, contentType string, reader io.Reader, isPrivate, overwrite bool) (fileName string, err error) {
-
-// 	acl := oss.ObjectACLPrivate
-// 	if !isPrivate {
-// 		acl = oss.ObjectACLPublicRead
-// 	}
-// 	key = subStringBlackSlash(key)
-// 	req := &oss.PutObjectRequest{
-// 		Acl:         acl,
-// 		Bucket:      oss.Ptr(c.BucketName),
-// 		Key:         oss.Ptr(key),
-// 		ContentType: oss.Ptr(contentType),
-// 	}
-
-// 	if !overwrite {
-// 		ex, err := c.C.IsObjectExist(context.TODO(), c.BucketName, key)
-// 		if err != nil {
-// 			logger.Error("[alioss] error:" + err.Error())
-// 			return fileName, err
-// 		}
-// 		if ex {
-// 			return key, errors.New("file already exists")
-// 		}
-// 	}
-// 	req.Payload = reader
-// 	_, err = c.C.PutObject(context.TODO(), req)
-// 	if err != nil {
-// 		logger.Error("[alioss] error:" + err.Error())
-// 		return
-// 	}
-// 	return key, err
-// }
 
 func (c OssClient) doUpload(key string, reader io.Reader, isPrivate, overwrite bool) (fileName string, err error) {
 	uploadReq := &goss.UploadReq{
@@ -126,55 +99,54 @@ func (c OssClient) doUploadByReq(uploadReq *goss.UploadReq) (fileName string, er
 	if len(ct) == 0 {
 		ct = utils.GetcontentType(key)
 	}
-	acl := oss.ObjectACLPrivate
+	acl := cannedAclPrivate
 	if !isPrivate {
-		acl = oss.ObjectACLPublicRead
+		acl = cannedAclPR
 	}
 	key = subStringBlackSlash(key)
-	req := &oss.PutObjectRequest{
-		Acl:         acl,
-		Bucket:      oss.Ptr(c.BucketName),
-		Key:         oss.Ptr(key),
-		ContentType: oss.Ptr(ct),
-	}
 	overwrite := uploadReq.Overwrite
 	if !overwrite {
-		ex, err := c.C.IsObjectExist(context.TODO(), c.BucketName, key)
+		ex, err := c.IsObjectExist(key)
 		if err != nil {
-			logger.Error("[alioss] error:" + err.Error())
+			logger.Error("[bdoss] error:" + err.Error())
 			return fileName, err
 		}
 		if ex {
 			return key, errors.New("file already exists")
 		}
 	}
-	req.Payload = uploadReq.Reader
+	putObjArgs := &api.PutObjectArgs{CannedAcl: acl, ContentType: ct}
 	if len(uploadReq.StorageType) > 0 {
-		req.StorageClass = getStorageType(uploadReq.StorageType)
+		putObjArgs.StorageClass = getStorageType(uploadReq.StorageType)
 	}
-	_, err = c.C.PutObject(context.TODO(), req)
+	_, err = c.C.PutObjectFromStream(c.BucketName, key, uploadReq.Reader, putObjArgs)
 	if err != nil {
-		logger.Error("[alioss] error:" + err.Error())
+		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
 	return key, err
 
 }
 
-func getStorageType(st goss.StorageType) oss.StorageClassType {
+// 指定Object的存储类型，
+// STANDARD_IA代表低频存储，
+// COLD代表冷存储，ARCHIVE代表归档存储，
+// 不指定时默认是STANDARD标准存储类型；
+// 如果是多AZ类型bucket，
+// MAZ_STANDARD_IA代表多AZ低频存储，
+// 不指定时默认是MAZ_STANDARD多AZ标准存储类型，不能是其它取值
+func getStorageType(st goss.StorageType) string {
 	switch st {
 	case goss.StorageTypeStandard:
-		return oss.StorageClassStandard
+		return api.STORAGE_CLASS_STANDARD
 	case goss.StorageTypeIA:
-		return oss.StorageClassIA
+		return api.STORAGE_CLASS_STANDARD_IA
 	case goss.StorageTypeArchive:
-		return oss.StorageClassArchive
+		return api.STORAGE_CLASS_ARCHIVE
 	case goss.StorageTypeColdArchive:
-		return oss.StorageClassColdArchive
-	case goss.StorageTypeDeepColdArchive:
-		return oss.StorageClassDeepColdArchive
+		return api.STORAGE_CLASS_COLD
 	default:
-		return oss.StorageClassStandard
+		return api.STORAGE_CLASS_STANDARD
 	}
 }
 
@@ -236,12 +208,12 @@ func (c OssClient) UploadFromUrl(urlStr, fileName string, isPrivate bool) (strin
 		filenameExtension = utils.Uuid()
 	}
 	if len(fileName) == 0 {
-		fileName = "downLoadFromUrl/" + filenameExtension
+		fileName = "bdDownLoadFromUrl/" + filenameExtension
 	}
 	var downLoad []byte
 	resp, err := http.DefaultClient.GetUrl(urlStr, nil, nil, &downLoad)
 	if err != nil {
-		logger.Error("[alioss] download error:" + err.Error())
+		logger.Error("[bdoss] download error:" + err.Error())
 		return "", err
 	}
 	cts := resp.Headers["Content-Type"]
@@ -267,55 +239,50 @@ func (c OssClient) UploadOverwrite(key string, reader io.Reader, isPrivate bool)
 	return c.doUpload(key, reader, isPrivate, true)
 }
 
-func (OssClient) NewClient(endpoint, accessKeyID, accessKeySecret, bucketName, region string) (c goss.OssClient, err error) {
+func (OssClient) NewClient(endpoint, accessKeyID, accessKeySecret, bucketName string) (c goss.OssClient, err error) {
 	if len(endpoint) == 0 {
 		err = errors.New("endpoint is  empty")
-		logger.Error("[alioss] error:" + err.Error())
+		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
 	if len(accessKeyID) == 0 {
 		err = errors.New("accessKeyID is  empty")
-		logger.Error("[alioss] error:" + err.Error())
+		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
 	if len(accessKeySecret) == 0 {
 		err = errors.New("accessKeySecret is  empty")
-		logger.Error("[alioss] error:" + err.Error())
+		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
 	if len(bucketName) == 0 {
 		err = errors.New("bucketName is  empty")
-		logger.Error("[alioss] error:" + err.Error())
+		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
-	if len(region) == 0 {
-		err = errors.New("region must not be blank when authVersion is v4")
-		logger.Error("[alioss] error:" + err.Error())
-		return
+
+	bosClient, err := bos.NewClient(accessKeyID, accessKeySecret, endpoint)
+	if err != nil {
+		return nil, err
 	}
-	ossCfg := oss.LoadDefaultConfig().WithInsecureSkipVerify(true).WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, accessKeySecret)).WithEndpoint(endpoint).WithRegion(region).WithSignatureVersion(oss.SignatureVersionV4)
-	cl := oss.NewClient(ossCfg)
 	c = &OssClient{
 		BucketName: bucketName,
-		C:          cl,
+		C:          bosClient,
 	}
 	return
 }
 
 func (oc OssClient) NewDefaultClient() (c goss.OssClient, err error) {
 	cfg := env.GetInstance()
-	endpointPublic := cfg.GetStringWithDefault(goss.AliEndpointPublicKey, "oss-cn-shanghai.aliyuncs.com")
-	endpointInternal := cfg.GetStringWithDefault(endpointInternalKey, "oss-cn-shanghai.aliyuncs.com")
+	endpointPublic := cfg.GetStringWithDefault(goss.BdEndpointPublicKey, defaultEndpoint)
+	endpointInternal := cfg.GetStringWithDefault(endpointInternalKey, defaultEndpoint)
 	accessKeyID := cfg.GetString(accessKeyIdKey)
 	accessKeySecret := cfg.GetString(accessKeySecretKey)
-	bucketName := cfg.GetStringWithDefault(goss.AlibucketNameKey, "mth-core")
-	authVersion := cfg.GetString(authVersionKey)
-	authVersion = strings.ToLower(authVersion)
-	region := cfg.GetStringWithDefault(regionKey, "cn-shanghai")
+	bucketName := cfg.GetStringWithDefault(goss.BdBucketNameKey, "pbm-core")
 	if len(endpointInternal) == 0 {
 		if len(endpointPublic) == 0 {
 			err = errors.New("[endpointInternal,endpointPublic] are both empty")
-			logger.Error("[alioss] error:" + err.Error())
+			logger.Error("[bdoss] error:" + err.Error())
 			return
 		} else {
 			endpointInternal = endpointPublic
@@ -323,36 +290,26 @@ func (oc OssClient) NewDefaultClient() (c goss.OssClient, err error) {
 	}
 	if len(accessKeyID) == 0 {
 		err = errors.New("accessKeyID is  empty")
-		logger.Error("[alioss] error:" + err.Error())
+		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
 	if len(accessKeySecret) == 0 {
 		err = errors.New("accessKeySecret is  empty")
-		logger.Error("[alioss] error:" + err.Error())
+		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
 	if len(bucketName) == 0 {
 		err = errors.New("bucketName is  empty")
-		logger.Error("[alioss] error:" + err.Error())
+		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
-	authv := oss.SignatureVersionV1
-	if len(authVersion) > 0 {
-		switch authVersion {
-		case "v4":
-			authv = oss.SignatureVersionV4
-			if len(region) == 0 {
-				err = errors.New("region must not be blank when authVersion is v4")
-				logger.Error("[alioss] error:" + err.Error())
-				return
-			}
-		}
+	bosClient, err := bos.NewClient(accessKeyID, accessKeySecret, endpointInternal)
+	if err != nil {
+		return nil, err
 	}
-	ossCfg := oss.LoadDefaultConfig().WithInsecureSkipVerify(true).WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, accessKeySecret)).WithEndpoint(endpointInternal).WithRegion(region).WithSignatureVersion(authv)
-	cl := oss.NewClient(ossCfg)
 	c = &OssClient{
 		BucketName: bucketName,
-		C:          cl,
+		C:          bosClient,
 	}
 	return
 }
@@ -372,12 +329,12 @@ func GetNativeWithPrefixUrl(fileName string) string {
 
 func GetNativePrefix() string {
 	cfg := env.GetInstance()
-	return cfg.GetStringWithDefault(goss.AlinativePrefixKey, goss.DefaultAliPrefix)
+	return cfg.GetStringWithDefault(goss.BdnativePrefixKey, goss.DefaultBdPrefix)
 }
 
 func getEndpoint() string {
 	cfg := env.GetInstance()
-	return cfg.GetStringWithDefault(goss.AliEndpointPublicKey, "oss-cn-shanghai.aliyuncs.com")
+	return cfg.GetStringWithDefault(goss.BdEndpointPublicKey, defaultEndpoint)
 }
 
 func getSelfDomain() bool {
@@ -387,7 +344,7 @@ func getSelfDomain() bool {
 
 func getSelfDomainHost() string {
 	cfg := env.GetInstance()
-	return cfg.GetString(goss.AliossSelfDomainHostKey)
+	return cfg.GetString(goss.BdSelfDomainHostKey)
 }
 
 func (c OssClient) GetFullUrl(fileName string) string {
@@ -414,33 +371,24 @@ func (c OssClient) getFileName(fileName string) string {
 
 func (c OssClient) GetSignUrl(fileName string, expiredInSec int64) (string, error) {
 	name := c.getFileName(fileName)
-	if ex, _ := c.C.IsObjectExist(context.TODO(), c.BucketName, name); ex {
+	ex, err := c.IsObjectExist(fileName)
+	if err != nil {
+		return fileName, err
+	}
+	if ex {
 		params := utils.GetStringParamsMapFromUrl(fileName)
-		delete(params, "Signature")
-		delete(params, "Expires")
-		delete(params, "OSSAccessKeyId")
-		delete(params, "x-oss-credential")
-		delete(params, "x-oss-date")
-		delete(params, "x-oss-expires")
-		delete(params, "x-oss-signature")
-		delete(params, "x-oss-signature-version")
-		// var options []oss.Option
-		req := &oss.GetObjectRequest{
-			Bucket: oss.Ptr(c.BucketName),
-			Key:    oss.Ptr(name),
-		}
-		req.Parameters = params
+		delete(params, "authorization")
+		delete(params, "x-bce-security-token")
+
 		// for k, v := range params {
 		// 	options = append(options, oss.AddParam(k, v))
 		// }
-		signUrl, err := c.C.Presign(context.TODO(), req, oss.PresignExpires(time.Duration(expiredInSec)*time.Second))
-		if err == nil {
-			sUrl := signUrl.URL
-			index := utils.UnicodeIndex(sUrl, "?")
-			name, _ = url.QueryUnescape(utils.SubStr(sUrl, 0, index))
-			name = name + utils.SubStr(sUrl, index, -1)
-		}
-		return name, err
+		signUrl := c.C.GeneratePresignedUrl(c.BucketName, name, int(expiredInSec), "GET", nil, params)
+		sUrl := signUrl
+		index := utils.UnicodeIndex(sUrl, "?")
+		name, _ = url.QueryUnescape(utils.SubStr(sUrl, 0, index))
+		name = name + utils.SubStr(sUrl, index, -1)
+		return name, nil
 	} else {
 		return fileName, errors.New("file not exists:" + name)
 	}
@@ -464,15 +412,13 @@ func (c OssClient) GetFullUrlWithSign(fileName string, expiredInSec int64) (stri
 	}
 }
 func (c OssClient) GetBytes(fileName string) ([]byte, error) {
-	fileName = c.getFileName(fileName)
-	if ex, _ := c.C.IsObjectExist(context.TODO(), c.BucketName, fileName); ex {
-		req := &oss.GetObjectRequest{
-			Bucket: oss.Ptr(c.BucketName),
-			Key:    oss.Ptr(fileName),
-		}
-		objResult, err := c.C.GetObject(context.TODO(), req)
+	name := c.getFileName(fileName)
+	if ex, _ := c.IsObjectExist(fileName); ex {
+		objResult, err := c.C.GetObject(c.BucketName, name, nil)
 		if err == nil {
-			return io.ReadAll(objResult.Body)
+			bytes, err := io.ReadAll(objResult.Body)
+			objResult.Body.Close()
+			return bytes, err
 		}
 		return nil, err
 	} else {

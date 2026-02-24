@@ -45,16 +45,22 @@ type OssType string
 const (
 	AliOss                  OssType = "alioss"
 	ZijieOss                OssType = "zijieoss"
+	BdOss                   OssType = "bdoss"
 	AliossSelfDomainHostKey         = "alioss.selfDomainHost"
 	ZijieSelfDomainHostKey          = "zijie.oss.selfDomainHost"
+	BdSelfDomainHostKey             = "bd.oss.selfDomainHost"
 	AliEndpointPublicKey            = "alioss.endpoint.public"
 	ZijieEndpointPublicKey          = "zijie.oss.endpoint.public"
+	BdEndpointPublicKey             = "bd.oss.endpoint.public"
 	AlinativePrefixKey              = "alioss.nativePrefix"
 	ZijienativePrefixKey            = "zijie.oss.nativePrefix"
+	BdnativePrefixKey               = "bd.oss.nativePrefix"
 	DefaultAliPrefix                = "/alioss-core/"
 	DefaultZijiePrefix              = "/zijie-core/"
+	DefaultBdPrefix                 = "/bd-core/"
 	AlibucketNameKey                = "alioss.bucketName"
 	ZijieBucketNameKey              = "zijie.oss.bucketName"
+	BdBucketNameKey                 = "bd.oss.bucketName"
 )
 
 type OssClient interface {
@@ -64,7 +70,7 @@ type OssClient interface {
 	GetFullUrlWithSign(fileName string, expiredInSec int64) (string, error)
 	GetFullUrl(fileName string) string
 	Upload(key string, reader io.Reader, isPrivate bool) (fileName string, err error)
-	UploadFromUrl(urlStr string, isPrivate bool) (string, error)
+	UploadFromUrl(urlStr, targetName string, isPrivate bool) (string, error)
 	UploadOverwrite(key string, reader io.Reader, isPrivate bool) (fileName string, err error)
 	UploadFile(fileName string, file *os.File, isPrivate bool) (string, error)
 	GetBytes(fileName string) ([]byte, error)
@@ -95,27 +101,26 @@ func SubStringBlackSlash(s string) string {
 	return SubStringBlackSlash(s)
 }
 
-func GetFileName(fileName, nativePrefix, endpoint, bucketName, selfDomain string) string {
+func GetFileName(fileName, nativePrefix, endpoint, bucketName, selfDomain string, cutParams bool) string {
 	j := -1
-
 	if strings.HasPrefix(fileName, nativePrefix) {
 		fileName = utils.SubStr(fileName, utils.UnicodeIndex(fileName, nativePrefix)+len(nativePrefix), -1)
 	} else {
 		if strings.HasPrefix(fileName, "http://") || strings.HasPrefix(fileName, "https://") {
 			fileName = utils.SubStr(fileName, utils.UnicodeIndex(fileName, "://")+3, -1)
 		}
-		if !strings.HasPrefix(fileName, bucketName+"."+endpoint) && !strings.HasPrefix(fileName, selfDomain) {
-			return fileName
-		} else {
+		if strings.HasPrefix(fileName, bucketName+"."+endpoint) || (len(selfDomain) > 0 && strings.HasPrefix(fileName, selfDomain)) {
 			j = utils.UnicodeIndex(fileName, "/")
 			if j > -1 {
 				fileName = utils.SubStr(fileName, j+1, -1)
 			}
 		}
 	}
-	i := utils.UnicodeIndex(fileName, "?")
-	if i > -1 {
-		fileName = utils.SubStr(fileName, 0, i)
+	if cutParams {
+		i := utils.UnicodeIndex(fileName, "?")
+		if i > -1 {
+			fileName = utils.SubStr(fileName, 0, i)
+		}
 	}
 	if strings.Contains(fileName, "%") {
 		fileName, _ = url.QueryUnescape(fileName)
@@ -149,6 +154,10 @@ func GetOssTypeByFilePath(filePath string) (OssType, error) {
 	if strings.HasPrefix(filePath, prefxz) {
 		return ZijieOss, nil
 	}
+	prefxb := cfg.GetStringWithDefault(BdnativePrefixKey, DefaultBdPrefix)
+	if strings.HasPrefix(filePath, prefxb) {
+		return BdOss, nil
+	}
 	if strings.HasPrefix(filePath, "http://") || strings.HasPrefix(filePath, "https://") {
 		idx := strings.Index(filePath, "://")
 		filePath = filePath[idx : idx+3]
@@ -161,6 +170,10 @@ func GetOssTypeByFilePath(filePath string) (OssType, error) {
 	if len(selfDomainHostz) > 0 && strings.HasPrefix(filePath, selfDomainHostz) {
 		return ZijieOss, nil
 	}
+	selfDomainHostB := cfg.GetString(BdSelfDomainHostKey)
+	if len(selfDomainHostB) > 0 && strings.HasPrefix(filePath, selfDomainHostB) {
+		return BdOss, nil
+	}
 	bucketNamea := cfg.GetString(AlibucketNameKey)
 	endpointa := cfg.GetString(AliEndpointPublicKey)
 	if strings.HasPrefix(filePath, bucketNamea+"."+endpointa) {
@@ -170,6 +183,11 @@ func GetOssTypeByFilePath(filePath string) (OssType, error) {
 	endpointz := cfg.GetString(ZijieEndpointPublicKey)
 	if strings.HasPrefix(filePath, bucketNamez+"."+endpointz) {
 		return ZijieOss, nil
+	}
+	bucketNameB := cfg.GetString(BdBucketNameKey)
+	endpointB := cfg.GetString(ZijieEndpointPublicKey)
+	if strings.HasPrefix(filePath, bucketNameB+"."+endpointB) {
+		return BdOss, nil
 	}
 	return "", errors.New("oss type not found")
 }

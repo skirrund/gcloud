@@ -170,6 +170,8 @@ func (oc ZijieOssClient) GetFullUrl(fileName string) string {
 	selfDomainHost := getSelfDomainHost()
 	endpoint := getEndpoint()
 	selfDomain := getSelfDomain()
+	nativePrefix := oc.GetNativePrefix()
+	fileName = goss.GetFileName(fileName, nativePrefix, endpoint, oc.bucketName, getSelfDomainHost(), false)
 	if len(selfDomainHost) == 0 {
 		return "https://" + oc.bucketName + "." + endpoint + "/" + fileName
 	}
@@ -183,7 +185,7 @@ func (oc ZijieOssClient) GetFullUrl(fileName string) string {
 func (oc ZijieOssClient) getFileName(fileName string) string {
 	nativePrefix := oc.GetNativePrefix()
 	endpoint := getEndpoint()
-	return goss.GetFileName(fileName, nativePrefix, endpoint, oc.bucketName, getSelfDomainHost())
+	return goss.GetFileName(fileName, nativePrefix, endpoint, oc.bucketName, getSelfDomainHost(), true)
 }
 
 func (oc ZijieOssClient) GetSignUrl(fileName string, expiredInSec int64) (string, error) {
@@ -238,14 +240,16 @@ func (oc ZijieOssClient) GetFullUrlWithSign(fileName string, expiredInSec int64)
 	}
 }
 
-func (c ZijieOssClient) UploadFromUrl(urlStr string, isPrivate bool) (string, error) {
+func (c ZijieOssClient) UploadFromUrl(urlStr, fileName string, isPrivate bool) (string, error) {
 	res, err := http.Get(urlStr)
 	if err != nil {
 		logger.Error("[zijieoss] download error:" + err.Error())
 		return "", err
 	}
 	defer res.Body.Close()
-	fileName := "zjDownLoadFromUrl/" + utils.SubStr(urlStr, utils.UnicodeLastIndex(urlStr, "/"), -1)
+	if len(fileName) == 0 {
+		fileName = "zjDownLoadFromUrl/" + utils.SubStr(urlStr, utils.UnicodeLastIndex(urlStr, "/"), -1)
+	}
 	fileName, err = c.doUpload(fileName, res.Body, isPrivate, false)
 	if err != nil {
 		return fileName, err
