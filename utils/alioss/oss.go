@@ -356,18 +356,17 @@ func (c *ossClient) UploadFileBytes(key string, bs []byte, isPrivate bool, force
 	ct := getcontentType(key)
 	contentType := oss.ContentType(ct)
 	key = subStringBlackSlash(key)
-
-	ex, err := c.C.IsObjectExist(key)
-	if err != nil {
-		logger.Error("[alioss] error:" + err.Error())
-		return fileName, err
-	}
-	if forceUpload && ex {
-		err = c.C.DeleteObject(key)
+	if !forceUpload {
+		ex, err := c.C.IsObjectExist(key)
 		if err != nil {
 			logger.Error("[alioss] error:" + err.Error())
+			return fileName, err
+		}
+		if ex {
+			return key, errors.New("file exists")
 		}
 	}
+
 	err = c.C.PutObject(key, bytes.NewReader(bs), contentType, acl)
 	if err != nil {
 		logger.Error("[alioss] error:" + err.Error())
