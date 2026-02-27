@@ -367,8 +367,6 @@ func (c *ossClient) UploadFileBytes(key string, bs []byte, isPrivate bool, force
 		if err != nil {
 			logger.Error("[alioss] error:" + err.Error())
 		}
-	} else {
-		return key, err
 	}
 	err = c.C.PutObject(key, bytes.NewReader(bs), contentType, acl)
 	if err != nil {
