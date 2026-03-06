@@ -145,11 +145,11 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	params := bytes.NewReader(req.Params)
 	headers := req.Headers
 	isJson := req.IsJson
-	// defer func() {
-	// 	if err := recover(); err != nil {
-	// 		logger.ErrorContext(loggerCtx, "[lb-http] recover :", err)
-	// 	}
-	// }()
+	defer func() {
+		if err := recover(); err != nil {
+			logger.ErrorContext(loggerCtx, "[lb-http] recover :", err)
+		}
+	}()
 	if req.Method == "POST" {
 		if params == nil {
 			logger.WarnContext(loggerCtx, "[lb-http] NewRequest with body nil")
