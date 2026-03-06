@@ -51,12 +51,12 @@ func init() {
 			KeepAlive: 30 * time.Second,
 		}).DialContext,
 		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
+		MaxIdleConns:          400,
 		IdleConnTimeout:       20 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		MaxConnsPerHost:       0,
-		MaxIdleConnsPerHost:   20,
+		MaxIdleConnsPerHost:   32,
 	}
 
 	// 配置 Transport，禁用 TLS，启用 h2c
@@ -68,8 +68,8 @@ func init() {
 		}).DialContext,
 		// 2. 控制长连接数量（和之前 HTTP/2 客户端一致）
 		MaxConnsPerHost:     100,
-		MaxIdleConns:        100,
-		MaxIdleConnsPerHost: 10,
+		MaxIdleConns:        400,
+		MaxIdleConnsPerHost: 32,
 		IdleConnTimeout:     20 * time.Second,
 		// 3. 禁用 TLS（h2c 是明文）
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
