@@ -3,17 +3,19 @@ package gin
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/skirrund/gcloud/logger"
 	"github.com/skirrund/gcloud/server"
+	"github.com/skirrund/gcloud/server/http"
 )
 
 func TestXxx(t *testing.T) {
-	reg := regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif).*$`)
-	t.Log(">>>>>>", reg.MatchString("http://123.com/js.png"))
+	urlStr := "https://127.0.0.1:8080/test"
+	//urlStr = "http://www.baidu.com"
+	resp, err := http.DefaultH2CClient.GetUrl(urlStr, nil, nil, nil)
+	fmt.Println(resp.Protocol, ":", err)
 }
 
 func TestGinServer(t *testing.T) {
@@ -26,7 +28,7 @@ func TestGinServer(t *testing.T) {
 		engine.GET("/test", func(context *gin.Context) {
 			//v := context.QueryArray("a")
 			// fmt.Println(v)
-			context.Redirect(302, "https://h5.mediext.com")
+			context.String(200, "123")
 		})
 	})
 	srv.Run(func() {

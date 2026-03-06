@@ -2,7 +2,6 @@ package client
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -29,7 +28,9 @@ const (
 )
 
 var defaultTransport *http.Transport
-var h2cTransport *http2.Transport
+
+//var h2cTransport *http2.Transport
+var transporth2c *http.Transport
 
 type NetHttpClient struct {
 }
@@ -47,25 +48,57 @@ func init() {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //不校验服务端证书
 		DialContext: (&net.Dialer{
 			Timeout:   3 * time.Second,
-			KeepAlive: 10 * time.Second,
+			KeepAlive: 30 * time.Second,
 		}).DialContext,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
-		IdleConnTimeout:       10 * time.Second,
+		IdleConnTimeout:       20 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		MaxConnsPerHost:       0,
 		MaxIdleConnsPerHost:   20,
 	}
-	h2cTransport = &http2.Transport{
+
+	// 配置 Transport，禁用 TLS，启用 h2c
+	transporth2c = &http.Transport{
+		// 1. 核心：自定义拨号函数（明文 TCP）
+		DialContext: (&net.Dialer{
+			Timeout:   3 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		// 2. 控制长连接数量（和之前 HTTP/2 客户端一致）
+		MaxConnsPerHost:     100,
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     20 * time.Second,
+		// 3. 禁用 TLS（h2c 是明文）
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		ReadIdleTimeout: 5 * time.Second,
-		IdleConnTimeout: 15 * time.Second,
-		AllowHTTP:       true,
-		DialTLSContext: func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-			return net.Dial(network, addr)
-		},
+		// 4. 强制尝试 HTTP/2
+		ForceAttemptHTTP2: true,
+		// 6. 其他基础配置
+		ResponseHeaderTimeout: 30 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		DialTLSContext: (&net.Dialer{
+			Timeout:   3 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
 	}
+	protos := &http.Protocols{}
+	protos.SetUnencryptedHTTP2(true)
+	transporth2c.Protocols = protos
+	h2cTransport, _ := http2.ConfigureTransports(transporth2c)
+	h2cTransport.ReadIdleTimeout = 5 * time.Second
+	h2cTransport.IdleConnTimeout = 20 * time.Second
+	h2cTransport.AllowHTTP = true
+	// h2cTransport = &http2.Transport{
+	// 	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	// 	ReadIdleTimeout: 5 * time.Second,
+	// 	IdleConnTimeout: 15 * time.Second,
+	// 	AllowHTTP:       true,
+	// 	DialTLSContext: func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+	// 		return net.Dial(network, addr)
+	// 	},
+	// }
 	// GetClient(default_timeout)
 }
 
@@ -112,11 +145,11 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 	params := bytes.NewReader(req.Params)
 	headers := req.Headers
 	isJson := req.IsJson
-	defer func() {
-		if err := recover(); err != nil {
-			logger.ErrorContext(loggerCtx, "[lb-http] recover :", err)
-		}
-	}()
+	// defer func() {
+	// 	if err := recover(); err != nil {
+	// 		logger.ErrorContext(loggerCtx, "[lb-http] recover :", err)
+	// 	}
+	// }()
 	if req.Method == "POST" {
 		if params == nil {
 			logger.WarnContext(loggerCtx, "[lb-http] NewRequest with body nil")
@@ -150,7 +183,7 @@ func (NetHttpClient) Exec(req *request.Request) (r *gResp.Response, err error) {
 		return http.ErrUseLastResponse
 	}}
 	if req.H2C {
-		httpC.Transport = h2cTransport
+		httpC.Transport = transporth2c
 		r.Protocol = "h2c"
 	} else {
 		httpC.Transport = defaultTransport
