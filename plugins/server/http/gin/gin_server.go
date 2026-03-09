@@ -17,6 +17,7 @@ import (
 	"github.com/skirrund/gcloud/plugins/server/http/gin/prometheus"
 	"github.com/skirrund/gcloud/response"
 	"github.com/skirrund/gcloud/server"
+	"github.com/skirrund/gcloud/server/http/cookie"
 	"github.com/skirrund/gcloud/tracer"
 	uValidator "github.com/skirrund/gcloud/utils/validator"
 	"golang.org/x/net/http2"
@@ -29,12 +30,17 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
+const (
+	CookieDeleteMe            = "DeleteMe"
+	CookieDeleteMaxAge        = 0
+	CookieDeleteVal           = ""
+	DefaultMaxRequestBodySize = 104857600 // 100MB
+)
+
 type Server struct {
 	Srv     *gin.Engine
 	Options server.Options
 }
-
-const DefaultMaxRequestBodySize = 104857600 // 100MB
 
 func NewServer(options server.Options, routerProvider func(engine *gin.Engine), middleware ...gin.HandlerFunc) server.Server {
 	srv := &Server{}
@@ -146,4 +152,80 @@ func InitTrans(locale string, validate binding.StructValidator) (err error) {
 func GetTraceContext(ctx *gin.Context) context.Context {
 	id := ctx.GetString(tracer.TraceIDKey)
 	return tracer.NewContextFromTraceId(id)
+}
+
+func GetCookie(name string, ctx *gin.Context) string {
+	val, _ := ctx.Cookie(name)
+	return val
+}
+
+// if len(keys)==0 this function will delete all cookies
+func ClearCookie(ctx *gin.Context, domain string, path string, keys ...string) {
+	cookies := ctx.Request.Cookies()
+	l := len(keys)
+	if len(cookies) > 0 {
+		var cookie *http.Cookie
+		for _, c := range cookies {
+			dm := string(c.Domain)
+			if len(domain) > 0 {
+				dm = domain
+			}
+			p := string(c.Path)
+			if len(path) > 0 {
+				p = path
+			}
+			name := string(c.Name)
+			if len(name) > 0 {
+				if l == 0 {
+					cookie = &http.Cookie{
+						Name:     name,
+						Value:    CookieDeleteVal,
+						MaxAge:   CookieDeleteMaxAge,
+						Path:     p,
+						Domain:   dm,
+						Secure:   c.Secure,
+						HttpOnly: c.HttpOnly,
+						SameSite: c.SameSite,
+					}
+					cookie.Expires = time.Now().Add(-1 * time.Second)
+					ctx.SetCookieData(cookie)
+				} else {
+					for _, k := range keys {
+						if name == k {
+							cookie = &http.Cookie{
+								Name:     name,
+								Value:    CookieDeleteVal,
+								MaxAge:   CookieDeleteMaxAge,
+								Path:     p,
+								Domain:   dm,
+								Secure:   c.Secure,
+								HttpOnly: c.HttpOnly,
+								SameSite: c.SameSite,
+							}
+							cookie.Expires = time.Now().Add(-1 * time.Second)
+							ctx.SetCookieData(cookie)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func SetCookie(c cookie.Cookie, ctx *gin.Context) {
+	if len(c.Key) > 0 {
+		ctx.SetCookie(c.Key, c.Value, c.MaxAge, c.Path, c.Domain, c.Secure, c.HttpOnly)
+	}
+}
+
+func getSameSite(sameSite cookie.CookieSameSite) http.SameSite {
+	switch sameSite {
+	case cookie.CookieSameSiteLaxMode:
+		return http.SameSiteLaxMode
+	case cookie.CookieSameSiteStrictMode:
+		return http.SameSiteStrictMode
+	case cookie.CookieSameSiteNoneMode:
+		return http.SameSiteNoneMode
+	}
+	return http.SameSiteDefaultMode
 }
