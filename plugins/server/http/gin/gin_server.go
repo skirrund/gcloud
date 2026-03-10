@@ -58,10 +58,10 @@ func NewServer(options server.Options, routerProvider func(engine *gin.Engine), 
 	}))
 	//s.Use(cors)
 	//s.Use(zipkinMiddleware)
-	s.Use(gm.TraceMiddleware, gm.LoggingMiddleware)
 	//zipkin.InitZipkinTracer(s)
 	gp := prometheus.New(s)
 	s.Use(gp.Middleware())
+	s.Use(gm.TraceMiddleware, gm.LoggingMiddleware)
 	if len(middleware) > 0 {
 		s.Use(middleware...)
 	}
