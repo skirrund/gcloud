@@ -20,7 +20,8 @@ func ProxyService(serviceName, path string, ctx *gin.Context, timeout time.Durat
 		TimeOut:     timeout,
 		IsProxy:     true,
 	}
-	if bodyBytes, err := io.ReadAll(req.Body); err != nil {
+	bodyBytes, err := io.ReadAll(req.Body)
+	if err != nil {
 		return err
 	} else {
 		gRequest.Params = bodyBytes

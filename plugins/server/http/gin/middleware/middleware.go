@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -20,6 +21,20 @@ import (
 const MAX_PRINT_BODY_LEN = 2048
 
 var reg = regexp.MustCompile(`.*\.(js|css|png|jpg|jpeg|gif|svg|webp|bmp|html|htm).*$`)
+
+var poll1 = &sync.Pool{
+	New: func() any {
+		return new(bytes.Buffer)
+	},
+}
+
+func getBuffer() *bytes.Buffer {
+	return poll1.Get().(*bytes.Buffer)
+}
+func putBuffer(buff *bytes.Buffer) {
+	buff.Reset()
+	poll1.Put(buff)
+}
 
 func Cors(c *gin.Context) {
 	method := c.Request.Method
@@ -92,9 +107,13 @@ func LoggingMiddleware(ctx *gin.Context) {
 	if utf8.RuneCountInString(strBody) > MAX_PRINT_BODY_LEN {
 		strBody = strBody[:(MAX_PRINT_BODY_LEN - 1)]
 	}
-	if len(bb) > MAX_PRINT_BODY_LEN {
-		bb = bb[:(MAX_PRINT_BODY_LEN - 1)]
-	}
+	buff := getBuffer()
+	defer putBuffer(buff)
+	buff.Write(bb)
+	logbb := buff.Next(MAX_PRINT_BODY_LEN)
+	// if len(bb) > MAX_PRINT_BODY_LEN {
+	// 	bb = bb[:(MAX_PRINT_BODY_LEN - 1)]
+	// }
 	req := ctx.Request
 	rUri, _ := url.QueryUnescape(req.RequestURI)
 	uri1 := req.Host + rUri
@@ -103,6 +122,6 @@ func LoggingMiddleware(ctx *gin.Context) {
 	status := ctx.Writer.Status()
 	respCt := ctx.Writer.Header().Get("Content-Type")
 	worker.AsyncExecute(func() {
-		requestEnd(uri1, ct, method, start, strBody, string(bb), strconv.FormatInt(int64(status), 10), respCt, ctx.GetString(tracer.TraceIDKey))
+		requestEnd(uri1, ct, method, start, strBody, string(logbb), strconv.FormatInt(int64(status), 10), respCt, ctx.GetString(tracer.TraceIDKey))
 	})
 }
