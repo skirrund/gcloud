@@ -98,7 +98,7 @@ func LoggingMiddleware(ctx *gin.Context) {
 	req := ctx.Request
 	rUri, _ := url.QueryUnescape(req.RequestURI)
 	uri1 := req.Host + rUri
-	ct := req.Header.Get("content-type")
+	ct := req.Header.Get("Content-Type")
 	method := req.Method
 	status := ctx.Writer.Status()
 	respCt := ctx.Writer.Header().Get("Content-Type")

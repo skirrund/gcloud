@@ -25,6 +25,7 @@ func ProxyService(serviceName, path string, ctx *gin.Context, timeout time.Durat
 	} else {
 		gRequest.Params = bodyBytes
 	}
+	logger.Info("startProxy-gin params:", string(gRequest.Params))
 
 	ctxHeader := make(map[string]string)
 	h := req.Header
@@ -32,6 +33,9 @@ func ProxyService(serviceName, path string, ctx *gin.Context, timeout time.Durat
 		if len(vals) > 0 {
 			ctxHeader[k] = vals[0]
 		}
+	}
+	for k, v := range ctxHeader {
+		logger.Info("startProxy-gin header:", k, "=>", v)
 	}
 	gRequest.Headers = ctxHeader
 	gRequest.LbOptions = request.NewDefaultLbOptions()
