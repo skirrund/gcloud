@@ -10,7 +10,9 @@ import (
 
 	"github.com/skirrund/gcloud/bootstrap/env"
 	"github.com/skirrund/gcloud/logger"
+	"github.com/skirrund/gcloud/server"
 	"github.com/skirrund/gcloud/utils"
+	"github.com/spf13/viper"
 )
 
 type StorageType string
@@ -91,6 +93,27 @@ type OssClient interface {
 }
 
 var ossClients sync.Map
+
+func init() {
+	err := server.RegisterEventHook(server.RegistryChangeEvent, server.EventHook(regChange))
+	if err != nil {
+		logger.Error("[bd oss ListenRegChange error]:", err)
+	}
+}
+
+func regChange(eventType server.EventName, eventInfo any) error {
+	if _, ok := eventInfo.(*viper.Viper); ok {
+		logger.Info("[百度]oss配置变更:=======")
+		ossClients.Range(func(k, v any) bool {
+			if vo, ok := v.(OssClient); ok {
+				vo.NewDefaultClient()
+			}
+			return true
+		})
+		logger.Info("[百度]oss配置变更完成:=======")
+	}
+	return nil
+}
 
 func SubStringBlackSlash(s string) string {
 	if !strings.HasPrefix(s, "/") && !strings.HasPrefix(s, "\\") {

@@ -260,10 +260,21 @@ func (OssClient) NewClient(endpoint, accessKeyID, accessKeySecret, bucketName st
 		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
-
+	selfDomain := getSelfDomain()
+	if selfDomain {
+		selfDomainHost := getSelfDomainHost()
+		if len(selfDomainHost) == 0 {
+			selfDomain = false
+		} else {
+			endpoint = selfDomainHost
+		}
+	}
 	bosClient, err := bos.NewClient(accessKeyID, accessKeySecret, endpoint)
 	if err != nil {
 		return nil, err
+	}
+	if selfDomain {
+		bosClient.Config.CnameEnabled = true
 	}
 	c = &OssClient{
 		BucketName: bucketName,

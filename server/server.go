@@ -78,10 +78,12 @@ func EmitEvent(event EventName, info any) {
 		logger.Info("[server] EmitEvent exec ", event)
 		for i := range funcs {
 			f := funcs[i]
-			err := f(event, info)
-			if err != nil {
-				logger.Infof("[server] error on '%s' hook: %v", event, err)
-			}
+			go func() {
+				err := f(event, info)
+				if err != nil {
+					logger.Infof("[server] error on '%s' hook: %v", event, err)
+				}
+			}()
 		}
 	}
 }
