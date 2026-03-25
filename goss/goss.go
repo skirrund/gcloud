@@ -95,13 +95,13 @@ type OssClient interface {
 var ossClients sync.Map
 
 func init() {
-	err := server.RegisterEventHook(server.RegistryChangeEvent, server.EventHook(regChange))
+	err := server.RegisterEventHook(server.ConfigChangeEvent, server.EventHook(cfgChange))
 	if err != nil {
 		logger.Error("[bd oss ListenRegChange error]:", err)
 	}
 }
 
-func regChange(eventType server.EventName, eventInfo any) error {
+func cfgChange(eventType server.EventName, eventInfo any) error {
 	if _, ok := eventInfo.(*viper.Viper); ok {
 		logger.Info("[百度]oss配置变更:=======")
 		ossClients.Range(func(k, v any) bool {
