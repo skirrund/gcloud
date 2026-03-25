@@ -106,7 +106,12 @@ func cfgChange(eventType server.EventName, eventInfo any) error {
 		logger.Info("[百度]oss配置变更:=======")
 		ossClients.Range(func(k, v any) bool {
 			if vo, ok := v.(OssClient); ok {
-				vo.NewDefaultClient()
+				oc, err := vo.NewDefaultClient()
+				if err == nil {
+					logger.Error("[百度]oss配置变更异常:=======", err.Error())
+				} else {
+					ossClients.Store(k, oc)
+				}
 			}
 			return true
 		})
