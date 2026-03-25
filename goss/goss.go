@@ -107,7 +107,7 @@ func cfgChange(eventType server.EventName, eventInfo any) error {
 		ossClients.Range(func(k, v any) bool {
 			if vo, ok := v.(OssClient); ok {
 				oc, err := vo.NewDefaultClient()
-				if err == nil {
+				if err != nil {
 					logger.Error("[百度]oss配置变更异常:=======", err.Error())
 				} else {
 					ossClients.Store(k, oc)
