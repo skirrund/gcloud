@@ -183,7 +183,7 @@ func GetOssTypeByFilePath(filePath string) (OssType, error) {
 	}
 	if strings.HasPrefix(filePath, "http://") || strings.HasPrefix(filePath, "https://") {
 		idx := strings.Index(filePath, "://")
-		filePath = filePath[idx : idx+3]
+		filePath = filePath[idx+3:]
 	}
 	selfDomainHosta := cfg.GetString(AliossSelfDomainHostKey)
 	if len(selfDomainHosta) > 0 && strings.HasPrefix(filePath, selfDomainHosta) {
