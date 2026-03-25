@@ -21,11 +21,11 @@ import (
 )
 
 const (
-	endpointInternalKey     = "bdoss.endpoint.internal"
-	accessKeyIdKey          = "bdoss.accessKeyId"
-	accessKeySecretKey      = "bdoss.accessKeySecret"
-	selfDomainKey           = "bdoss.selfDomain"
-	authVersionKey          = "bdoss.authVersion" //"v1,v4等";
+	endpointInternalKey     = "bd.oss.endpoint.internal"
+	accessKeyIdKey          = "bd.oss.accessKeyId"
+	accessKeySecretKey      = "bd.oss.accessKeySecret"
+	selfDomainKey           = "bd.oss.selfDomain"
+	authVersionKey          = "bd.oss.authVersion" //"v1,v4等";
 	defaultEndpoint         = "bj.bcebos.com"
 	defaultSelfDomainHost   = "static-core.demo.com"
 	defaultEndpointInternal = "bj.bcebos.com"

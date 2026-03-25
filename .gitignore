@@ -23,3 +23,4 @@ sm4_test.go
 zijie_oss_test.go
 oss_test.go
 baidu_oss_test.go
+DEFAULT_GROUP@@pbm-sso-api-dev
