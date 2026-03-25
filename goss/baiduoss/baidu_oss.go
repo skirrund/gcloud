@@ -34,8 +34,11 @@ const (
 )
 
 type OssClient struct {
-	BucketName string
-	C          *bos.Client
+	BucketName     string
+	C              *bos.Client
+	SelfDomain     bool
+	SelfDomainHost string
+	BdEndpoint     string
 }
 
 // DelObject implements goss.OssClient.
@@ -239,7 +242,7 @@ func (c OssClient) UploadOverwrite(key string, reader io.Reader, isPrivate bool)
 	return c.doUpload(key, reader, isPrivate, true)
 }
 
-func (OssClient) NewClient(endpoint, accessKeyID, accessKeySecret, bucketName string) (c goss.OssClient, err error) {
+func (OssClient) NewClient(endpoint, accessKeyID, accessKeySecret, bucketName string, selfDomain bool, selfDomainHost string) (c goss.OssClient, err error) {
 	if len(endpoint) == 0 {
 		err = errors.New("endpoint is  empty")
 		logger.Error("[bdoss] error:" + err.Error())
@@ -260,16 +263,15 @@ func (OssClient) NewClient(endpoint, accessKeyID, accessKeySecret, bucketName st
 		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
-	selfDomain := getSelfDomain()
+	clientEndpoint := endpoint
 	if selfDomain {
-		selfDomainHost := getSelfDomainHost()
 		if len(selfDomainHost) == 0 {
 			selfDomain = false
 		} else {
-			endpoint = selfDomainHost
+			clientEndpoint = selfDomainHost
 		}
 	}
-	bosClient, err := bos.NewClient(accessKeyID, accessKeySecret, endpoint)
+	bosClient, err := bos.NewClient(accessKeyID, accessKeySecret, clientEndpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -277,8 +279,11 @@ func (OssClient) NewClient(endpoint, accessKeyID, accessKeySecret, bucketName st
 		bosClient.Config.CnameEnabled = true
 	}
 	c = &OssClient{
-		BucketName: bucketName,
-		C:          bosClient,
+		BucketName:     bucketName,
+		C:              bosClient,
+		SelfDomain:     selfDomain,
+		SelfDomainHost: selfDomainHost,
+		BdEndpoint:     endpoint,
 	}
 	return
 }
@@ -314,13 +319,29 @@ func (oc OssClient) NewDefaultClient() (c goss.OssClient, err error) {
 		logger.Error("[bdoss] error:" + err.Error())
 		return
 	}
-	bosClient, err := bos.NewClient(accessKeyID, accessKeySecret, endpointInternal)
+	selfDomain := getSelfDomain()
+	selfDomainHost := getSelfDomainHost()
+	clientEndpoint := endpointInternal
+	if selfDomain {
+		if len(selfDomainHost) == 0 {
+			selfDomain = false
+		} else {
+			clientEndpoint = selfDomainHost
+		}
+	}
+	bosClient, err := bos.NewClient(accessKeyID, accessKeySecret, clientEndpoint)
 	if err != nil {
 		return nil, err
 	}
+	if selfDomain {
+		bosClient.Config.CnameEnabled = true
+	}
 	c = &OssClient{
-		BucketName: bucketName,
-		C:          bosClient,
+		BucketName:     bucketName,
+		C:              bosClient,
+		SelfDomain:     selfDomain,
+		SelfDomainHost: selfDomainHost,
+		BdEndpoint:     endpointPublic,
 	}
 	return
 }
@@ -343,9 +364,20 @@ func GetNativePrefix() string {
 	return cfg.GetStringWithDefault(goss.BdnativePrefixKey, goss.DefaultBdPrefix)
 }
 
-func getEndpoint() string {
+func getBdEndpoint() string {
 	cfg := env.GetInstance()
 	return cfg.GetStringWithDefault(goss.BdEndpointPublicKey, defaultEndpoint)
+}
+
+func getSelfEndpoint() string {
+	selfDomain := getSelfDomain()
+	if selfDomain {
+		sdh := getSelfDomainHost()
+		if len(sdh) > 0 {
+			return sdh
+		}
+	}
+	return ""
 }
 
 func getSelfDomain() bool {
@@ -359,11 +391,11 @@ func getSelfDomainHost() string {
 }
 
 func (c OssClient) GetFullUrl(fileName string) string {
-	selfDomainHost := getSelfDomainHost()
-	endpoint := getEndpoint()
-	selfDomain := getSelfDomain()
+	selfDomainHost := c.SelfDomainHost
+	endpoint := c.BdEndpoint
+	selfDomain := c.SelfDomain
 	nativePrefix := c.GetNativePrefix()
-	fileName = goss.GetFileName(fileName, nativePrefix, endpoint, c.BucketName, getSelfDomainHost(), false)
+	fileName = goss.GetFileName(fileName, nativePrefix, endpoint, c.BucketName, selfDomainHost, false)
 	if len(selfDomainHost) == 0 {
 		return "https://" + c.BucketName + "." + endpoint + "/" + fileName
 	}
@@ -376,8 +408,8 @@ func (c OssClient) GetFullUrl(fileName string) string {
 
 func (c OssClient) getFileName(fileName string) string {
 	nativePrefix := c.GetNativePrefix()
-	endpoint := getEndpoint()
-	return goss.GetFileName(fileName, nativePrefix, endpoint, c.BucketName, getSelfDomainHost(), true)
+	endpoint := c.BdEndpoint
+	return goss.GetFileName(fileName, nativePrefix, endpoint, c.BucketName, c.SelfDomainHost, true)
 }
 
 func (c OssClient) GetSignUrl(fileName string, expiredInSec int64) (string, error) {
@@ -413,13 +445,13 @@ func (c OssClient) GetFullUrlWithSign(fileName string, expiredInSec int64) (stri
 	fileName = utils.SubStr(url, utils.UnicodeIndex(url, "://")+3, -1)
 
 	fileName = subStringBlackSlash(utils.SubStr(fileName, utils.UnicodeIndex(fileName, "/")+1, -1))
-	if len(getSelfDomainHost()) == 0 {
-		return "https://" + c.BucketName + "." + getEndpoint() + "/" + fileName, err
+	if len(c.SelfDomainHost) == 0 {
+		return "https://" + c.BucketName + "." + c.BdEndpoint + "/" + fileName, err
 	}
-	if getSelfDomain() {
-		return "https://" + getSelfDomainHost() + "/" + fileName, err
+	if c.SelfDomain {
+		return "https://" + c.SelfDomainHost + "/" + fileName, err
 	} else {
-		return "https://" + c.BucketName + "." + getEndpoint() + "/" + fileName, err
+		return "https://" + c.BucketName + "." + c.BdEndpoint + "/" + fileName, err
 	}
 }
 func (c OssClient) GetBytes(fileName string) ([]byte, error) {
