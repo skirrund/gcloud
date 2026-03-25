@@ -41,7 +41,7 @@ func init() {
 		config: parser.NewDefaultParser(),
 		base:   make(map[string]any),
 	}
-	server.RegisterEventHook(server.ConfigChangeEvent, e.MergeConfig)
+	server.RegisterEventHookFirst(server.ConfigChangeEvent, e.MergeConfig)
 }
 
 func GetInstance() *env {

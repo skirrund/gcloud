@@ -51,7 +51,11 @@ var eventHooks = struct {
 	EventHook map[EventName][]EventHook
 }{EventHook: make(map[EventName][]EventHook)}
 
-func RegisterEventHook(name EventName, hook ...EventHook) error {
+func RegisterEventHookFirst(name EventName, hook ...EventHook) error {
+	return doRegisterEventHook(name, true, hook...)
+}
+
+func doRegisterEventHook(name EventName, isFirst bool, hook ...EventHook) error {
 	if name == "" {
 		logger.Error("[server] event hook must have a name")
 		return errors.New("[server] event hook must have a name")
@@ -59,14 +63,23 @@ func RegisterEventHook(name EventName, hook ...EventHook) error {
 	logger.Info("[server] RegisterEventHook:"+name, hook)
 	v, ok := eventHooks.EventHook[name]
 	var list []EventHook
-	if !ok {
-		v = list
+	list = append(list, hook...)
+	if ok {
+		if isFirst {
+			list = append(list, v...)
+		} else {
+			list = append(v, list...)
+		}
 	}
-	v = append(v, hook...)
+	v = list
 	eventHooks.Lock()
 	defer eventHooks.Unlock()
 	eventHooks.EventHook[name] = v
 	return nil
+}
+
+func RegisterEventHook(name EventName, hook ...EventHook) error {
+	return doRegisterEventHook(name, false, hook...)
 }
 
 // EmitEvent executes the different hooks passing the EventType as an
