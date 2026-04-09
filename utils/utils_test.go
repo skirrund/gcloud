@@ -16,7 +16,7 @@ type TestJson struct {
 	T    DateTime        `json:"t"`
 }
 
-func TestXxx(t *testing.T) {
+func TestUtils(t *testing.T) {
 	str := `{"id":12.0}`
 	testStruct := &TestJson{}
 	err := UnmarshalFromString(str, &testStruct)
