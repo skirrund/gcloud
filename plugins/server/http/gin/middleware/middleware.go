@@ -72,7 +72,7 @@ func requestEnd(uri, contentType, method string, start time.Time, strBody, reqBo
 	if reg.MatchString(uri) {
 		return
 	}
-	logger.Info("\n [GIN] uri:", uri,
+	logger.Info("\n [GIN] uri:", uri,  ", at:", start.Format(time.DateTime),
 		"\n [GIN] trace-id:", traceId,
 		"\n [GIN] content-type:", contentType,
 		"\n [GIN] method:", method,

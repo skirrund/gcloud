@@ -15,14 +15,22 @@ func init() {
 	// cacheSize := 200 * 1024 * 1024
 	// cache = freecache.NewCache(cacheSize)
 	var err error
-	cache, err = MustBuilder[string, any](math.MaxUint16).WithVariableTTL().Build()
+	cache, err = MustBuilder[string, any](math.MaxInt16).WithVariableTTL().Build()
 	if err != nil {
 		panic(err)
 	}
 }
 
+func GetDefaultInstance() CacheWithVariableTTL[string, any] {
+	return cache
+}
+
 func NewCache(capacity int) (CacheWithVariableTTL[string, any], error) {
 	return MustBuilder[string, any](capacity).WithVariableTTL().Build()
+}
+
+func Has(key string) bool {
+	return cache.Has(key)
 }
 
 func Get(key string) any {
