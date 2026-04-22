@@ -51,7 +51,7 @@ func SetWithTtl(key string, value any, ttl time.Duration) error {
 		return nil
 	}
 	// valueBytes, err := serialize(value)
-	logger.Info("[localCache] cache :" + key)
+	//logger.Info("[localCache] cache :" + key)
 	// if err != nil {
 	// 	logger.Error("[localCache] error:" + err.Error())
 	// 	return err
