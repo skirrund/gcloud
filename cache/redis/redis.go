@@ -64,6 +64,8 @@ type Options struct {
 	// Only failover clients.
 
 	MasterName string `property:"redis.masterName"`
+
+	IsClusterMode bool `property:"redis.isClusterMode"`
 }
 
 var ctx = context.Background()
@@ -114,6 +116,7 @@ func NewClient(opts Options) *RedisClient {
 			RouteByLatency:   opts.RouteByLatency,
 			RouteRandomly:    opts.RouteRandomly,
 			MasterName:       opts.MasterName,
+			IsClusterMode:    opts.IsClusterMode,
 		})
 		redisClient.client = rdb
 		err := redisClient.Ping()
